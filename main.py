@@ -133,9 +133,9 @@ st.markdown("<br>", unsafe_allow_html=True)
 # 1. HOME
 if st.session_state.page == "Home":
     st.markdown("""
-        <div class="home-section"><img class="section-bg" src="static/home1.jpg"><div class="section-content"><div class="section-text">Combining <span class="highlight">AI</span> with <span class="highlight">3D printing</span> to turn napkin sketches into real parts within minutes.</div></div></div>
-        <div class="home-section"><img class="section-bg" src="static/production1.jpg"><div class="section-content"><div class="section-text">Production downtime can cost companies up to <span class="highlight">millions of dollars</span> per hour.</div></div></div>
-        <div class="home-section"><img class="section-bg" src="static/print1.jpg"><div class="section-content"><div class="section-text">Continuous advancements in AI are evolving Napkin to become the <span class="highlight">future of rapid manufacturing.</span></div></div></div>
+        <div class="home-section"><img class="section-bg" src="app/static/home1.jpg"><div class="section-content"><div class="section-text">Combining <span class="highlight">AI</span> with <span class="highlight">3D printing</span> to turn napkin sketches into real parts within minutes.</div></div></div>
+        <div class="home-section"><img class="section-bg" src="app/static/production1.jpg"><div class="section-content"><div class="section-text">Production downtime can cost companies up to <span class="highlight">millions of dollars</span> per hour.</div></div></div>
+        <div class="home-section"><img class="section-bg" src="app/static/print1.jpg"><div class="section-content"><div class="section-text">Continuous advancements in AI are evolving Napkin to become the <span class="highlight">future of rapid manufacturing.</span></div></div></div>
     """, unsafe_allow_html=True)
 
     st.markdown("### Process Overview")
@@ -184,7 +184,7 @@ elif st.session_state.page == "Make a Part":
                 try:
                     exe = shutil.which("openscad")
                     if not exe:
-                        st.error("Engine Error: OpenSCAD not found on server.")
+                        st.error("Engine Error: OpenSCAD not found.")
                     else:
                         client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
                         prompt = f"Act as an OpenSCAD engineer. Create code based on: '{user_context}'. Use $fn=50;. Provide a JSON 'METADATA' object. Format: ```openscad [code] ``` and ```json [metadata] ```"
@@ -216,30 +216,24 @@ elif st.session_state.page == "Pricing":
 elif st.session_state.page == "Help":
     st.markdown("### How to use Napkin")
     st.markdown("""
-    1. **Upload or Describe:** Use a photo of your hand-drawn sketch or just type out what you need in the specification box.
-    2. **Be Specific:** Mention exact dimensions or hole types (e.g. 'M5 clearance hole').
-    3. **Generate:** Click the 'Generate 3D Model' button.
-    4. **Download:** Export your .stl file directly.
+    1. **Upload or Describe:** Use a sketch photo or type your requirements.
+    2. **Generate:** Click the button and wait for the AI to draft the geometry.
+    3. **Download:** Get your .stl file for your slicer.
     """)
 
-# 5. GALLERY (FIXED IMAGE NAMES)
+# 5. GALLERY
 elif st.session_state.page == "Gallery":
     st.markdown("### Gallery")
-    
-    # First row
-    row1_col1, row1_col2 = st.columns(2)
-    row1_col1.image("static/gallery3.jpg", use_container_width=True)
-    row1_col2.image("static/gallery4.jpg", use_container_width=True)
-    
-    # Second row
-    row2_col1, row2_col2 = st.columns(2)
-    row2_col1.image("static/gallery5.jpg", use_container_width=True)
-    row2_col2.image("static/gallery6.jpg", use_container_width=True)
-    
-    # Bonus row for the print/production photos
-    row3_col1, row3_col2 = st.columns(2)
-    row3_col1.image("static/print2.jpg", use_container_width=True)
-    row3_col2.image("static/production1.jpg", use_container_width=True)
+    # Streamlit image commands work with local paths directly
+    g1, g2 = st.columns(2)
+    g1.image("static/gallery3.jpg", use_container_width=True)
+    g2.image("static/gallery4.jpg", use_container_width=True)
+    g3, g4 = st.columns(2)
+    g3.image("static/gallery5.jpg", use_container_width=True)
+    g4.image("static/gallery6.jpg", use_container_width=True)
+    g5, g6 = st.columns(2)
+    g5.image("static/print1.jpg", use_container_width=True)
+    g6.image("static/production2.jpg", use_container_width=True)
 
 # 6. CONTACT
 elif st.session_state.page == "Contact":
@@ -253,14 +247,15 @@ elif st.session_state.page == "Contact":
     
     st.markdown("<br>Connect with us", unsafe_allow_html=True)
     s1, s2, s3, _ = st.columns([1.5, 1.5, 1.5, 4.5])
+    # HTML icons need app/static/
     with s1:
-        st.markdown('<div class="social-underlay"><img src="static/insta.png"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="social-underlay"><img src="app/static/insta.png"></div>', unsafe_allow_html=True)
         st.button("Instagram", key="soc_insta", use_container_width=True)
     with s2:
-        st.markdown('<div class="social-underlay"><img src="static/linkedin.png"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="social-underlay"><img src="app/static/linkedin.png"></div>', unsafe_allow_html=True)
         st.button("LinkedIn", key="soc_link", use_container_width=True)
     with s3:
-        st.markdown('<div class="social-underlay"><img src="static/youtube.png"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="social-underlay"><img src="app/static/youtube.png"></div>', unsafe_allow_html=True)
         st.button("YouTube", key="soc_yt", use_container_width=True)
 
 # --- FOOTER ---
@@ -268,9 +263,9 @@ st.markdown(f"""
     <div class="footer-minimal">
         <p style="font-size: 0.9rem; margin-bottom: 15px; font-weight: 600; color: white;">FOLLOW US</p>
         <div style="display: flex; justify-content: center; align-items: center;">
-            <div class="footer-icon-box"><img src="static/insta.png"></div>
-            <div class="footer-icon-box"><img src="static/linkedin.png"></div>
-            <div class="footer-icon-box"><img src="static/youtube.png"></div>
+            <div class="footer-icon-box"><img src="app/static/insta.png"></div>
+            <div class="footer-icon-box"><img src="app/static/linkedin.png"></div>
+            <div class="footer-icon-box"><img src="app/static/youtube.png"></div>
         </div>
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
