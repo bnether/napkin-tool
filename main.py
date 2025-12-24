@@ -233,8 +233,8 @@ elif st.session_state.page == "Help":
         """)
     with st.expander("What are some examples of parts it can make?"):
         st.write("""
-        * ** Any component that is simple enough to be described by a small sketch and text prompt.
-        * ** The AI will excel at engineering-specific parts and features; for example, a mounting bracket with an M6 clearance hole. This is because it has been trained on real-world industrial standards such as ISO/DIN tables.
+        * Any component that is simple enough to be described by a small sketch and text prompt.
+        * The AI will excel at engineering-specific parts and features; for example, a mounting bracket with an M6 clearance hole. This is because it has been trained on real-world industrial standards such as ISO/DIN tables.
         """)
     with st.expander("Does it work with resin printers?"):
         st.write("Yes, the .STL files are compatible with both FDM and SLA (resin) slicers.")
@@ -246,8 +246,8 @@ elif st.session_state.page == "Help":
         """)
     with st.expander("Why is the AI not generating my model correctly?"):
         st.write("""
-        * **User error:** Firstly, check the accuracy of your drawing and description, ensuring that all features are clearly described. Watch our tutorial to learn how to give effective prompts.
-        * **AI error:** Although the AI is programmed specifically for engineering component design, there may still be errors with more complicated models. We are aiming to continuously improve our system.       
+        * **User error:** Firstly, check the accuracy of your drawing and description, ensuring that all features are clearly described. Watch our tutorial to learn how to give more effective prompts.
+        * **AI error:** Although the AI is programmed specifically for engineering component design, there may still be errors with more complicated models. For these scenarios, traditional CAD modelling methods are required. However, we are aiming to continuously improve our system, and welcome any feedback when common or valuable designs are failing to generate.       
         """)
 
 # 5. GALLERY
@@ -298,6 +298,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
