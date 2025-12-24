@@ -227,9 +227,14 @@ elif st.session_state.page == "Help":
     with st.expander("How is this software developed?"):
         st.write("""
         Unlike generic AI, this platform is engineered specifically for industrial environments:
-        * **Parametric Precision:** Uses the OpenSCAD engine to ensure parts are mathematically accurate, not just visual guesses.
+        * **Parametric Precision:** Uses a mathematical modeling engine to guarantee exact physical dimensions instead of visual guesses.
         * **Machinist Logic:** Programmed with engineering rules for structural integrity, clearances, and 3D-printability.
-        * **Professional Workflow:** Mimics a human engineer’s "Chain of Thought" to analyze mechanical needs before generating code.
+        * **Professional Workflow:** Automatically applies ISO-compliant tolerances and mechanical heuristics.
+        """)
+    with st.expander("What are some examples of parts it can make?"):
+        st.write("""
+        * ** Any component that is simple enough to be described by a small sketch and text prompt.
+        * ** The AI will excel at engineering-specific parts and features; for example, a mounting bracket with an M6 clearance hole. This is because it has been trained on real-world industrial standards such as ISO/DIN tables.
         """)
     with st.expander("Does it work with resin printers?"):
         st.write("Yes, the .STL files are compatible with both FDM and SLA (resin) slicers.")
@@ -293,6 +298,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
