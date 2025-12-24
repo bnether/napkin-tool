@@ -224,9 +224,26 @@ elif st.session_state.page == "Help":
     """)
     st.markdown("---")
     st.markdown("### Frequently Asked Questions")
-    with st.expander("What file types does Napkin export?"): st.write("Napkin currently exports high-resolution .STL files.")
-    with st.expander("Does it work with resin printers?"): st.write("Yes, the .STL files are compatible with both FDM and SLA slicers.")
-    with st.expander("Test question?"): st.write("Test answer.")
+    with st.expander("How is this software developed?"):
+        st.write("""
+        Unlike generic AI, this platform is engineered specifically for industrial environments:
+        * **Parametric Precision:** Uses the OpenSCAD engine to ensure parts are mathematically accurate, not just visual guesses.
+        * **Machinist Logic:** Programmed with engineering rules for structural integrity, clearances, and 3D-printability.
+        * **Professional Workflow:** Mimics a human engineer’s "Chain of Thought" to analyze mechanical needs before generating code.
+        """)
+    with st.expander("Does it work with resin printers?"):
+        st.write("Yes, the .STL files are compatible with both FDM and SLA (resin) slicers.")
+    with st.expander("How do I get the best results?"):
+        st.write("""
+        * **Be Specific:** Include exact dimensions (e.g., "50mm wide").
+        * **Describe the Use:** Mention if it needs to fit a specific bolt (e.g., "M5 clearance hole").
+        * **High Contrast:** If uploading a sketch, ensure the lines are dark and the background is plain.
+        """)
+    with st.expander("Why is the AI not generating my model correctly?"):
+        st.write("""
+        * **User error:** Firstly, check the accuracy of your drawing and description, ensuring that all features are clearly described. Watch our tutorial to learn how to give effective prompts.
+        * **AI error:** Although the AI is programmed specifically for engineering component design, there may still be errors with more complicated models. We are aiming to continuously improve our system.       
+        """)
 
 # 5. GALLERY
 elif st.session_state.page == "Gallery":
@@ -276,6 +293,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
