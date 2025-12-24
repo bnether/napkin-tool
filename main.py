@@ -140,7 +140,7 @@ if st.session_state.page == "Home":
         {"quote": "The speed from a sketch to a real part is unlike anything we've used in our R&D lab or manufacturing space.", "author": "Lead Engineer, Precision Dynamics", "img": "https://i.pravatar.cc/150?u=1"},
         {"quote": "Napkin has fundamentally changed how we handle emergency production part replacements.", "author": "Maintenance Team Leader, TechBuild Solutions", "img": "https://i.pravatar.cc/150?u=2"},
         {"quote": "Intuitive, fast, and convenient. This software is revolutionary for staff who are untrained in CAD.", "author": "Operations Engineer, Global Auto", "img": "https://i.pravatar.cc/150?u=3"},
-        {"quote": "On several ocasions, we've returned to production within a fraction of the time we previously could have.", "author": "CEO, Something Engineering", "img": "https://i.pravatar.cc/150?u=4"}
+        {"quote": "On several occasions, we've returned to production within a fraction of the time we previously could have.", "author": "CEO, Something Engineering", "img": "https://i.pravatar.cc/150?u=4"}
     ]
     
     curr = testimonials[st.session_state.testimonial_index]
@@ -226,7 +226,7 @@ elif st.session_state.page == "Help":
     st.markdown("### Frequently Asked Questions")
     with st.expander("What file types does Napkin export?"): st.write("Napkin currently exports high-resolution .STL files.")
     with st.expander("Does it work with resin printers?"): st.write("Yes, the .STL files are compatible with both FDM and SLA slicers.")
-    with st.expander("Does it work with resin printers?"): st.write("Yes, the .STL files are compatible with both FDM and SLA slicers.")
+    with st.expander("Test question?"): st.write("Test answer.")
 
 # 5. GALLERY
 elif st.session_state.page == "Gallery":
@@ -276,6 +276,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
