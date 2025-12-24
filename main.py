@@ -127,9 +127,9 @@ st.markdown("<br>", unsafe_allow_html=True)
 # 1. HOME
 if st.session_state.page == "Home":
     st.markdown("""
-        <div class="home-section"><img class="section-bg" src="app/static/home1.jpg"><div class="section-content"><div class="section-text">Combining <span class="highlight">AI</span> with <span class="highlight">3D printing</span> to turn napkin sketches into real parts within minutes.</div></div></div>
-        <div class="home-section"><img class="section-bg" src="app/static/production1.jpg"><div class="section-content"><div class="section-text">Production downtime can cost companies up to <span class="highlight">millions of dollars</span> per hour.</div></div></div>
-        <div class="home-section"><img class="section-bg" src="app/static/print1.jpg"><div class="section-content"><div class="section-text">Continuous advancements in AI are evolving Napkin to become the <span class="highlight">future of rapid manufacturing.</span></div></div></div>
+        <div class="home-section"><img class="section-bg" src="app/static/home1.jpg"><div class="section-content"><div class="section-text">Combining <span class="highlight">AI</span> with <span class="highlight">3D printing</span> to turn napkin sketches into real parts.</div></div></div>
+        <div class="home-section"><img class="section-bg" src="app/static/production1.jpg"><div class="section-content"><div class="section-text">Production downtime can cost companies up to <span class="highlight">millions of dollars</span> per hour. </div></div></div>
+        <div class="home-section"><img class="section-bg" src="app/static/print1.jpg"><div class="section-content"><div class="section-text">Merging modern technologies into a tool that <span class="highlight">continuously improves.</span></div></div></div>
     """, unsafe_allow_html=True)
 
     st.markdown("### Process Overview")
@@ -275,4 +275,5 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
