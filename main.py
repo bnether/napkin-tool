@@ -22,11 +22,11 @@ def set_page(page_name):
     st.rerun()
 
 # --- CUSTOM CSS ---
+# Note: We use /app/static/ for HTML image sources
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
     
-    /* Header/Footer Branding */
     .brand-blue {{
         background-color: #1e3a8a;
         border-bottom: 3px solid #3b82f6;
@@ -44,7 +44,6 @@ st.markdown(f"""
     }}
     .nav-title {{ font-size: 3.5rem; font-weight: 800; color: white; letter-spacing: -1.5px; }}
     
-    /* Contact Social Icons */
     .social-underlay {{
         background-color: white;
         padding: 15px;
@@ -60,7 +59,6 @@ st.markdown(f"""
         object-fit: contain;
     }}
     
-    /* Footer specific icon size */
     .footer-icon-box {{
         background-color: white;
         padding: 6px;
@@ -73,7 +71,6 @@ st.markdown(f"""
         height: 18px !important;
     }}
 
-    /* Testimonial Carousel Card */
     .testimonial-card {{
         background: #161b22;
         padding: 30px;
@@ -89,7 +86,6 @@ st.markdown(f"""
     .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
     .testimonial-quote {{ font-style: italic; font-size: 1.05rem; color: #d1d5db; line-height: 1.4; }}
 
-    /* Home Section Branding */
     .home-section {{
         position: relative; width: 100%; min-height: 450px;
         border-radius: 20px; overflow: hidden; margin-bottom: 40px;
@@ -100,11 +96,9 @@ st.markdown(f"""
     .section-text {{ font-size: 2.5rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }}
     .highlight {{ color: #58a6ff; }}
 
-    /* Pricing Card */
     .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 350px; margin-bottom: 10px; }}
     .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; display: inline-block; }}
     .per-month {{ font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }}
-    
     .currency-sub {{ color: #8b949e; font-size: 0.85rem; margin-bottom: 15px; }}
 
     .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
@@ -184,7 +178,7 @@ elif st.session_state.page == "Make a Part":
                 try:
                     exe = shutil.which("openscad")
                     if not exe:
-                        st.error("Engine Error: OpenSCAD not found.")
+                        st.error("Engine Error: OpenSCAD not found on server.")
                     else:
                         client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
                         prompt = f"Act as an OpenSCAD engineer. Create code based on: '{user_context}'. Use $fn=50;. Provide a JSON 'METADATA' object. Format: ```openscad [code] ``` and ```json [metadata] ```"
@@ -247,7 +241,6 @@ elif st.session_state.page == "Contact":
     
     st.markdown("<br>Connect with us", unsafe_allow_html=True)
     s1, s2, s3, _ = st.columns([1.5, 1.5, 1.5, 4.5])
-    # HTML icons need app/static/
     with s1:
         st.markdown('<div class="social-underlay"><img src="app/static/insta.png"></div>', unsafe_allow_html=True)
         st.button("Instagram", key="soc_insta", use_container_width=True)
