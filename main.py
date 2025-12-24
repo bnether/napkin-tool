@@ -220,7 +220,7 @@ elif st.session_state.page == "Help":
     st.markdown("""
     1. **Network Discovery:** Ensure your printer and computer are on the same Wi-Fi network.
     2. **API Access:** Locate your API Key or Access Code within your printer's network settings.
-    3. **Direct Printing:** Once configured, you can send generated parts straight to the print bed without leaving Napkin.
+    3. **Direct Printing:** Once configured, you can send generated parts straight to the print bed from this software, without leaving the shop floor.
     """)
     st.markdown("---")
     st.markdown("### Frequently Asked Questions")
@@ -298,6 +298,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
