@@ -6,7 +6,7 @@ from streamlit_stl import stl_from_file
 import json
 import re
 import os
-import shutil  # Required to find OpenSCAD on the server
+import shutil
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Napkin", layout="wide", initial_sidebar_state="collapsed")
@@ -89,7 +89,7 @@ st.markdown(f"""
     .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
     .testimonial-quote {{ font-style: italic; font-size: 1.05rem; color: #d1d5db; line-height: 1.4; }}
 
-    /* Home Section Branding (Overlay Style) */
+    /* Home Section Branding */
     .home-section {{
         position: relative; width: 100%; min-height: 450px;
         border-radius: 20px; overflow: hidden; margin-bottom: 40px;
@@ -105,11 +105,7 @@ st.markdown(f"""
     .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; display: inline-block; }}
     .per-month {{ font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }}
     
-    .currency-sub {{ 
-        color: #8b949e; 
-        font-size: 0.85rem; 
-        margin-bottom: 15px; 
-    }}
+    .currency-sub {{ color: #8b949e; font-size: 0.85rem; margin-bottom: 15px; }}
 
     .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
     button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; color: white !important; }}
@@ -137,9 +133,9 @@ st.markdown("<br>", unsafe_allow_html=True)
 # 1. HOME
 if st.session_state.page == "Home":
     st.markdown("""
-        <div class="home-section"><img class="section-bg" src="app/static/home1.jpg"><div class="section-content"><div class="section-text">Combining <span class="highlight">AI</span> with <span class="highlight">3D printing</span> to turn napkin sketches into real parts within minutes.</div></div></div>
-        <div class="home-section"><img class="section-bg" src="app/static/production1.jpg"><div class="section-content"><div class="section-text">Production downtime can cost companies up to <span class="highlight">millions of dollars</span> per hour.</div></div></div>
-        <div class="home-section"><img class="section-bg" src="app/static/print1.jpg"><div class="section-content"><div class="section-text">Continuous advancements in AI are evolving Napkin to become the <span class="highlight">future of rapid manufacturing.</span></div></div></div>
+        <div class="home-section"><img class="section-bg" src="static/home1.jpg"><div class="section-content"><div class="section-text">Combining <span class="highlight">AI</span> with <span class="highlight">3D printing</span> to turn napkin sketches into real parts within minutes.</div></div></div>
+        <div class="home-section"><img class="section-bg" src="static/production1.jpg"><div class="section-content"><div class="section-text">Production downtime can cost companies up to <span class="highlight">millions of dollars</span> per hour.</div></div></div>
+        <div class="home-section"><img class="section-bg" src="static/print1.jpg"><div class="section-content"><div class="section-text">Continuous advancements in AI are evolving Napkin to become the <span class="highlight">future of rapid manufacturing.</span></div></div></div>
     """, unsafe_allow_html=True)
 
     st.markdown("### Process Overview")
@@ -186,31 +182,22 @@ elif st.session_state.page == "Make a Part":
         if generate_btn:
             with st.spinner("Generating..."):
                 try:
-                    # 1. Find the OpenSCAD executable on the server
-                    openscad_executable = shutil.which("openscad")
-                    
-                    if not openscad_executable:
-                        st.error("OpenSCAD is not installed. Please ensure packages.txt contains 'openscad' and is in your GitHub root.")
+                    exe = shutil.which("openscad")
+                    if not exe:
+                        st.error("Engine Error: OpenSCAD not found on server.")
                     else:
                         client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
                         prompt = f"Act as an OpenSCAD engineer. Create code based on: '{user_context}'. Use $fn=50;. Provide a JSON 'METADATA' object. Format: ```openscad [code] ``` and ```json [metadata] ```"
                         inputs = [prompt, PIL.Image.open(uploaded_file)] if uploaded_file else [prompt]
                         response = client.models.generate_content(model="gemini-2.0-flash-exp", contents=inputs)
-                        
                         scad_match = re.search(r"```openscad(.*?)```", response.text, re.DOTALL)
                         if scad_match:
                             scad_code = scad_match.group(1).strip()
                             with open("part.scad", "w") as f: f.write(scad_code)
-                            
-                            # 2. Run the subprocess using the found path
-                            subprocess.run([openscad_executable, "-o", "part.stl", "part.scad"], check=True)
-                            
+                            subprocess.run([exe, "-o", "part.stl", "part.scad"], check=True)
                             stl_from_file("part.stl", color='#58a6ff')
                             st.download_button("Download STL", open("part.stl", "rb"), "part.stl", use_container_width=True)
-                        else:
-                            st.warning("AI could not generate valid OpenSCAD code. Try adjusting your description.")
-                except Exception as e: 
-                    st.error(f"Error during generation: {e}")
+                except Exception as e: st.error(f"Error: {e}")
 
 # 3. PRICING
 elif st.session_state.page == "Pricing":
@@ -230,28 +217,29 @@ elif st.session_state.page == "Help":
     st.markdown("### How to use Napkin")
     st.markdown("""
     1. **Upload or Describe:** Use a photo of your hand-drawn sketch or just type out what you need in the specification box.
-    2. **Be Specific:** For precision engineering, mention exact dimensions or hole types (e.g. 'M5 clearance hole').
-    3. **Generate:** Click the 'Generate 3D Model' button. Our AI engine will translate your input into geometric code.
-    4. **Download:** Export your .stl file directly for use in any slicing software.
+    2. **Be Specific:** Mention exact dimensions or hole types (e.g. 'M5 clearance hole').
+    3. **Generate:** Click the 'Generate 3D Model' button.
+    4. **Download:** Export your .stl file directly.
     """)
-    st.markdown("---")
-    st.markdown("### Setting up your 3D Printer")
-    st.markdown("""
-    1. **Network Discovery:** Ensure your printer and computer are on the same Wi-Fi network.
-    2. **API Access:** Locate your API Key or Access Code within your printer's network settings.
-    3. **Direct Printing:** Once configured, you can send generated parts straight to the print bed without leaving Napkin.
-    """)
-    st.markdown("---")
-    st.markdown("### Frequently Asked Questions")
-    with st.expander("What file types does Napkin export?"): st.write("Napkin currently exports high-resolution .STL files.")
-    with st.expander("Does it work with resin printers?"): st.write("Yes, the .STL files are compatible with both FDM and SLA slicers.")
 
-# 5. GALLERY
+# 5. GALLERY (FIXED IMAGE NAMES)
 elif st.session_state.page == "Gallery":
     st.markdown("### Gallery")
-    g1, g2 = st.columns(2)
-    g1.image("static/print2.jpg")
-    g2.image("static/production2.jpg")
+    
+    # First row
+    row1_col1, row1_col2 = st.columns(2)
+    row1_col1.image("static/gallery3.jpg", use_container_width=True)
+    row1_col2.image("static/gallery4.jpg", use_container_width=True)
+    
+    # Second row
+    row2_col1, row2_col2 = st.columns(2)
+    row2_col1.image("static/gallery5.jpg", use_container_width=True)
+    row2_col2.image("static/gallery6.jpg", use_container_width=True)
+    
+    # Bonus row for the print/production photos
+    row3_col1, row3_col2 = st.columns(2)
+    row3_col1.image("static/print2.jpg", use_container_width=True)
+    row3_col2.image("static/production1.jpg", use_container_width=True)
 
 # 6. CONTACT
 elif st.session_state.page == "Contact":
@@ -265,19 +253,24 @@ elif st.session_state.page == "Contact":
     
     st.markdown("<br>Connect with us", unsafe_allow_html=True)
     s1, s2, s3, _ = st.columns([1.5, 1.5, 1.5, 4.5])
-    for col, img, lbl in zip([s1, s2, s3], ["insta.png", "linkedin.png", "youtube.png"], ["Instagram", "LinkedIn", "YouTube"]):
-        with col:
-            st.markdown(f'<div class="social-underlay"><img src="app/static/{img}"></div>', unsafe_allow_html=True)
-            st.button(lbl, key=f"soc_{lbl}", use_container_width=True)
+    with s1:
+        st.markdown('<div class="social-underlay"><img src="static/insta.png"></div>', unsafe_allow_html=True)
+        st.button("Instagram", key="soc_insta", use_container_width=True)
+    with s2:
+        st.markdown('<div class="social-underlay"><img src="static/linkedin.png"></div>', unsafe_allow_html=True)
+        st.button("LinkedIn", key="soc_link", use_container_width=True)
+    with s3:
+        st.markdown('<div class="social-underlay"><img src="static/youtube.png"></div>', unsafe_allow_html=True)
+        st.button("YouTube", key="soc_yt", use_container_width=True)
 
 # --- FOOTER ---
 st.markdown(f"""
     <div class="footer-minimal">
         <p style="font-size: 0.9rem; margin-bottom: 15px; font-weight: 600; color: white;">FOLLOW US</p>
         <div style="display: flex; justify-content: center; align-items: center;">
-            <div class="footer-icon-box"><img src="app/static/insta.png"></div>
-            <div class="footer-icon-box"><img src="app/static/linkedin.png"></div>
-            <div class="footer-icon-box"><img src="app/static/youtube.png"></div>
+            <div class="footer-icon-box"><img src="static/insta.png"></div>
+            <div class="footer-icon-box"><img src="static/linkedin.png"></div>
+            <div class="footer-icon-box"><img src="static/youtube.png"></div>
         </div>
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
