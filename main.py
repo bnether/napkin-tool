@@ -210,10 +210,22 @@ elif st.session_state.page == "Pricing":
 elif st.session_state.page == "Help":
     st.markdown("### How to use Napkin")
     st.markdown("""
-    1. **Upload or Describe:** Use a sketch photo or type your requirements.
-    2. **Generate:** Click the button and wait for the AI to draft the geometry.
-    3. **Download:** Get your .stl file for your slicer.
+    1. **Upload or Describe:** Use a photo of your hand-drawn sketch or just type out what you need in the specification box.
+    2. **Be Specific:** For precision engineering, mention exact dimensions or hole types (e.g. 'M5 clearance hole').
+    3. **Generate:** Click the 'Generate 3D Model' button. Our AI engine will translate your input into geometric code.
+    4. **Download:** Export your .stl file directly for use in any slicing software.
     """)
+    st.markdown("---")
+    st.markdown("### Setting up your 3D Printer")
+    st.markdown("""
+    1. **Network Discovery:** Ensure your printer and computer are on the same Wi-Fi network.
+    2. **API Access:** Locate your API Key or Access Code within your printer's network settings.
+    3. **Direct Printing:** Once configured, you can send generated parts straight to the print bed without leaving Napkin.
+    """)
+    st.markdown("---")
+    st.markdown("### Frequently Asked Questions")
+    with st.expander("What file types does Napkin export?"): st.write("Napkin currently exports high-resolution .STL files.")
+    with st.expander("Does it work with resin printers?"): st.write("Yes, the .STL files are compatible with both FDM and SLA slicers.")
 
 # 5. GALLERY
 elif st.session_state.page == "Gallery":
@@ -263,3 +275,4 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
