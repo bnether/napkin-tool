@@ -226,6 +226,7 @@ elif st.session_state.page == "Help":
     st.markdown("### Frequently Asked Questions")
     with st.expander("What file types does Napkin export?"): st.write("Napkin currently exports high-resolution .STL files.")
     with st.expander("Does it work with resin printers?"): st.write("Yes, the .STL files are compatible with both FDM and SLA slicers.")
+    with st.expander("Does it work with resin printers?"): st.write("Yes, the .STL files are compatible with both FDM and SLA slicers.")
 
 # 5. GALLERY
 elif st.session_state.page == "Gallery":
@@ -275,5 +276,6 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
