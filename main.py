@@ -123,7 +123,7 @@ for i, p in enumerate(pages):
         set_page(p)
 
 # The Profile Icon (using a person emoji or custom character)
-if nav_cols[6].button("👤", key="nav_Profile", type="primary" if st.session_state.page == "Profile" else "secondary"):
+if nav_cols[6].button("Profile", key="nav_Profile", type="primary" if st.session_state.page == "Profile" else "secondary"):
     set_page("Profile")
 
 # Content padding for the rest of the page
@@ -311,8 +311,8 @@ elif st.session_state.page == "Profile":
         st.markdown("#### Statistics")
         stat1, stat2, stat3 = st.columns(3)
         stat1.metric("Parts Generated", "42")
-        stat2.metric("Print Success Rate", "98%")
-        stat3.metric("Credits Remaining", "Unlimited")
+        stat2.metric("Printers connected", "1")
+        stat3.metric("Plan", "Professional")
         if st.button("Save Changes"):
             st.success("Profile Updated!")
 
@@ -330,3 +330,4 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
