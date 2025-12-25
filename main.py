@@ -92,6 +92,20 @@ st.markdown(f"""
     .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; }}
     .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
     
+    /* MODIFIED PRICING CLASSES */
+    .per-month {{ 
+        font-size: 1rem; 
+        color: #8b949e; 
+        font-weight: 400; 
+        margin-left: 5px;
+    }}
+    .currency-sub {{ 
+        font-size: 0.85rem; 
+        color: #8b949e; 
+        margin-top: -10px; 
+        margin-bottom: 15px;
+    }}
+
     .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
     button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; }}
     button[key="sign_out_btn"] {{ border-color: #f85149 !important; color: #f85149 !important; }}
@@ -99,6 +113,13 @@ st.markdown(f"""
     .footer-minimal {{
         background-color: #1e3a8a; border-top: 3px solid #3b82f6;
         padding: 40px 20px; text-align: center; color: #e2e8f0; margin-top: 4rem;
+    }}
+
+    /* MODIFIED FOOTER ICON SIZE */
+    .footer-icon-box img {{
+        width: 24px !important;
+        height: auto !important;
+        margin: 0 10px;
     }}
 
     header {{visibility: hidden;}}
@@ -122,7 +143,7 @@ st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
 
 # --- PAGE ROUTING ---
 
-# 1. HOME SECTION (REFACTORED)
+# 1. HOME SECTION
 if st.session_state.page == "Home":
     st.markdown("""
         <div class="hero-container">
@@ -348,6 +369,3 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
-
-
-
