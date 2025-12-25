@@ -194,7 +194,7 @@ if st.session_state.page == "Home":
                 set_page("Pricing")
             st.markdown("</div>", unsafe_allow_html=True)
         with right:
-            st.image("static/print2.jpg", use_container_width=True)
+            st.image("static/production1.jpg", use_container_width=True)
             
        
         
@@ -373,6 +373,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
