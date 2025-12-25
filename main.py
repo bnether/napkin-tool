@@ -26,67 +26,32 @@ def set_page(page_name):
 # --- CUSTOM CSS ---
 st.markdown(f"""
     <style>
-    /* Global Layout - Maintained at 5% */
+    /* Global Layout */
     .block-container {{
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
-        padding-left: 5% !important;
-        padding-right: 5% !important;
+        padding-left: 0rem !important;
+        padding-right: 0rem !important;
     }}
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
 
-    /* MODERN HEADER STRIP */
-    .modern-header {{
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 70px;
-        background: linear-gradient(90deg, #1e3a8a 0%, #1e40af 100%);
-        z-index: 99;
-        border-bottom: 2px solid #3b82f6;
+    /* Navigation Bar */
+    [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
+        background-color: #1e3a8a !important;
+        border-bottom: 3px solid #3b82f6 !important;
+        padding: 40px 5rem 20px 5rem !important;
+        margin-top: 0rem !important;
+        width: 100vw !important;
+        position: relative;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
         display: flex;
         align-items: center;
-        padding: 0 5%;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    }}
-    .header-logo {{ font-size: 1.5rem; font-weight: 800; color: white; letter-spacing: 2px; }}
-
-    /* Adjust main content for fixed header */
-    .main-content {{ margin-top: 100px; min-height: 80vh; }}
-
-    /* Navigation Bar Styling */
-    [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
-        background-color: transparent !important;
-        border-bottom: 1px solid #30363d !important;
-        padding-bottom: 10px !important;
-        margin-bottom: 40px !important;
     }}
 
-    /* Target Nav Buttons & Home Tabs to be Plain Text + Underline */
-    button[key^="nav_"], button[key^="tab_"] {{
-        background-color: transparent !important;
-        border: none !important;
-        border-radius: 0px !important;
-        border-bottom: 3px solid transparent !important;
-        color: #8b949e !important;
-        font-weight: 600 !important;
-        transition: all 0.3s ease !important;
-        box-shadow: none !important;
-    }}
-
-    /* Blue Underline for Active Selection */
-    button[key^="nav_"][kind="primary"], button[key^="tab_"][kind="primary"] {{
-        color: #58a6ff !important;
-        border-bottom: 3px solid #3b82f6 !important;
-    }}
-
-    button[key^="nav_"]:hover, button[key^="tab_"]:hover {{
-        color: #ffffff !important;
-        background-color: transparent !important;
-    }}
-
-    /* Hero Section */
+    /* Hero Section with Vertical Gradient Fade */
     .hero-container {{
         position: relative;
         width: 100%;
@@ -97,11 +62,24 @@ st.markdown(f"""
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 20px;
+        margin-bottom: 0px;
     }}
     .section-content {{ position: relative; z-index: 2; width: 70%; text-align: center; }}
     .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
     .highlight {{ color: #58a6ff; }}
+
+    /* Profile Button Icon */
+    button[key="nav_Profile"] {{
+        border-radius: 50% !important;
+        width: 50px !important;
+        height: 50px !important;
+        padding: 0px !important;
+        background-image: st.image("static/profile.png", use_container_width=True) !important;
+        background-size: cover !important;
+        background-position: center !important;
+        color: transparent !important; 
+        border: 2px solid #3b82f6 !important;
+    }}
 
     /* UI Elements */
     .testimonial-card {{
@@ -114,49 +92,54 @@ st.markdown(f"""
     .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; }}
     .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
     
-    .per-month {{ font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }}
-    .currency-sub {{ font-size: 0.85rem; color: #8b949e; margin-top: -10px; margin-bottom: 15px; }}
-
-    /* Standard action buttons remain boxed */
-    .stButton>button:not([key^="nav_"]):not([key^="tab_"]) {{ 
-        border-radius: 10px; 
-        height: 3.5em; 
-        background-color: #21262d; 
-        color: white; 
-        border: 1px solid #30363d; 
-        font-weight: 600; 
+    /* MODIFIED PRICING CLASSES */
+    .per-month {{ 
+        font-size: 1rem; 
+        color: #8b949e; 
+        font-weight: 400; 
+        margin-left: 5px;
     }}
-    button[kind="primary"]:not([key^="nav_"]):not([key^="tab_"]) {{ background-color: #3b82f6 !important; border: none !important; }}
+    .currency-sub {{ 
+        font-size: 0.85rem; 
+        color: #8b949e; 
+        margin-top: -10px; 
+        margin-bottom: 15px;
+    }}
 
-    /* MODERN FULL WIDTH FOOTER */
-    .footer-modern {{
-        background: #111827;
-        border-top: 3px solid #1e40af;
-        padding: 60px 5%;
-        margin-top: 80px;
-        margin-left: -6% !important;
-        margin-right: -6% !important;
-        color: #e5e7eb;
+    .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
+    button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; }}
+    button[key="sign_out_btn"] {{ border-color: #f85149 !important; color: #f85149 !important; }}
+
+    .footer-minimal {{
+        background-color: #1e3a8a; border-top: 3px solid #3b82f6;
+        padding: 40px 20px; text-align: center; color: #e2e8f0; margin-top: 4rem;
+    }}
+
+    /* MODIFIED FOOTER ICON SIZE */
+    .footer-icon-box img {{
+        width: 24px !important;
+        height: auto !important;
+        margin: 0 10px;
     }}
 
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     </style>
-
-    <div class="modern-header">
-        <div class="header-logo">NAPKIN <span style="color: #3b82f6;">AI</span></div>
-    </div>
     """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-content">', unsafe_allow_html=True)
-
 # --- NAVBAR ---
-pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile"]
-nav_cols = st.columns(len(pages))
+nav_cols = st.columns([1,1,1,1,1,1,1])
+pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact"]
 
 for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
+
+if nav_cols[6].button(".", key="nav_Profile"):
+    set_page("Profile")
+
+# Container for standard page content
+st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
 
 # --- PAGE ROUTING ---
 
@@ -173,16 +156,18 @@ if st.session_state.page == "Home":
         </div>
     """, unsafe_allow_html=True)
 
+    # Interactive Tab Columns
     t1, t2, t3 = st.columns(3)
-    if t1.button("Why Napkin", use_container_width=True, key="tab_Why", type="primary" if st.session_state.home_tab == "Why Napkin" else "secondary"):
+    if t1.button("Why Napkin", use_container_width=True, type="primary" if st.session_state.home_tab == "Why Napkin" else "secondary"):
         st.session_state.home_tab = "Why Napkin"; st.rerun()
-    if t2.button("How to use", use_container_width=True, key="tab_How", type="primary" if st.session_state.home_tab == "How to use" else "secondary"):
+    if t2.button("How to use", use_container_width=True, type="primary" if st.session_state.home_tab == "How to use" else "secondary"):
         st.session_state.home_tab = "How to use"; st.rerun()
-    if t3.button("Try now", use_container_width=True, key="tab_Try", type="primary" if st.session_state.home_tab == "Try now" else "secondary"):
+    if t3.button("Try now", use_container_width=True, type="primary" if st.session_state.home_tab == "Try now" else "secondary"):
         st.session_state.home_tab = "Try now"; st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # Tab Content Area
     if st.session_state.home_tab == "Why Napkin":
         left, right = st.columns([1, 1], gap="large")
         with left:
@@ -200,15 +185,21 @@ if st.session_state.page == "Home":
         st.video("https://www.youtube.com/watch?v=uTKkxl8y-BI")
 
     elif st.session_state.home_tab == "Try now":
+
         left, right = st.columns([1, 1], gap="large")
         with left:
             st.markdown("### Ready to start printing?")
-            st.write("Get a free trial to turn your napkin sketches into real parts today.")
-            if st.button("Explore Pricing & Plans", type="primary", key="explore_pricing_btn"):
+            st.write("Get a free trial to turn your napkin sketches into real parts today")
+            if st.button("Explore Pricing & Plans", type="primary"):
                 set_page("Pricing")
+            st.markdown("</div>", unsafe_allow_html=True)
         with right:
             st.image("static/print2.jpg", use_container_width=True)
+            
+       
+        
 
+    # Testimonials
     st.markdown("---")
     testimonials = [
         {"quote": "The speed from a sketch to a real part is unlike anything we've used.", "author": "Lead Engineer, Precision Dynamics", "img": "https://i.pravatar.cc/150?u=1"},
@@ -219,6 +210,7 @@ if st.session_state.page == "Home":
     if tc1.button("←", key="prev_t"): st.session_state.testimonial_index = (st.session_state.testimonial_index - 1) % len(testimonials); st.rerun()
     tc2.markdown(f'<div class="testimonial-card"><img src="{curr["img"]}" class="testimonial-img"><div><i>"{curr["quote"]}"</i><br><b>— {curr["author"]}</b></div></div>', unsafe_allow_html=True)
     if tc3.button("→", key="next_t"): st.session_state.testimonial_index = (st.session_state.testimonial_index + 1) % len(testimonials); st.rerun()
+
 
 # 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
@@ -256,13 +248,13 @@ elif st.session_state.page == "Pricing":
     p1, p2, p3 = st.columns(3)
     with p1:
         st.markdown('<div class="price-card"><h3>Starter</h3><div class="price-amt">£0<span class="per-month">per month</span></div><div class="currency-sub">$0 USD | €0 EUR</div><p class="price-feat">1 week free trial</p><p class="price-feat">1 connected device</p><p class="price-feat">1 connected printer</p></div>', unsafe_allow_html=True)
-        st.button("Join Free", key="p1_btn", use_container_width=True)
+        st.button("Join Free", key="p1", use_container_width=True)
     with p2:
         st.markdown('<div class="price-card" style="border-color:#58a6ff"><h3>Professional</h3><div class="price-amt">£65<span class="per-month">per month</span></div><div class="currency-sub">$82 USD | €78 EUR</div><p class="price-feat">Unlimited exports</p><p class="price-feat">1 connected device</p><p class="price-feat">1 connected printer</p></div>', unsafe_allow_html=True)
-        st.button("Get Professional", type="primary", key="p2_btn", use_container_width=True)
+        st.button("Get Professional", type="primary", key="p2", use_container_width=True)
     with p3:
         st.markdown('<div class="price-card"><h3>Enterprise</h3><div class="price-amt">Custom<span class="per-month">per month</span></div><div class="currency-sub">Tailored for large-scale operations</div><p class="price-feat">Unlimited exports</p><p class="price-feat">Unlimited connected devices</p><p class="price-feat">Unlimited connected printers</p></div>', unsafe_allow_html=True)
-        st.button("Contact Sales", key="p3_btn", use_container_width=True)
+        st.button("Contact Sales", key="p3", use_container_width=True)
 
 # 4. HELP
 elif st.session_state.page == "Help":
@@ -334,54 +326,62 @@ elif st.session_state.page == "Contact":
     st.markdown("<br>Connect with us", unsafe_allow_html=True)
     s1, s2, s3, _ = st.columns([1.5, 1.5, 1.5, 4.5])
     with s1:
+        st.markdown('<div class="social-underlay"><img src="app/static/insta.png"></div>', unsafe_allow_html=True)
         st.button("Instagram", key="soc_insta", use_container_width=True)
     with s2:
+        st.markdown('<div class="social-underlay"><img src="app/static/linkedin.png"></div>', unsafe_allow_html=True)
         st.button("LinkedIn", key="soc_link", use_container_width=True)
     with s3:
+        st.markdown('<div class="social-underlay"><img src="app/static/youtube.png"></div>', unsafe_allow_html=True)
         st.button("YouTube", key="soc_yt", use_container_width=True)
 
-# 7. PROFILE PAGE
+# 7. NEW PROFILE PAGE
 elif st.session_state.page == "Profile":
     st.markdown("### User Profile")
     prof_col1, prof_col2 = st.columns([1, 2])
     with prof_col1:
-        st.markdown("""<div style="text-align: center;"><img src="https://i.pravatar.cc/150?u=napkin" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px;"><h4>John Doe</h4></div>""", unsafe_allow_html=True)
+        st.markdown("""
+            <div style="text-align: center;">
+                <img src="https://i.pravatar.cc/150?u=napkin" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px;">
+                <h4>John Doe</h4>
+                <p style="color: #8b949e;">Senior Manufacturing Engineer</p>
+            </div>
+        """, unsafe_allow_html=True)
     with prof_col2:
+        st.markdown("#### Account Information")
         st.text_input("Full Name", value="John Doe")
-        st.text_input("Company", value="Manufacturing Corporation")
         st.text_input("Email Address", value="john.doe@manufacturing-corp.com")
+        st.markdown("#### Statistics")
         stat1, stat2, stat3 = st.columns(3)
         stat1.metric("Parts Generated", "42")
         stat2.metric("Printers connected", "1")
         stat3.metric("Plan", "Professional")
-        if st.button("Save Changes", key="save_profile_btn"):
+        if st.button("Save Changes"):
             st.success("Profile Updated!")
 
-st.markdown('</div>', unsafe_allow_html=True) # End main-content
+st.markdown('</div>', unsafe_allow_html=True) # End content padding
 
 # --- FOOTER ---
-st.markdown("""
-    <div class="footer-modern">
-        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; max-width: 1200px; margin: 0 auto;">
-            <div style="flex: 1; min-width: 250px; margin-bottom: 20px;">
-                <h3 style="color: #3b82f6; margin-bottom: 15px;">NAPKIN AI</h3>
-                <p style="color: #9ca3af; font-size: 0.9rem;">Bridging the gap between manual sketching and rapid 3D manufacturing.</p>
-            </div>
-            <div style="flex: 1; min-width: 150px; margin-bottom: 20px;">
-                <h4 style="margin-bottom: 15px;">Resources</h4>
-                <p style="font-size: 0.85rem; color: #9ca3af; margin: 5px 0;">Documentation</p>
-                <p style="font-size: 0.85rem; color: #9ca3af; margin: 5px 0;">Tutorials</p>
-                <p style="font-size: 0.85rem; color: #9ca3af; margin: 5px 0;">API Access</p>
-            </div>
-            <div style="flex: 1; min-width: 150px; margin-bottom: 20px;">
-                <h4 style="margin-bottom: 15px;">Support</h4>
-                <p style="font-size: 0.85rem; color: #9ca3af; margin: 5px 0;">Contact Us</p>
-                <p style="font-size: 0.85rem; color: #9ca3af; margin: 5px 0;">System Status</p>
-                <p style="font-size: 0.85rem; color: #9ca3af; margin: 5px 0;">Feedback</p>
-            </div>
+st.markdown(f"""
+    <div class="footer-minimal">
+        <p style="font-size: 0.9rem; margin-bottom: 15px; font-weight: 600; color: white;">FOLLOW US</p>
+        <div style="display: flex; justify-content: center; align-items: center;">
+            <div class="footer-icon-box"><img src="app/static/insta.png"></div>
+            <div class="footer-icon-box"><img src="app/static/linkedin.png"></div>
+            <div class="footer-icon-box"><img src="app/static/youtube.png"></div>
         </div>
-        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #1f2937;">
-            <p style="font-size: 0.75rem; color: #6b7280;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
-        </div>
+        <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
+
+
+
+
+
+
+
+
+
+
+
