@@ -26,7 +26,7 @@ def set_page(page_name):
 # --- CUSTOM CSS ---
 st.markdown(f"""
     <style>
-    /* Global Layout - Force side margins for breathing room */
+    /* Global Layout - Force side margins at 5% as requested */
     .block-container {{
         padding-top: 2rem !important;
         padding-bottom: 2rem !important;
@@ -34,6 +34,17 @@ st.markdown(f"""
         padding-right: 5% !important;
     }}
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
+
+    /* MODERN HEADER UNDERLAY */
+    .header-underlay {{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 380px;
+        background: radial-gradient(circle at 50% -20%, #1e3a8a 0%, #0e1117 85%);
+        z-index: -1;
+    }}
 
     /* Navigation Bar Styling */
     [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
@@ -108,20 +119,25 @@ st.markdown(f"""
     }}
     button[kind="primary"]:not([key^="nav_"]):not([key^="tab_"]) {{ background-color: #3b82f6 !important; border: none !important; }}
 
-    .footer-minimal {{
-        background-color: transparent !important; 
-        border-top: 1px solid #30363d !important;
-        padding: 40px 20px; text-align: center; color: #e2e8f0; margin-top: 4rem;
+    /* MODERN BLUE FOOTER */
+    .footer-modern {{
+        background: linear-gradient(to top, #1e3a8a33 0%, #0e1117 100%);
+        border-top: 1px solid #1e3a8a;
+        padding: 60px 20px;
+        text-align: center;
+        color: #e2e8f0;
+        margin-top: 4rem;
+        margin-left: -6% !important;
+        margin-right: -6% !important;
     }}
-    .footer-icon-box img {{ width: 24px !important; height: auto !important; margin: 0 10px; }}
 
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     </style>
+    <div class="header-underlay"></div>
     """, unsafe_allow_html=True)
 
 # --- NAVBAR ---
-# Added 'Profile' as a text element in the bar as requested
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile"]
 nav_cols = st.columns(len(pages))
 
@@ -130,7 +146,7 @@ for i, p in enumerate(pages):
         set_page(p)
 
 # Container for standard page content
-st.markdown('<div style="padding: 0 2rem;">', unsafe_allow_html=True)
+st.markdown('<div style="padding: 0 2rem; min-height: 70vh;">', unsafe_allow_html=True)
 
 # --- PAGE ROUTING ---
 
@@ -345,20 +361,33 @@ elif st.session_state.page == "Profile":
         if st.button("Save Changes", key="save_profile_btn"):
             st.success("Profile Updated!")
 
-st.markdown('</div>', unsafe_allow_html=True) # End content padding
+st.markdown('</div>', unsafe_allow_html=True)
 
-# --- FOOTER ---
+# --- MODERN BLUE FOOTER ---
 st.markdown(f"""
-    <div class="footer-minimal">
-        <p style="font-size: 0.9rem; margin-bottom: 15px; font-weight: 600; color: #8b949e;">FOLLOW US</p>
-        <div style="display: flex; justify-content: center; align-items: center;">
-            <div class="footer-icon-box"><img src="app/static/insta.png"></div>
-            <div class="footer-icon-box"><img src="app/static/linkedin.png"></div>
-            <div class="footer-icon-box"><img src="app/static/youtube.png"></div>
+    <div class="footer-modern">
+        <div style="max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-around; flex-wrap: wrap; text-align: left;">
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #58a6ff;">NAPKIN AI</h4>
+                <p style="font-size: 0.8rem; color: #8b949e; max-width: 250px;">
+                    Turning sketches into physical parts with AI precision.
+                </p>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <h4 style="color: #ffffff;">Navigation</h4>
+                <p style="font-size: 0.8rem; line-height: 0.5;">Home</p>
+                <p style="font-size: 0.8rem; line-height: 0.5;">Pricing</p>
+                <p style="font-size: 0.8rem; line-height: 0.5;">Help</p>
+            </div>
+            <div>
+                <h4 style="color: #ffffff;">Follow Us</h4>
+                <div style="display: flex; gap: 15px; margin-top: 10px;">
+                    <img src="https://img.icons8.com/ios-filled/24/ffffff/instagram-new.png" width="20">
+                    <img src="https://img.icons8.com/ios-filled/24/ffffff/linkedin.png" width="20">
+                    <img src="https://img.icons8.com/ios-filled/24/ffffff/youtube-play.png" width="20">
+                </div>
+            </div>
         </div>
-        <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.5;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
+        <p style="font-size:0.75rem; margin-top: 40px; opacity: 0.5;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
-
-
-
