@@ -22,18 +22,18 @@ def set_page(page_name):
     st.rerun()
 
 # --- CUSTOM CSS ---
-# Note: We use /app/static/ for HTML image sources
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
     
-    .brand-blue {{
+    /* New Navigation Banner Style */
+    .nav-banner {{
         background-color: #1e3a8a;
         border-bottom: 3px solid #3b82f6;
-        padding: 40px 20px;
+        padding: 20px 40px;
         margin: -6rem -5rem 2rem -5rem;
-        text-align: center;
     }}
+    
     .footer-minimal {{
         background-color: #1e3a8a;
         border-top: 3px solid #3b82f6;
@@ -42,7 +42,6 @@ st.markdown(f"""
         text-align: center;
         color: #e2e8f0;
     }}
-    .nav-title {{ font-size: 3.5rem; font-weight: 800; color: white; letter-spacing: -1.5px; }}
     
     .social-underlay {{
         background-color: white;
@@ -107,18 +106,17 @@ st.markdown(f"""
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     </style>
-    
-    <div class="brand-blue">
-        <div class="nav-title">NAPKIN</div>
-    </div>
     """, unsafe_allow_html=True)
 
 # --- NAVBAR ---
+# We wrap the buttons in a div with the 'nav-banner' class
+st.markdown('<div class="nav-banner">', unsafe_allow_html=True)
 nav_cols = st.columns(6)
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact"]
 for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
+st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -247,13 +245,12 @@ elif st.session_state.page == "Help":
     with st.expander("Why is the AI not generating my model correctly?"):
         st.write("""
         * **User error:** Firstly, check the accuracy of your drawing and description, ensuring that all features are clearly described. Watch our tutorial to learn how to give more effective prompts.
-        * **AI error:** Although the AI is programmed specifically for engineering component design, there may still be errors with more complicated models. For these scenarios, traditional CAD modelling methods are required. However, we are aiming to continuously improve our system, and welcome any feedback when common or valuable designs are failing to generate.       
+        * **AI error:** Although the AI is programmed specifically for engineering component design, there may still be errors with more complicated models. For these scenarios, traditional CAD modelling methods are required. However, we are aiming to continuously improve our system, and welcome any feedback when common or valuable designs are failing to generate.        
         """)
 
 # 5. GALLERY
 elif st.session_state.page == "Gallery":
     st.markdown("### Gallery")
-    # Streamlit image commands work with local paths directly
     g1, g2 = st.columns(2)
     g1.image("static/gallery3.jpg", use_container_width=True)
     g2.image("static/gallery4.jpg", use_container_width=True)
@@ -298,11 +295,3 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
-
-
-
-
-
-
-
-
