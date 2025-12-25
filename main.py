@@ -26,48 +26,44 @@ def set_page(page_name):
 # --- CUSTOM CSS ---
 st.markdown(f"""
     <style>
-    /* Global Layout - Adding Breathing Room */
+    /* Global Layout - Force side margins for breathing room */
     .block-container {{
-        padding-top: 1rem !important;
-        padding-bottom: 0rem !important;
-        padding-left: 8% !important;
-        padding-right: 8% !important;
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+        padding-left: 10% !important;
+        padding-right: 10% !important;
     }}
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
 
-    /* Navigation Bar - Transparent with Underlines */
+    /* Navigation Bar Styling */
     [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
         background-color: transparent !important;
         border-bottom: 1px solid #30363d !important;
-        padding: 20px 0rem 0px 0rem !important;
-        margin-bottom: 2rem !important;
-        width: 100% !important;
-        left: 0 !important;
-        margin-left: 0 !important;
+        padding-bottom: 10px !important;
+        margin-bottom: 40px !important;
     }}
 
-    /* Underline style for Nav and Home Tabs */
+    /* Target Nav Buttons & Home Tabs to be Plain Text + Underline */
     button[key^="nav_"], button[key^="tab_"] {{
         background-color: transparent !important;
         border: none !important;
-        border-bottom: 3px solid transparent !important;
         border-radius: 0px !important;
+        border-bottom: 3px solid transparent !important;
         color: #8b949e !important;
         font-weight: 600 !important;
-        height: 3.5em !important;
-        transition: all 0.3s ease;
+        transition: all 0.3s ease !important;
+        box-shadow: none !important;
     }}
 
-    /* Active Highlight State */
+    /* Blue Underline for Active Selection */
     button[key^="nav_"][kind="primary"], button[key^="tab_"][kind="primary"] {{
-        background-color: transparent !important;
         color: #58a6ff !important;
         border-bottom: 3px solid #3b82f6 !important;
     }}
 
     button[key^="nav_"]:hover, button[key^="tab_"]:hover {{
         color: #ffffff !important;
-        background-color: rgba(255,255,255,0.05) !important;
+        background-color: transparent !important;
     }}
 
     /* Hero Section */
@@ -81,8 +77,7 @@ st.markdown(f"""
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 2rem;
-        border-radius: 15px;
+        margin-bottom: 20px;
     }}
     .section-content {{ position: relative; z-index: 2; width: 70%; text-align: center; }}
     .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
@@ -99,35 +94,26 @@ st.markdown(f"""
     .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; }}
     .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
     
-    .per-month {{ 
-        font-size: 1rem; 
-        color: #8b949e; 
-        font-weight: 400; 
-        margin-left: 5px;
-    }}
-    .currency-sub {{ 
-        font-size: 0.85rem; 
-        color: #8b949e; 
-        margin-top: -10px; 
-        margin-bottom: 15px;
-    }}
+    .per-month {{ font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }}
+    .currency-sub {{ font-size: 0.85rem; color: #8b949e; margin-top: -10px; margin-bottom: 15px; }}
 
-    .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
-    /* Keep primary action buttons (Generate, Pricing, etc) blue, but exclude nav/tabs */
+    /* Standard action buttons remain boxed */
+    .stButton>button:not([key^="nav_"]):not([key^="tab_"]) {{ 
+        border-radius: 10px; 
+        height: 3.5em; 
+        background-color: #21262d; 
+        color: white; 
+        border: 1px solid #30363d; 
+        font-weight: 600; 
+    }}
     button[kind="primary"]:not([key^="nav_"]):not([key^="tab_"]) {{ background-color: #3b82f6 !important; border: none !important; }}
-    button[key="sign_out_btn"] {{ border-color: #f85149 !important; color: #f85149 !important; }}
 
     .footer-minimal {{
-        background-color: transparent; border-top: 1px solid #30363d;
+        background-color: transparent !important; 
+        border-top: 1px solid #30363d !important;
         padding: 40px 20px; text-align: center; color: #e2e8f0; margin-top: 4rem;
     }}
-
-    .footer-icon-box img {{
-        width: 24px !important;
-        height: auto !important;
-        margin: 0 10px;
-        opacity: 0.7;
-    }}
+    .footer-icon-box img {{ width: 24px !important; height: auto !important; margin: 0 10px; }}
 
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
@@ -135,6 +121,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # --- NAVBAR ---
+# Added 'Profile' as a text element in the bar as requested
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile"]
 nav_cols = st.columns(len(pages))
 
@@ -142,7 +129,7 @@ for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
 
-# Container for standard page content - added internal padding
+# Container for standard page content
 st.markdown('<div style="padding: 0 2rem;">', unsafe_allow_html=True)
 
 # --- PAGE ROUTING ---
@@ -160,7 +147,7 @@ if st.session_state.page == "Home":
         </div>
     """, unsafe_allow_html=True)
 
-    # Interactive Tab Columns (Modern Underline Style)
+    # Interactive Tab Columns styled as underlines
     t1, t2, t3 = st.columns(3)
     if t1.button("Why Napkin", use_container_width=True, key="tab_Why", type="primary" if st.session_state.home_tab == "Why Napkin" else "secondary"):
         st.session_state.home_tab = "Why Napkin"; st.rerun()
@@ -171,7 +158,6 @@ if st.session_state.page == "Home":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Tab Content Area
     if st.session_state.home_tab == "Why Napkin":
         left, right = st.columns([1, 1], gap="large")
         with left:
@@ -193,7 +179,7 @@ if st.session_state.page == "Home":
         with left:
             st.markdown("### Ready to start printing?")
             st.write("Get a free trial to turn your napkin sketches into real parts today")
-            if st.button("Explore Pricing & Plans", type="primary"):
+            if st.button("Explore Pricing & Plans", type="primary", key="explore_pricing_btn"):
                 set_page("Pricing")
             st.markdown("</div>", unsafe_allow_html=True)
         with right:
@@ -210,7 +196,6 @@ if st.session_state.page == "Home":
     if tc1.button("←", key="prev_t"): st.session_state.testimonial_index = (st.session_state.testimonial_index - 1) % len(testimonials); st.rerun()
     tc2.markdown(f'<div class="testimonial-card"><img src="{curr["img"]}" class="testimonial-img"><div><i>"{curr["quote"]}"</i><br><b>— {curr["author"]}</b></div></div>', unsafe_allow_html=True)
     if tc3.button("→", key="next_t"): st.session_state.testimonial_index = (st.session_state.testimonial_index + 1) % len(testimonials); st.rerun()
-
 
 # 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
@@ -248,13 +233,13 @@ elif st.session_state.page == "Pricing":
     p1, p2, p3 = st.columns(3)
     with p1:
         st.markdown('<div class="price-card"><h3>Starter</h3><div class="price-amt">£0<span class="per-month">per month</span></div><div class="currency-sub">$0 USD | €0 EUR</div><p class="price-feat">1 week free trial</p><p class="price-feat">1 connected device</p><p class="price-feat">1 connected printer</p></div>', unsafe_allow_html=True)
-        st.button("Join Free", key="p1", use_container_width=True)
+        st.button("Join Free", key="p1_btn", use_container_width=True)
     with p2:
         st.markdown('<div class="price-card" style="border-color:#58a6ff"><h3>Professional</h3><div class="price-amt">£65<span class="per-month">per month</span></div><div class="currency-sub">$82 USD | €78 EUR</div><p class="price-feat">Unlimited exports</p><p class="price-feat">1 connected device</p><p class="price-feat">1 connected printer</p></div>', unsafe_allow_html=True)
-        st.button("Get Professional", type="primary", key="p2", use_container_width=True)
+        st.button("Get Professional", type="primary", key="p2_btn", use_container_width=True)
     with p3:
         st.markdown('<div class="price-card"><h3>Enterprise</h3><div class="price-amt">Custom<span class="per-month">per month</span></div><div class="currency-sub">Tailored for large-scale operations</div><p class="price-feat">Unlimited exports</p><p class="price-feat">Unlimited connected devices</p><p class="price-feat">Unlimited connected printers</p></div>', unsafe_allow_html=True)
-        st.button("Contact Sales", key="p3", use_container_width=True)
+        st.button("Contact Sales", key="p3_btn", use_container_width=True)
 
 # 4. HELP
 elif st.session_state.page == "Help":
@@ -335,7 +320,7 @@ elif st.session_state.page == "Contact":
         st.markdown('<div class="social-underlay"><img src="app/static/youtube.png"></div>', unsafe_allow_html=True)
         st.button("YouTube", key="soc_yt", use_container_width=True)
 
-# 7. NEW PROFILE PAGE
+# 7. PROFILE PAGE
 elif st.session_state.page == "Profile":
     st.markdown("### User Profile")
     prof_col1, prof_col2 = st.columns([1, 2])
@@ -356,7 +341,7 @@ elif st.session_state.page == "Profile":
         stat1.metric("Parts Generated", "42")
         stat2.metric("Printers connected", "1")
         stat3.metric("Plan", "Professional")
-        if st.button("Save Changes"):
+        if st.button("Save Changes", key="save_profile_btn"):
             st.success("Profile Updated!")
 
 st.markdown('</div>', unsafe_allow_html=True) # End content padding
