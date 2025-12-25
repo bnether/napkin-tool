@@ -156,7 +156,7 @@ st.markdown(f"""
 
 # --- NAVBAR ---
 nav_cols = st.columns([1,1,1,1,1,1,1])
-pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile"]
+pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact"]
 
 for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
@@ -391,6 +391,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
