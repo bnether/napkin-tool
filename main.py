@@ -74,7 +74,7 @@ st.markdown(f"""
         width: 50px !important;
         height: 50px !important;
         padding: 0px !important;
-        background-image: url("profile")!important;
+        background-image: st.image("static/profile.png") !important;
         background-size: cover !important;
         background-position: center !important;
         color: transparent !important; 
@@ -373,6 +373,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
