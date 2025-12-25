@@ -20,7 +20,10 @@ if 'testimonial_index' not in st.session_state:
 def set_page(page_name):
     st.session_state.page = page_name
     st.rerun()
-
+    
+if 'home_tab' not in st.session_state:
+    st.session_state.home_tab = "Why Napkin"
+    
 # --- CUSTOM CSS ---
 st.markdown(f"""
     <style>
@@ -113,6 +116,33 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
+    /* Hero with Gradient Fade */
+    .hero-container {
+        position: relative;
+        width: 100%;
+        height: 500px;
+        background-image: linear-gradient(to bottom, rgba(14, 17, 17, 0) 60%, rgba(14, 17, 17, 1) 100%), url("app/static/home1.jpg");
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    /* Tab Buttons Styling */
+    .tab-col-btn {
+        text-align: center;
+        padding: 20px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: 0.3s;
+    }
+    .tab-active {
+        border-bottom: 3px solid #3b82f6 !important;
+        background-color: rgba(59, 130, 246, 0.1);
+    }
+
 # --- NAVBAR ---
 # Expanded to 7 columns to include the Profile icon
 nav_cols = st.columns([1,1,1,1,1,1,0.5])
@@ -133,21 +163,75 @@ st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
 
 # 1. HOME
 if st.session_state.page == "Home":
+    # Hero Section with Vertical Gradient
     st.markdown("""
-        <div class="home-section"><img class="section-bg" src="app/static/home1.jpg"><div class="section-content"><div class="section-text">Combining <span class="highlight">AI</span> with <span class="highlight">3D printing</span> to turn napkin sketches into real parts.</div></div></div>
-        <div class="home-section"><img class="section-bg" src="app/static/production1.jpg"><div class="section-content"><div class="section-text">Production downtime can cost companies up to <span class="highlight">millions of dollars</span> per hour. </div></div></div>
-        <div class="home-section"><img class="section-bg" src="app/static/print1.jpg"><div class="section-content"><div class="section-text">Merging modern technologies into a tool that <span class="highlight">continuously improves.</span></div></div></div>
+        <div class="hero-container">
+            <div class="section-content">
+                <div class="section-text">
+                    Combining <span class="highlight">AI</span> with <span class="highlight">3D printing</span> 
+                    to turn napkin sketches into real parts.
+                </div>
+            </div>
+        </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("### Process Overview")
-    st.video("https://www.youtube.com/watch?v=uTKkxl8y-BI") 
+    # Interactive Columns (Tabs)
+    tab_cols = st.columns(3)
+    
+    with tab_cols[0]:
+        if st.button("Why Napkin", use_container_width=True, type="primary" if st.session_state.home_tab == "Why Napkin" else "secondary"):
+            st.session_state.home_tab = "Why Napkin"
+            st.rerun()
+            
+    with tab_cols[1]:
+        if st.button("How to use", use_container_width=True, type="primary" if st.session_state.home_tab == "How to use" else "secondary"):
+            st.session_state.home_tab = "How to use"
+            st.rerun()
+            
+    with tab_cols[2]:
+        if st.button("Try now", use_container_width=True, type="primary" if st.session_state.home_tab == "Try now" else "secondary"):
+            st.session_state.home_tab = "Try now"
+            st.rerun()
 
-    st.markdown("<br><h3 style='text-align:center;'>Testimonials</h3>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Tab Content Logic
+    if st.session_state.home_tab == "Why Napkin":
+        c1, c2 = st.columns([1, 1], gap="large")
+        with c1:
+            st.markdown("### Why Napkin?")
+            st.write("""
+                Traditional CAD takes hours. Napkin takes seconds. 
+                Our engine is built specifically for industrial maintenance and R&D teams 
+                who need functional parts *now*, not next week. 
+                
+                By using mathematical modeling instead of just "drawing" pixels, 
+                we ensure that every part is physically accurate and print-ready.
+            """)
+        with c2:
+            # Placeholder for image
+            st.image("https://via.placeholder.com/600x400/161b22/58a6ff?text=Industrial+3D+Model+Preview", use_container_width=True)
+
+    elif st.session_state.home_tab == "How to use":
+        st.markdown("<div style='text-align:center;'><h3>Process Overview</h3></div>", unsafe_allow_html=True)
+        st.video("https://www.youtube.com/watch?v=uTKkxl8y-BI")
+
+    elif st.session_state.home_tab == "Try now":
+        st.markdown("<div style='text-align:center; padding: 50px 0;'>", unsafe_allow_html=True)
+        st.markdown("### Ready to turn your sketches into reality?")
+        st.write("Join hundreds of engineers optimizing their workflow.")
+        if st.button("View Pricing & Plans", type="primary"):
+            set_page("Pricing")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # Keep Testimonials below the interactive section
+    st.markdown("---")
+    st.markdown("<h3 style='text-align:center;'>Testimonials</h3>", unsafe_allow_html=True)
     testimonials = [
-        {"quote": "The speed from a sketch to a real part is unlike anything we've used in our R&D lab or manufacturing space.", "author": "Lead Engineer, Precision Dynamics", "img": "https://i.pravatar.cc/150?u=1"},
+        {"quote": "The speed from a sketch to a real part is unlike anything we've used in our R&D lab.", "author": "Lead Engineer, Precision Dynamics", "img": "https://i.pravatar.cc/150?u=1"},
         {"quote": "Napkin has fundamentally changed how we handle emergency production part replacements.", "author": "Maintenance Team Leader, TechBuild Solutions", "img": "https://i.pravatar.cc/150?u=2"},
-        {"quote": "Intuitive, fast, and convenient. This software is revolutionary for staff who are untrained in CAD.", "author": "Operations Engineer, Global Auto", "img": "https://i.pravatar.cc/150?u=3"},
-        {"quote": "On several occasions, we've returned to production within a fraction of the time we previously could have.", "author": "CEO, Something Engineering", "img": "https://i.pravatar.cc/150?u=4"}
+        {"quote": "Intuitive, fast, and convenient. This software is revolutionary.", "author": "Operations Engineer, Global Auto", "img": "https://i.pravatar.cc/150?u=3"},
+        {"quote": "On several occasions, we've returned to production within a fraction of the time.", "author": "CEO, Something Engineering", "img": "https://i.pravatar.cc/150?u=4"}
     ]
     
     curr = testimonials[st.session_state.testimonial_index]
@@ -166,9 +250,6 @@ if st.session_state.page == "Home":
         if st.button("→", key="next_t"):
             st.session_state.testimonial_index = (st.session_state.testimonial_index + 1) % len(testimonials)
             st.rerun()
-
-    if st.button("Get Started", type="primary", use_container_width=True):
-        set_page("Make a Part")
 
 # 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
@@ -331,6 +412,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
