@@ -30,8 +30,8 @@ st.markdown(f"""
     .block-container {{
         padding-top: 2rem !important;
         padding-bottom: 2rem !important;
-        padding-left: 10% !important;
-        padding-right: 10% !important;
+        padding-left: 5% !important;
+        padding-right: 5% !important;
     }}
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
 
@@ -358,3 +358,4 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.5;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
