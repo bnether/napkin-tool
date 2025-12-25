@@ -22,18 +22,18 @@ def set_page(page_name):
     st.rerun()
 
 # --- CUSTOM CSS ---
-st.markdown(f"""
+st.markdown("""
     <style>
-    .block-container {{
+    .block-container {
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
         padding-left: 0rem !important;
         padding-right: 0rem !important;
-    }}
-    .stApp {{ background-color: #0e1117; color: #ffffff; }}
+    }
+    .stApp { background-color: #0e1117; color: #ffffff; }
 
-    /* Navbar styling */
-    [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
+    /* Navigation Bar */
+    [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {
         background-color: #1e3a8a !important;
         border-bottom: 3px solid #3b82f6 !important;
         padding: 40px 5rem 20px 5rem !important;
@@ -46,21 +46,21 @@ st.markdown(f"""
         margin-right: -50vw;
         display: flex;
         align-items: center;
-    }}
+    }
 
-    /* Hero Sections */
-    .home-section {{
+    /* Hero Section Backgrounds */
+    .home-section {
         position: relative; width: 100%; min-height: 450px;
         border-radius: 20px; overflow: hidden; margin-bottom: 40px;
         display: flex; align-items: center; justify-content: center;
-    }}
-    .section-bg {{ position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.35; z-index: 1; }}
-    .section-content {{ position: relative; z-index: 2; width: 80%; text-align: center; padding: 20px; }}
-    .section-text {{ font-size: 2.5rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }}
-    .highlight {{ color: #58a6ff; }}
+    }
+    .section-bg { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.35; z-index: 1; }
+    .section-content { position: relative; z-index: 2; width: 80%; text-align: center; padding: 20px; }
+    .section-text { font-size: 2.5rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }
+    .highlight { color: #58a6ff; }
 
-    /* Profile Button Icon */
-    button[key="nav_Profile"] {{
+    /* Profile Icon */
+    button[key="nav_Profile"] {
         border-radius: 50% !important;
         width: 50px !important;
         height: 50px !important;
@@ -69,31 +69,31 @@ st.markdown(f"""
         background-position: center !important;
         color: transparent !important; 
         border: 2px solid #3b82f6 !important;
-    }}
+    }
 
-    /* Global UI Components */
-    .testimonial-card {{
+    /* Cards and Buttons */
+    .testimonial-card {
         background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
         display: flex; align-items: center; justify-content: center; min-height: 180px;
         max-width: 750px; margin: 0 auto;
-    }}
-    .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
+    }
+    .testimonial-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }
     
-    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 350px; }}
-    .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
-    .currency-sub {{ color: #8b949e; font-size: 0.85rem; margin-bottom: 15px; }}
+    .price-card { background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 350px; }
+    .price-amt { font-size: 2.8rem; font-weight: 800; color: #58a6ff; }
+    .currency-sub { color: #8b949e; font-size: 0.85rem; margin-bottom: 15px; }
 
-    .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
-    button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; }}
-    button[key="sign_out_btn"] {{ border-color: #f85149 !important; color: #f85149 !important; }}
+    .stButton>button { border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }
+    button[kind="primary"] { background-color: #3b82f6 !important; border: none !important; }
+    button[key="sign_out_btn"] { border-color: #f85149 !important; color: #f85149 !important; }
 
-    .footer-minimal {{
+    .footer-minimal {
         background-color: #1e3a8a; border-top: 3px solid #3b82f6;
         padding: 40px 20px; text-align: center; color: #e2e8f0; margin-top: 4rem;
-    }}
+    }
 
-    header {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -110,7 +110,7 @@ st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
 
 # --- ROUTING ---
 
-# 1. HOME SECTION
+# 1. HOME
 if st.session_state.page == "Home":
     st.markdown("""
         <div class="home-section"><img class="section-bg" src="app/static/home1.jpg"><div class="section-content"><div class="section-text">Combining <span class="highlight">AI</span> with <span class="highlight">3D printing</span> to turn napkin sketches into real parts.</div></div></div>
@@ -147,7 +147,7 @@ elif st.session_state.page == "Make a Part":
         st.button("Generate 3D Model", type="primary", use_container_width=True)
     with c2: st.write("Preview Area")
 
-# 3. PRICING
+# 3. PRICING (RESTORED FULL CONTENT)
 elif st.session_state.page == "Pricing":
     p1, p2, p3 = st.columns(3)
     with p1:
@@ -160,21 +160,26 @@ elif st.session_state.page == "Pricing":
         st.markdown('<div class="price-card"><h3>Enterprise</h3><div class="price-amt">Custom</div><div class="currency-sub">Tailored Scale</div><p>Unlimited exports</p><p>Unlimited devices</p><p>Unlimited printers</p></div>', unsafe_allow_html=True)
         st.button("Contact Sales", key="p3", use_container_width=True)
 
-# 4. HELP
+# 4. HELP (RESTORED FULL CONTENT)
 elif st.session_state.page == "Help":
     st.markdown("### How to use Napkin")
-    st.write("1. **Upload or Describe:** Use a sketch or type out specs.\n2. **Be Specific:** Mention exact dimensions.\n3. **Generate:** AI creates geometry code.\n4. **Download:** Export .stl directly.")
+    st.write("1. **Upload or Describe:** Use a photo of your hand-drawn sketch or just type out specs.")
+    st.write("2. **Be Specific:** Mention exact dimensions or hole types (e.g. M5 clearance hole).")
+    st.write("3. **Generate:** AI translates input into geometric code.")
+    st.write("4. **Download:** Export your .stl file directly.")
     st.markdown("---")
     st.markdown("### Setting up your 3D Printer")
-    st.write("1. **Network Discovery:** Ensure same Wi-Fi.\n2. **API Access:** Find your key in settings.\n3. **Direct Printing:** Send parts straight to the bed.")
+    st.write("1. **Network Discovery:** Ensure same Wi-Fi.")
+    st.write("2. **API Access:** Find your key in printer settings.")
+    st.write("3. **Direct Printing:** Send parts straight to the bed.")
     st.markdown("---")
     st.markdown("### Frequently Asked Questions")
     with st.expander("How is this software developed?"):
-        st.write("Uses parametric precision engines and machinist logic for structural integrity and ISO compliance.")
+        st.write("Uses parametric precision engines and machinist logic for structural integrity and ISO-compliant tolerances.")
     with st.expander("Does it work with resin printers?"):
         st.write("Yes, STL files are compatible with both FDM and SLA slicers.")
 
-# 5. GALLERY
+# 5. GALLERY (RESTORED ALL IMAGES)
 elif st.session_state.page == "Gallery":
     st.markdown("### Gallery")
     g1, g2 = st.columns(2)
@@ -191,7 +196,7 @@ elif st.session_state.page == "Contact":
         st.text_input("Name"); st.text_input("Company"); st.text_input("Email"); st.text_area("Message")
         st.form_submit_button("Send Message")
 
-# 7. PROFILE
+# 7. PROFILE (RESTORED FULL CONTENT)
 elif st.session_state.page == "Profile":
     st.markdown("### User Profile")
     pr1, pr2 = st.columns([1, 2])
@@ -200,10 +205,14 @@ elif st.session_state.page == "Profile":
         if st.button("Sign Out", key="sign_out_btn", use_container_width=True): set_page("Home")
     with pr2:
         st.markdown("#### Account Information")
-        st.text_input("Full Name", "John Doe"); st.text_input("Company", "TechBuild Solutions"); st.text_input("Email", "john.doe@techbuild.com")
+        st.text_input("Full Name", "John Doe")
+        st.text_input("Company", "TechBuild Solutions")
+        st.text_input("Email Address", "john.doe@techbuild.com")
         st.markdown("#### Statistics")
         s1, s2, s3 = st.columns(3)
-        s1.metric("Parts Generated", "42"); s2.metric("Printers Connected", "1"); s3.metric("Current Plan", "Professional")
+        s1.metric("Parts Generated", "42")
+        s2.metric("Printers Connected", "1")
+        s3.metric("Current Plan", "Professional")
         if st.button("Save Changes", type="primary", use_container_width=True): st.success("Updated!")
 
 st.markdown('</div>', unsafe_allow_html=True)
