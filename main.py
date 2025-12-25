@@ -126,21 +126,6 @@ st.markdown(f"""
 
     }}
 
-     .header-minimal {{
-        
-        background-color: #1e3a8a; 
-        border-bottom: 3px solid #3b82f6;
-        padding: 20px 15px; 
-        text-align: center; 
-        color: #e2e8f0; 
-        margin-top: 4rem;
-    
-        /* These lines cancel out the 5% padding of the parent container */
-        margin-left: -5.3% !important;
-        margin-right: -5.3% !important;
-        width: calc(100% + 10.6%) !important;
-
-    }}
 
     /* MODIFIED FOOTER ICON SIZE */
     .footer-icon-box img {{
@@ -391,6 +376,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
