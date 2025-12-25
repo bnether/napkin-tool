@@ -164,7 +164,6 @@ if st.session_state.page == "Home":
     if st.session_state.home_tab == "Why Napkin":
         left, right = st.columns([1, 1], gap="large")
         with left:
-            st.markdown("### Engineering Speed")
             st.write("**Napkin is an AI design-to-manufacture tool that automates the creation of 3D models from simple hand-drawn sketches.**")
             st.markdown("""
                 * **Eliminate Downtime:** Companies can lose up to millions of dollars per hour of production downtime. These bottlenecks can be minimised by using this software to generate custom replacement parts in minutes.
@@ -352,3 +351,4 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
