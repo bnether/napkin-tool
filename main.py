@@ -16,8 +16,6 @@ if 'page' not in st.session_state:
     st.session_state.page = "Home"
 if 'testimonial_index' not in st.session_state:
     st.session_state.testimonial_index = 0
-if 'home_tab' not in st.session_state:
-    st.session_state.home_tab = "Why Napkin"
 
 def set_page(page_name):
     st.session_state.page = page_name
@@ -26,16 +24,15 @@ def set_page(page_name):
 # --- CUSTOM CSS ---
 st.markdown(f"""
     <style>
-    /* Global Layout */
+    /* 1. Remove all default Streamlit padding at the top */
     .block-container {{
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
         padding-left: 0rem !important;
         padding-right: 0rem !important;
     }}
-    .stApp {{ background-color: #0e1117; color: #ffffff; }}
 
-    /* Navigation Bar */
+    /* 2. Target the specific container that holds the nav columns */
     [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
         background-color: #1e3a8a !important;
         border-bottom: 3px solid #3b82f6 !important;
@@ -51,62 +48,73 @@ st.markdown(f"""
         align-items: center;
     }}
 
-    /* Hero Section with Vertical Gradient Fade */
-    .hero-container {{
-        position: relative;
-        width: 100%;
-        height: 550px;
-        background-image: linear-gradient(to bottom, rgba(14, 17, 23, 0) 50%, rgba(14, 17, 23, 1) 100%), url("app/static/home1.jpg");
-        background-size: cover;
-        background-position: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 0px;
+    .stApp {{ background-color: #0e1117; color: #ffffff; }}
+    
+    .footer-minimal {{
+        background-color: #1e3a8a;
+        border-top: 3px solid #3b82f6;
+        padding: 40px 20px;
+        margin: 4rem 0rem -6rem 0rem;
+        text-align: center;
+        color: #e2e8f0;
     }}
-    .section-content {{ position: relative; z-index: 2; width: 70%; text-align: center; }}
-    .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
-    .highlight {{ color: #58a6ff; }}
-
-    /* Profile Button Icon */
+    
+    /* Profile Icon Styling override */
     button[key="nav_Profile"] {{
         border-radius: 50% !important;
         width: 50px !important;
         height: 50px !important;
         padding: 0px !important;
-        background-image: url("app/static/profile.png") !important;
-        background-size: cover !important;
-        background-position: center !important;
-        color: transparent !important; 
-        border: 2px solid #3b82f6 !important;
+        min-width: 50px !important;
+        background-color: #30363d !important;
+        font-size: 1.2rem !important;
     }}
 
-    /* UI Elements */
+    .social-underlay {{
+        background-color: white; padding: 15px; border-radius: 12px;
+        display: inline-flex; align-items: center; justify-content: center; margin-bottom: 10px;
+    }}
+    .social-underlay img {{ width: 70px !important; height: 70px !important; object-fit: contain; }}
+    
+    .footer-icon-box {{
+        background-color: white; padding: 6px; border-radius: 6px;
+        display: inline-flex; margin: 0 8px;
+    }}
+    .footer-icon-box img {{ width: 18px !important; height: 18px !important; }}
+
     .testimonial-card {{
         background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
         display: flex; align-items: center; justify-content: center; min-height: 180px;
-        max-width: 800px; margin: 0 auto;
+        max-width: 750px; margin: 0 auto;
     }}
     .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
-    
-    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; }}
-    .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
-    
-    .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
-    button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; }}
-    button[key="sign_out_btn"] {{ border-color: #f85149 !important; color: #f85149 !important; }}
+    .testimonial-quote {{ font-style: italic; font-size: 1.05rem; color: #d1d5db; line-height: 1.4; }}
 
-    .footer-minimal {{
-        background-color: #1e3a8a; border-top: 3px solid #3b82f6;
-        padding: 40px 20px; text-align: center; color: #e2e8f0; margin-top: 4rem;
+    .home-section {{
+        position: relative; width: 100%; min-height: 450px;
+        border-radius: 20px; overflow: hidden; margin-bottom: 40px;
+        display: flex; align-items: center; justify-content: center;
     }}
+    .section-bg {{ position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.35; z-index: 1; }}
+    .section-content {{ position: relative; z-index: 2; width: 80%; text-align: center; padding: 20px; }}
+    .section-text {{ font-size: 2.5rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }}
+    .highlight {{ color: #58a6ff; }}
 
+    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 350px; margin-bottom: 10px; }}
+    .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; display: inline-block; }}
+    .per-month {{ font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }}
+    .currency-sub {{ color: #8b949e; font-size: 0.85rem; margin-bottom: 15px; }}
+
+    .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
+    button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; color: white !important; }}
+    
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     </style>
     """, unsafe_allow_html=True)
 
 # --- NAVBAR ---
+# Expanded to 7 columns to include the Profile icon
 nav_cols = st.columns([1,1,1,1,1,1,0.5])
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact"]
 
@@ -114,77 +122,53 @@ for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
 
-if nav_cols[6].button(".", key="nav_Profile"):
+# The Profile Icon (using a person emoji or custom character)
+if nav_cols[6].button("Profile", key="nav_Profile", type="primary" if st.session_state.page == "Profile" else "secondary"):
     set_page("Profile")
 
-# Container for standard page content
+# Content padding for the rest of the page
 st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
 
 # --- PAGE ROUTING ---
 
-# 1. HOME SECTION (REFACTORED)
+# 1. HOME
 if st.session_state.page == "Home":
     st.markdown("""
-        <div class="hero-container">
-            <div class="section-content">
-                <div class="section-text">
-                    Combining <span class="highlight">AI</span> with <span class="highlight">3D printing</span> 
-                    to turn napkin sketches into real parts.
-                </div>
-            </div>
-        </div>
+        <div class="home-section"><img class="section-bg" src="app/static/home1.jpg"><div class="section-content"><div class="section-text">Combining <span class="highlight">AI</span> with <span class="highlight">3D printing</span> to turn napkin sketches into real parts.</div></div></div>
+        <div class="home-section"><img class="section-bg" src="app/static/production1.jpg"><div class="section-content"><div class="section-text">Production downtime can cost companies up to <span class="highlight">millions of dollars</span> per hour. </div></div></div>
+        <div class="home-section"><img class="section-bg" src="app/static/print1.jpg"><div class="section-content"><div class="section-text">Merging modern technologies into a tool that <span class="highlight">continuously improves.</span></div></div></div>
     """, unsafe_allow_html=True)
 
-    # Interactive Tab Columns
-    t1, t2, t3 = st.columns(3)
-    if t1.button("Why Napkin", use_container_width=True, type="primary" if st.session_state.home_tab == "Why Napkin" else "secondary"):
-        st.session_state.home_tab = "Why Napkin"; st.rerun()
-    if t2.button("How to use", use_container_width=True, type="primary" if st.session_state.home_tab == "How to use" else "secondary"):
-        st.session_state.home_tab = "How to use"; st.rerun()
-    if t3.button("Try now", use_container_width=True, type="primary" if st.session_state.home_tab == "Try now" else "secondary"):
-        st.session_state.home_tab = "Try now"; st.rerun()
+    st.markdown("### Process Overview")
+    st.video("https://www.youtube.com/watch?v=uTKkxl8y-BI") 
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Tab Content Area
-    if st.session_state.home_tab == "Why Napkin":
-        left, right = st.columns([1, 1], gap="large")
-        with left:
-            st.markdown("### Engineering Speed")
-            st.write("""
-                Traditional CAD workflows are a bottleneck for emergency repairs and rapid prototyping. 
-                Napkin leverages AI trained on ISO standards and machinist logic to generate 
-                production-ready geometry in seconds. 
-                
-                Reduce your downtime from days to minutes by turning physical ideas into digital assets 
-                without the need for complex modeling software.
-            """)
-        with right:
-            st.image("https://via.placeholder.com/600x350/161b22/58a6ff?text=Industrial+AI+Engine+Preview", use_container_width=True)
-
-    elif st.session_state.home_tab == "How to use":
-        st.markdown("<div style='text-align:center;'><h3>Process Overview</h3></div>", unsafe_allow_html=True)
-        st.video("https://www.youtube.com/watch?v=uTKkxl8y-BI")
-
-    elif st.session_state.home_tab == "Try now":
-        st.markdown("<div style='text-align:center; padding: 40px 0;'>", unsafe_allow_html=True)
-        st.markdown("### Ready to start printing?")
-        st.write("Join leading engineering teams and streamline your production floor.")
-        if st.button("Explore Pricing & Plans", type="primary"):
-            set_page("Pricing")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # Testimonials
-    st.markdown("---")
+    st.markdown("<br><h3 style='text-align:center;'>Testimonials</h3>", unsafe_allow_html=True)
     testimonials = [
-        {"quote": "The speed from a sketch to a real part is unlike anything we've used.", "author": "Lead Engineer, Precision Dynamics", "img": "https://i.pravatar.cc/150?u=1"},
-        {"quote": "Fundamental change for emergency production part replacements.", "author": "Maintenance Lead, TechBuild", "img": "https://i.pravatar.cc/150?u=2"}
+        {"quote": "The speed from a sketch to a real part is unlike anything we've used in our R&D lab or manufacturing space.", "author": "Lead Engineer, Precision Dynamics", "img": "https://i.pravatar.cc/150?u=1"},
+        {"quote": "Napkin has fundamentally changed how we handle emergency production part replacements.", "author": "Maintenance Team Leader, TechBuild Solutions", "img": "https://i.pravatar.cc/150?u=2"},
+        {"quote": "Intuitive, fast, and convenient. This software is revolutionary for staff who are untrained in CAD.", "author": "Operations Engineer, Global Auto", "img": "https://i.pravatar.cc/150?u=3"},
+        {"quote": "On several occasions, we've returned to production within a fraction of the time we previously could have.", "author": "CEO, Something Engineering", "img": "https://i.pravatar.cc/150?u=4"}
     ]
+
     curr = testimonials[st.session_state.testimonial_index]
-    tc1, tc2, tc3 = st.columns([1, 6, 1])
-    if tc1.button("←", key="prev_t"): st.session_state.testimonial_index = (st.session_state.testimonial_index - 1) % len(testimonials); st.rerun()
-    tc2.markdown(f'<div class="testimonial-card"><img src="{curr["img"]}" class="testimonial-img"><div><i>"{curr["quote"]}"</i><br><b>— {curr["author"]}</b></div></div>', unsafe_allow_html=True)
-    if tc3.button("→", key="next_t"): st.session_state.testimonial_index = (st.session_state.testimonial_index + 1) % len(testimonials); st.rerun()
+    t_col1, t_carousel, t_col2 = st.columns([1, 6, 1])
+    with t_col1:
+        st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
+        if st.button("←", key="prev_t"):
+            st.session_state.testimonial_index = (st.session_state.testimonial_index - 1) % len(testimonials)
+            st.rerun()
+    with t_carousel:
+        st.markdown(f'<div class="testimonial-card"><img src="{curr["img"]}" class="testimonial-img"><div><div class="testimonial-quote">"{curr["quote"]}"</div><small><b>— {curr["author"]}</b></small></div></div>', unsafe_allow_html=True)
+        dots = "".join(["● " if i == st.session_state.testimonial_index else "○ " for i in range(len(testimonials))])
+        st.markdown(f"<p style='text-align:center; font-size:1.5rem; color:#3b82f6; margin-top:10px;'>{dots}</p>", unsafe_allow_html=True)
+    with t_col2:
+        st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
+        if st.button("→", key="next_t"):
+            st.session_state.testimonial_index = (st.session_state.testimonial_index + 1) % len(testimonials)
+            st.rerun()
+
+    if st.button("Get Started", type="primary", use_container_width=True):
+        set_page("Make a Part")
 
 # 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
@@ -282,6 +266,7 @@ elif st.session_state.page == "Gallery":
     g2.image("static/production2.jpg", use_container_width=True)
     g3, g4 = st.columns(2)
     g3.image("static/gallery3.jpg", use_container_width=True)
+    g4.image("static/gallery4.jpg", use_container_width=True)
     g4.image("static/gallery4.jpg", use_container_width=True)
     g5, g6 = st.columns(2)
     g5.image("static/gallery5.jpg", use_container_width=True)
