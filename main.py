@@ -162,7 +162,7 @@ for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
 
-if nav_cols[7].button("Profile", key="nav_Profile"):
+if nav_cols[6].button("Profile", key="nav_Profile"):
     set_page("Profile")
 
 # Container for standard page content
@@ -391,6 +391,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
