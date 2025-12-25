@@ -13,13 +13,13 @@ st.set_page_config(page_title="Napkin", layout="wide", initial_sidebar_state="co
 
 # --- STATE MANAGEMENT ---
 if 'page' not in st.session_state:
-st.session_state.page = "Home"
+   st.session_state.page = "Home"
 if 'testimonial_index' not in st.session_state:
-st.session_state.testimonial_index = 0
+   st.session_state.testimonial_index = 0
 
 def set_page(page_name):
-st.session_state.page = page_name
-st.rerun()
+   st.session_state.page = page_name
+   st.rerun()
 
 # --- CUSTOM CSS ---
 st.markdown(f"""
@@ -332,6 +332,7 @@ st.markdown(f"""
        <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
    </div>
    """, unsafe_allow_html=True)
+
 
 
 
