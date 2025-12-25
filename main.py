@@ -70,22 +70,11 @@ st.markdown(f"""
         background-size: cover !important;
         background-position: center !important;
         background-repeat: no-repeat !important;
-        color: transparent !important; /* Hide the placeholder text */
+        color: transparent !important; 
         border: 2px solid #3b82f6 !important;
     }}
 
-    .social-underlay {{
-        background-color: white; padding: 15px; border-radius: 12px;
-        display: inline-flex; align-items: center; justify-content: center; margin-bottom: 10px;
-    }}
-    .social-underlay img {{ width: 70px !important; height: 70px !important; object-fit: contain; }}
-    
-    .footer-icon-box {{
-        background-color: white; padding: 6px; border-radius: 6px;
-        display: inline-flex; margin: 0 8px;
-    }}
-    .footer-icon-box img {{ width: 18px !important; height: 18px !important; }}
-
+    /* 4. Home & Component Styling */
     .testimonial-card {{
         background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
         display: flex; align-items: center; justify-content: center; min-height: 180px;
@@ -107,11 +96,16 @@ st.markdown(f"""
     .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 350px; margin-bottom: 10px; }}
     .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; display: inline-block; }}
     .per-month {{ font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }}
-    .currency-sub {{ color: #8b949e; font-size: 0.85rem; margin-bottom: 15px; }}
 
     .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
     button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; color: white !important; }}
     
+    /* Sign out button custom style */
+    button[key="sign_out_btn"] {{
+        border-color: #f85149 !important;
+        color: #f85149 !important;
+    }}
+
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     </style>
@@ -125,11 +119,9 @@ for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
 
-# The Profile Button (The CSS above will replace the text '.' with your profile.png)
 if nav_cols[6].button(".", key="nav_Profile"):
     set_page("Profile")
 
-# Content padding for the rest of the page
 st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
 
 # --- PAGE ROUTING ---
@@ -187,9 +179,7 @@ elif st.session_state.page == "Make a Part":
             with st.spinner("Generating..."):
                 try:
                     exe = shutil.which("openscad")
-                    if not exe:
-                        st.error("Engine Error: OpenSCAD not found on server.")
-                    else:
+                    if exe:
                         client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
                         prompt = f"Act as an OpenSCAD engineer. Create code based on: '{user_context}'. Use $fn=50;. Provide a JSON 'METADATA' object. Format: ```openscad [code] ``` and ```json [metadata] ```"
                         inputs = [prompt, PIL.Image.open(uploaded_file)] if uploaded_file else [prompt]
@@ -207,58 +197,25 @@ elif st.session_state.page == "Make a Part":
 elif st.session_state.page == "Pricing":
     p1, p2, p3 = st.columns(3)
     with p1:
-        st.markdown('<div class="price-card"><h3>Starter</h3><div class="price-amt">£0<span class="per-month">per month</span></div><div class="currency-sub">$0 USD | €0 EUR</div><p class="price-feat">1 week free trial</p><p class="price-feat">1 connected device</p><p class="price-feat">1 connected printer</p></div>', unsafe_allow_html=True)
+        st.markdown('<div class="price-card"><h3>Starter</h3><div class="price-amt">£0<span class="per-month">per month</span></div><p class="price-feat">1 week free trial</p></div>', unsafe_allow_html=True)
         st.button("Join Free", key="p1", use_container_width=True)
     with p2:
-        st.markdown('<div class="price-card" style="border-color:#58a6ff"><h3>Professional</h3><div class="price-amt">£65<span class="per-month">per month</span></div><div class="currency-sub">$82 USD | €78 EUR</div><p class="price-feat">Unlimited exports</p><p class="price-feat">1 connected device</p><p class="price-feat">1 connected printer</p></div>', unsafe_allow_html=True)
+        st.markdown('<div class="price-card" style="border-color:#58a6ff"><h3>Professional</h3><div class="price-amt">£65<span class="per-month">per month</span></div><p class="price-feat">Unlimited exports</p></div>', unsafe_allow_html=True)
         st.button("Get Professional", type="primary", key="p2", use_container_width=True)
     with p3:
-        st.markdown('<div class="price-card"><h3>Enterprise</h3><div class="price-amt">Custom<span class="per-month">per month</span></div><div class="currency-sub">Tailored for large-scale operations</div><p class="price-feat">Unlimited exports</p><p class="price-feat">Unlimited connected devices</p><p class="price-feat">Unlimited connected printers</p></div>', unsafe_allow_html=True)
+        st.markdown('<div class="price-card"><h3>Enterprise</h3><div class="price-amt">Custom</div><p class="price-feat">Tailored solutions</p></div>', unsafe_allow_html=True)
         st.button("Contact Sales", key="p3", use_container_width=True)
 
 # 4. HELP
 elif st.session_state.page == "Help":
     st.markdown("### How to use Napkin")
-    st.markdown("""
-    1. **Upload or Describe:** Use a photo of your hand-drawn sketch or just type out what you need in the specification box.
-    2. **Be Specific:** For precision engineering, mention exact dimensions or hole types (e.g. 'M5 clearance hole').
-    3. **Generate:** Click the 'Generate 3D Model' button. Our AI engine will translate your input into geometric code.
-    4. **Download:** Export your .stl file directly for use in any slicing software.
-    """)
+    st.markdown("1. **Upload or Describe:** Use a photo of your sketch or type specifications.")
+    st.markdown("2. **Generate:** Click the button to create a 3D model.")
+    st.markdown("3. **Download:** Export your .stl file for 3D printing.")
     st.markdown("---")
-    st.markdown("### Setting up your 3D Printer")
-    st.markdown("""
-    1. **Network Discovery:** Ensure your printer and computer are on the same Wi-Fi network.
-    2. **API Access:** Locate your API Key or Access Code within your printer's network settings.
-    3. **Direct Printing:** Once configured, you can send generated parts straight to the print bed from this software, without leaving the shop floor.
-    """)
-    st.markdown("---")
-    st.markdown("### Frequently Asked Questions")
-    with st.expander("How is this software developed?"):
-        st.write("""
-        Unlike generic AI, this platform is engineered specifically for industrial environments:
-        * **Parametric Precision:** Uses a mathematical modeling engine to guarantee exact physical dimensions instead of visual guesses.
-        * **Machinist Logic:** Programmed with engineering rules for structural integrity, clearances, and 3D-printability.
-        * **Professional Workflow:** Automatically applies ISO-compliant tolerances and mechanical heuristics.
-        """)
-    with st.expander("What are some examples of parts it can make?"):
-        st.write("""
-        * Any component that is simple enough to be described by a small sketch and text prompt.
-        * The AI will excel at engineering-specific parts and features; for example, a mounting bracket with an M6 clearance hole. This is because it has been trained on real-world industrial standards such as ISO/DIN tables.
-        """)
+    st.markdown("### FAQs")
     with st.expander("Does it work with resin printers?"):
-        st.write("Yes, the .STL files are compatible with both FDM and SLA (resin) slicers.")
-    with st.expander("How do I get the best results?"):
-        st.write("""
-        * **Be Specific:** Include exact dimensions (e.g., "50mm wide").
-        * **Describe the Use:** Mention if it needs to fit a specific bolt (e.g., "M5 clearance hole").
-        * **High Contrast:** If uploading a sketch, ensure the lines are dark and the background is plain.
-        """)
-    with st.expander("Why is the AI not generating my model correctly?"):
-        st.write("""
-        * **User error:** Firstly, check the accuracy of your drawing and description, ensuring that all features are clearly described. Watch our tutorial to learn how to give more effective prompts.
-        * **AI error:** Although the AI is programmed specifically for engineering component design, there may still be errors with more complicated models. For these scenarios, traditional CAD modelling methods are required. However, we are aiming to continuously improve our system, and welcome any feedback when common or valuable designs are failing to generate.        
-        """)
+        st.write("Yes, the .STL files are compatible with both FDM and SLA slicers.")
 
 # 5. GALLERY
 elif st.session_state.page == "Gallery":
@@ -266,36 +223,17 @@ elif st.session_state.page == "Gallery":
     g1, g2 = st.columns(2)
     g1.image("static/gallery3.jpg", use_container_width=True)
     g2.image("static/gallery4.jpg", use_container_width=True)
-    g3, g4 = st.columns(2)
-    g3.image("static/gallery5.jpg", use_container_width=True)
-    g4.image("static/gallery6.jpg", use_container_width=True)
-    g5, g6 = st.columns(2)
-    g5.image("static/print1.jpg", use_container_width=True)
-    g6.image("static/production2.jpg", use_container_width=True)
 
 # 6. CONTACT
 elif st.session_state.page == "Contact":
     st.markdown("### Contact Us")
     with st.form("c"):
         st.text_input("Name")
-        st.text_input("Company")
         st.text_input("Email")
         st.text_area("Message")
         st.form_submit_button("Send Message")
-    
-    st.markdown("<br>Connect with us", unsafe_allow_html=True)
-    s1, s2, s3, _ = st.columns([1.5, 1.5, 1.5, 4.5])
-    with s1:
-        st.markdown('<div class="social-underlay"><img src="app/static/insta.png"></div>', unsafe_allow_html=True)
-        st.button("Instagram", key="soc_insta", use_container_width=True)
-    with s2:
-        st.markdown('<div class="social-underlay"><img src="app/static/linkedin.png"></div>', unsafe_allow_html=True)
-        st.button("LinkedIn", key="soc_link", use_container_width=True)
-    with s3:
-        st.markdown('<div class="social-underlay"><img src="app/static/youtube.png"></div>', unsafe_allow_html=True)
-        st.button("YouTube", key="soc_yt", use_container_width=True)
 
-# 7. UPDATED PROFILE PAGE
+# 7. PROFILE PAGE (WITH SIGN OUT)
 elif st.session_state.page == "Profile":
     st.markdown("### User Profile")
     prof_col1, prof_col2 = st.columns([1, 2])
@@ -307,6 +245,10 @@ elif st.session_state.page == "Profile":
                 <p style="color: #8b949e;">Senior Manufacturing Engineer</p>
             </div>
         """, unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("Sign Out", key="sign_out_btn", use_container_width=True):
+            set_page("Home")
+            
     with prof_col2:
         st.markdown("#### Account Information")
         st.text_input("Full Name", value="John Doe")
@@ -319,20 +261,15 @@ elif st.session_state.page == "Profile":
         stat2.metric("Printers Connected", "1")
         stat3.metric("Current Plan", "Professional")
         
-        if st.button("Save Changes", type="primary"):
+        if st.button("Save Changes", type="primary", use_container_width=True):
             st.success("Profile Updated!")
 
-st.markdown('</div>', unsafe_allow_html=True) # End content padding
+st.markdown('</div>', unsafe_allow_html=True)
 
 # --- FOOTER ---
-st.markdown(f"""
+st.markdown("""
     <div class="footer-minimal">
         <p style="font-size: 0.9rem; margin-bottom: 15px; font-weight: 600; color: white;">FOLLOW US</p>
-        <div style="display: flex; justify-content: center; align-items: center;">
-            <div class="footer-icon-box"><img src="app/static/insta.png"></div>
-            <div class="footer-icon-box"><img src="app/static/linkedin.png"></div>
-            <div class="footer-icon-box"><img src="app/static/youtube.png"></div>
-        </div>
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
