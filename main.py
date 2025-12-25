@@ -24,71 +24,58 @@ def set_page(page_name):
 # --- CUSTOM CSS ---
 st.markdown(f"""
     <style>
-    /* Remove default streamlit padding at the top */
+    /* 1. Eliminate the top gap entirely */
+    .stApp {{ background-color: #0e1117; color: #ffffff; }}
     .block-container {{
         padding-top: 0rem !important;
-        padding-bottom: 0rem !important;
+        padding-left: 0rem !important;
+        padding-right: 0rem !important;
     }}
-
-    .stApp {{ background-color: #0e1117; color: #ffffff; }}
     
-    /* The blue banner that wraps the navigation */
-    .nav-wrapper {{
+    /* 2. Create the Background Banner (Positioned behind buttons) */
+    .nav-bg {{
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 120px; /* Adjust height to fit buttons */
         background-color: #1e3a8a;
         border-bottom: 3px solid #3b82f6;
-        padding: 40px 50px 20px 50px;
-        margin-left: -5rem;
-        margin-right: -5rem;
-        margin-top: 0;
+        z-index: 0;
     }}
-    
+
+    /* 3. Ensure the buttons are visible above the blue */
+    .nav-container {{
+        position: relative;
+        z-index: 1;
+        padding: 35px 5rem 10px 5rem;
+    }}
+
     .footer-minimal {{
         background-color: #1e3a8a;
         border-top: 3px solid #3b82f6;
         padding: 40px 20px;
-        margin: 4rem -5rem -6rem -5rem;
+        margin: 4rem 0rem -6rem 0rem;
         text-align: center;
         color: #e2e8f0;
     }}
     
     .social-underlay {{
-        background-color: white;
-        padding: 15px;
-        border-radius: 12px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 10px;
+        background-color: white; padding: 15px; border-radius: 12px;
+        display: inline-flex; align-items: center; justify-content: center; margin-bottom: 10px;
     }}
-    .social-underlay img {{
-        width: 70px !important;
-        height: 70px !important;
-        object-fit: contain;
-    }}
+    .social-underlay img {{ width: 70px !important; height: 70px !important; object-fit: contain; }}
     
     .footer-icon-box {{
-        background-color: white;
-        padding: 6px;
-        border-radius: 6px;
-        display: inline-flex;
-        margin: 0 8px;
+        background-color: white; padding: 6px; border-radius: 6px;
+        display: inline-flex; margin: 0 8px;
     }}
-    .footer-icon-box img {{
-        width: 18px !important;
-        height: 18px !important;
-    }}
+    .footer-icon-box img {{ width: 18px !important; height: 18px !important; }}
 
     .testimonial-card {{
-        background: #161b22;
-        padding: 30px;
-        border-radius: 15px;
-        border: 1px solid #30363d;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 180px;
-        max-width: 750px;
-        margin: 0 auto;
+        background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
+        display: flex; align-items: center; justify-content: center; min-height: 180px;
+        max-width: 750px; margin: 0 auto;
     }}
     .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
     .testimonial-quote {{ font-style: italic; font-size: 1.05rem; color: #d1d5db; line-height: 1.4; }}
@@ -117,17 +104,20 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # --- NAVBAR ---
-# Inject the opening div for the blue background
-st.markdown('<div class="nav-wrapper">', unsafe_allow_html=True)
+# 1. Place the Background
+st.markdown('<div class="nav-bg"></div>', unsafe_allow_html=True)
+
+# 2. Place the Buttons inside a padded container
+st.markdown('<div class="nav-container">', unsafe_allow_html=True)
 nav_cols = st.columns(6)
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact"]
 for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
-# Close the blue background div
 st.markdown('</div>', unsafe_allow_html=True)
 
-st.markdown("<br>", unsafe_allow_html=True)
+# Content padding for the rest of the page
+st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
 
 # --- PAGE ROUTING ---
 
@@ -291,6 +281,8 @@ elif st.session_state.page == "Contact":
     with s3:
         st.markdown('<div class="social-underlay"><img src="app/static/youtube.png"></div>', unsafe_allow_html=True)
         st.button("YouTube", key="soc_yt", use_container_width=True)
+
+st.markdown('</div>', unsafe_allow_html=True) # End content padding
 
 # --- FOOTER ---
 st.markdown(f"""
