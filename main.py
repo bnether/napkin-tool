@@ -22,6 +22,7 @@ def set_page(page_name):
     st.rerun()
 
 # --- CUSTOM CSS ---
+# All CSS is wrapped in a triple-quoted string to prevent SyntaxErrors
 st.markdown("""
     <style>
     .block-container {
@@ -32,7 +33,6 @@ st.markdown("""
     }
     .stApp { background-color: #0e1117; color: #ffffff; }
 
-    /* Navigation Bar */
     [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {
         background-color: #1e3a8a !important;
         border-bottom: 3px solid #3b82f6 !important;
@@ -48,18 +48,22 @@ st.markdown("""
         align-items: center;
     }
 
-    /* Hero Section Backgrounds */
     .home-section {
-        position: relative; width: 100%; min-height: 450px;
-        border-radius: 20px; overflow: hidden; margin-bottom: 40px;
-        display: flex; align-items: center; justify-content: center;
+        position: relative; 
+        width: 100%; 
+        min-height: 450px;
+        border-radius: 20px; 
+        overflow: hidden; 
+        margin-bottom: 40px;
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
     }
     .section-bg { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.35; z-index: 1; }
     .section-content { position: relative; z-index: 2; width: 80%; text-align: center; padding: 20px; }
     .section-text { font-size: 2.5rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }
     .highlight { color: #58a6ff; }
 
-    /* Profile Icon */
     button[key="nav_Profile"] {
         border-radius: 50% !important;
         width: 50px !important;
@@ -71,7 +75,6 @@ st.markdown("""
         border: 2px solid #3b82f6 !important;
     }
 
-    /* Cards and Buttons */
     .testimonial-card {
         background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
         display: flex; align-items: center; justify-content: center; min-height: 180px;
@@ -131,11 +134,15 @@ if st.session_state.page == "Home":
     curr = testimonials[st.session_state.testimonial_index]
     t_col1, t_carousel, t_col2 = st.columns([1, 6, 1])
     with t_col1:
-        if st.button("←", key="prev_t"): st.session_state.testimonial_index = (st.session_state.testimonial_index - 1) % len(testimonials); st.rerun()
+        if st.button("←", key="prev_t"): 
+            st.session_state.testimonial_index = (st.session_state.testimonial_index - 1) % len(testimonials)
+            st.rerun()
     with t_carousel:
         st.markdown(f'<div class="testimonial-card"><img src="{curr["img"]}" class="testimonial-img"><div><div class="testimonial-quote">"{curr["quote"]}"</div><small><b>— {curr["author"]}</b></small></div></div>', unsafe_allow_html=True)
     with t_col2:
-        if st.button("→", key="next_t"): st.session_state.testimonial_index = (st.session_state.testimonial_index + 1) % len(testimonials); st.rerun()
+        if st.button("→", key="next_t"): 
+            st.session_state.testimonial_index = (st.session_state.testimonial_index + 1) % len(testimonials)
+            st.rerun()
 
 # 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
@@ -145,9 +152,10 @@ elif st.session_state.page == "Make a Part":
         st.file_uploader("Upload Image", type=['jpg', 'png'])
         st.text_area("Specifications", placeholder="e.g. A 50x50mm cube...", height=150)
         st.button("Generate 3D Model", type="primary", use_container_width=True)
-    with c2: st.write("Preview Area")
+    with c2: 
+        st.write("Preview Area")
 
-# 3. PRICING (RESTORED FULL CONTENT)
+# 3. PRICING
 elif st.session_state.page == "Pricing":
     p1, p2, p3 = st.columns(3)
     with p1:
@@ -160,60 +168,68 @@ elif st.session_state.page == "Pricing":
         st.markdown('<div class="price-card"><h3>Enterprise</h3><div class="price-amt">Custom</div><div class="currency-sub">Tailored Scale</div><p>Unlimited exports</p><p>Unlimited devices</p><p>Unlimited printers</p></div>', unsafe_allow_html=True)
         st.button("Contact Sales", key="p3", use_container_width=True)
 
-# 4. HELP (RESTORED FULL CONTENT)
+# 4. HELP
 elif st.session_state.page == "Help":
     st.markdown("### How to use Napkin")
-    st.write("1. **Upload or Describe:** Use a photo of your hand-drawn sketch or just type out specs.")
-    st.write("2. **Be Specific:** Mention exact dimensions or hole types (e.g. M5 clearance hole).")
+    st.write("1. **Upload or Describe:** Use a photo of your sketch or type out specs.")
+    st.write("2. **Be Specific:** Mention exact dimensions or hole types.")
     st.write("3. **Generate:** AI translates input into geometric code.")
     st.write("4. **Download:** Export your .stl file directly.")
     st.markdown("---")
     st.markdown("### Setting up your 3D Printer")
     st.write("1. **Network Discovery:** Ensure same Wi-Fi.")
-    st.write("2. **API Access:** Find your key in printer settings.")
+    st.write("2. **API Access:** Find your key in settings.")
     st.write("3. **Direct Printing:** Send parts straight to the bed.")
     st.markdown("---")
     st.markdown("### Frequently Asked Questions")
     with st.expander("How is this software developed?"):
-        st.write("Uses parametric precision engines and machinist logic for structural integrity and ISO-compliant tolerances.")
+        st.write("Uses parametric precision engines and machinist logic for structural integrity.")
     with st.expander("Does it work with resin printers?"):
-        st.write("Yes, STL files are compatible with both FDM and SLA slicers.")
+        st.write("Yes, STL files are compatible with FDM and SLA slicers.")
 
-# 5. GALLERY (RESTORED ALL IMAGES)
+# 5. GALLERY
 elif st.session_state.page == "Gallery":
     st.markdown("### Gallery")
     g1, g2 = st.columns(2)
-    g1.image("static/gallery3.jpg", use_container_width=True); g2.image("static/gallery4.jpg", use_container_width=True)
+    g1.image("static/gallery3.jpg", use_container_width=True)
+    g2.image("static/gallery4.jpg", use_container_width=True)
     g3, g4 = st.columns(2)
-    g3.image("static/gallery5.jpg", use_container_width=True); g4.image("static/gallery6.jpg", use_container_width=True)
+    g3.image("static/gallery5.jpg", use_container_width=True)
+    g4.image("static/gallery6.jpg", use_container_width=True)
     g5, g6 = st.columns(2)
-    g5.image("static/print1.jpg", use_container_width=True); g6.image("static/production2.jpg", use_container_width=True)
+    g5.image("static/print1.jpg", use_container_width=True)
+    g6.image("static/production2.jpg", use_container_width=True)
 
 # 6. CONTACT
 elif st.session_state.page == "Contact":
     st.markdown("### Contact Us")
-    with st.form("c"):
-        st.text_input("Name"); st.text_input("Company"); st.text_input("Email"); st.text_area("Message")
+    with st.form("contact_form"):
+        st.text_input("Name")
+        st.text_input("Company")
+        st.text_input("Email")
+        st.text_area("Message")
         st.form_submit_button("Send Message")
 
-# 7. PROFILE (RESTORED FULL CONTENT)
+# 7. PROFILE
 elif st.session_state.page == "Profile":
     st.markdown("### User Profile")
     pr1, pr2 = st.columns([1, 2])
     with pr1:
         st.markdown('<div style="text-align:center;"><img src="app/static/profile.png" style="border-radius:50%; border:4px solid #3b82f6; width:150px; height:150px; object-fit:cover;"><h4>John Doe</h4><p style="color:#8b949e;">Senior Engineer</p></div>', unsafe_allow_html=True)
-        if st.button("Sign Out", key="sign_out_btn", use_container_width=True): set_page("Home")
+        if st.button("Sign Out", key="sign_out_btn", use_container_width=True): 
+            set_page("Home")
     with pr2:
         st.markdown("#### Account Information")
-        st.text_input("Full Name", "John Doe")
-        st.text_input("Company", "TechBuild Solutions")
-        st.text_input("Email Address", "john.doe@techbuild.com")
+        st.text_input("Full Name", value="John Doe")
+        st.text_input("Company", value="TechBuild Solutions")
+        st.text_input("Email Address", value="john.doe@techbuild.com")
         st.markdown("#### Statistics")
         s1, s2, s3 = st.columns(3)
         s1.metric("Parts Generated", "42")
         s2.metric("Printers Connected", "1")
         s3.metric("Current Plan", "Professional")
-        if st.button("Save Changes", type="primary", use_container_width=True): st.success("Updated!")
+        if st.button("Save Changes", type="primary", use_container_width=True): 
+            st.success("Updated!")
 
 st.markdown('</div>', unsafe_allow_html=True)
 
