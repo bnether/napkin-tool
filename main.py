@@ -183,10 +183,12 @@ if st.session_state.page == "Home":
         left, right = st.columns([1, 1], gap="large")
         with left:
             st.markdown("### Engineering Speed")
-            st.write("""
-                Companies can lose up to millions of dollars during production downtime. This software can minimise bottlenecks by producing custom replacement parts within minutes. Technicians who are otherwise untrained in CAD can prototype or manufacture engineering solutions remotely from the click of a button.
-                
-                We have trained the AI platform specifically for engineering component design, on aspects such as ISO standards and machinist logic. With AI and 3D printing each rapidly evolving, this is a tool that continuously improves over time. 
+            st.write("**Napkin is an AI design-to-manufacture tool that automates the creation of 3D models from simple hand-drawn sketches.**")
+            st.markdown("""
+                * **Eliminate Downtime:** Companies can lose up to millions of dollars per hour of production downtime. These bottlenecks can be minimised by using this software to generate custom replacement parts in minutes.
+                * **No CAD Skills Required:** Empower technicians to prototype and manufacture solutions remotely without specialised engineering software training.
+                * **Industrial Intelligence:** The AI system has been built on a foundation of ISO standards and machinist logic for structurally sound, compliant designs.
+                * **Evolving Capabilities:** Continuous improvement through advanced AI learning and the rapid evolution of 3D printing technology.
             """)
         with right:
             st.image("static/production1.jpg", use_container_width=True)
@@ -373,6 +375,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
