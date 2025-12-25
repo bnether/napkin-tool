@@ -198,7 +198,7 @@ elif st.session_state.page == "Make a Part":
                             subprocess.run([exe, "-o", "part.stl", "part.scad"], check=True)
                             stl_from_file("part.stl", color='#58a6ff')
                             st.download_button("Download STL", open("part.stl", "rb"), "part.stl", use_container_width=True)
-                            st.download_button("Send to printer", open("part.stl", "rb"), "part.stl", use_container_width=True)
+                            st.download_button("Print", open("part.stl", "rb"), "part.stl", use_container_width=True)
                 except Exception as e: st.error(f"Error: {e}")
 
 # 3. PRICING
@@ -220,8 +220,8 @@ elif st.session_state.page == "Help":
     st.markdown("""
     1. **Upload or Describe:** Use a photo of your hand-drawn sketch or just type out what you need in the specification box.
     2. **Be Specific:** For precision engineering, mention exact dimensions or hole types (e.g. 'M5 clearance hole').
-    3. **Generate:** Click the 'Generate 3D Model' button. Our AI engine will translate your input into geometric code.
-    4. **Download:** Export your .stl file directly for use in any slicing software.
+    3. **Generate:** Click the 'Generate 3D Model' button. Our AI engine will translate your input into geometric code and generate a 3D model.
+    4. **Print:** Send your part straight to the printer, or export your .stl file for use in any slicing software.
     """)
     st.markdown("---")
     st.markdown("### Setting up your 3D Printer")
@@ -232,14 +232,14 @@ elif st.session_state.page == "Help":
     """)
     st.markdown("---")
     st.markdown("### Frequently Asked Questions")
-    with st.expander("How is this software developed?"):
+    with st.expander("How has this software been developed?"):
         st.write("""
         Unlike generic AI, this platform is engineered specifically for industrial environments:
-        * **Parametric Precision:** Uses a mathematical modeling engine to guarantee exact physical dimensions instead of visual guesses.
+        * **Parametric Precision:** Uses a mathematical modelling engine to guarantee exact physical dimensions instead of visual guesses.
         * **Machinist Logic:** Programmed with engineering rules for structural integrity, clearances, and 3D-printability.
         * **Professional Workflow:** Automatically applies ISO-compliant tolerances and mechanical heuristics.
         """)
-    with st.expander("What are some examples of parts it can make?"):
+    with st.expander("What type of parts can it make?"):
         st.write("""
         * Any component that is simple enough to be described by a small sketch and text prompt.
         * The AI will excel at engineering-specific parts and features; for example, a mounting bracket with an M6 clearance hole. This is because it has been trained on real-world industrial standards such as ISO/DIN tables.
@@ -262,14 +262,14 @@ elif st.session_state.page == "Help":
 elif st.session_state.page == "Gallery":
     st.markdown("### Gallery")
     g1, g2 = st.columns(2)
-    g1.image("static/gallery3.jpg", use_container_width=True)
-    g2.image("static/gallery4.jpg", use_container_width=True)
+    g1.image("static/print1.jpg", use_container_width=True)
+    g2.image("static/production2.jpg", use_container_width=True)
     g3, g4 = st.columns(2)
-    g3.image("static/gallery5.jpg", use_container_width=True)
-    g4.image("static/gallery6.jpg", use_container_width=True)
+    g3.image("static/gallery3.jpg", use_container_width=True)
+    g4.image("static/gallery64jpg", use_container_width=True)
     g5, g6 = st.columns(2)
-    g5.image("static/print1.jpg", use_container_width=True)
-    g6.image("static/production2.jpg", use_container_width=True)
+    g5.image("static/gallery5.jpg", use_container_width=True)
+    g6.image("static/gallery6.jpg", use_container_width=True)
 
 # 6. CONTACT
 elif st.session_state.page == "Contact":
@@ -331,5 +331,6 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
