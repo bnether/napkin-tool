@@ -26,25 +26,34 @@ def set_page(page_name):
 # --- CUSTOM CSS ---
 st.markdown(f"""
     <style>
-    /* Global Layout - Force side margins at 5% as requested */
+    /* Global Layout - Maintained at 5% */
     .block-container {{
-        padding-top: 2rem !important;
-        padding-bottom: 2rem !important;
+        padding-top: 0rem !important;
+        padding-bottom: 0rem !important;
         padding-left: 5% !important;
         padding-right: 5% !important;
     }}
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
 
-    /* MODERN HEADER UNDERLAY */
-    .header-underlay {{
-        position: absolute;
+    /* MODERN HEADER STRIP */
+    .modern-header {{
+        position: fixed;
         top: 0;
         left: 0;
         width: 100%;
-        height: 380px;
-        background: radial-gradient(circle at 50% -20%, #1e3a8a 0%, #0e1117 85%);
-        z-index: -1;
+        height: 70px;
+        background: linear-gradient(90deg, #1e3a8a 0%, #1e40af 100%);
+        z-index: 99;
+        border-bottom: 2px solid #3b82f6;
+        display: flex;
+        align-items: center;
+        padding: 0 5%;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }}
+    .header-logo {{ font-size: 1.5rem; font-weight: 800; color: white; letter-spacing: 2px; }}
+
+    /* Adjust main content for fixed header */
+    .main-content {{ margin-top: 100px; min-height: 80vh; }}
 
     /* Navigation Bar Styling */
     [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
@@ -119,23 +128,27 @@ st.markdown(f"""
     }}
     button[kind="primary"]:not([key^="nav_"]):not([key^="tab_"]) {{ background-color: #3b82f6 !important; border: none !important; }}
 
-    /* MODERN BLUE FOOTER */
+    /* MODERN FULL WIDTH FOOTER */
     .footer-modern {{
-        background: linear-gradient(to top, #1e3a8a33 0%, #0e1117 100%);
-        border-top: 1px solid #1e3a8a;
-        padding: 60px 20px;
-        text-align: center;
-        color: #e2e8f0;
-        margin-top: 4rem;
+        background: #111827;
+        border-top: 3px solid #1e40af;
+        padding: 60px 5%;
+        margin-top: 80px;
         margin-left: -6% !important;
         margin-right: -6% !important;
+        color: #e5e7eb;
     }}
 
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     </style>
-    <div class="header-underlay"></div>
+
+    <div class="modern-header">
+        <div class="header-logo">NAPKIN <span style="color: #3b82f6;">AI</span></div>
+    </div>
     """, unsafe_allow_html=True)
+
+st.markdown('<div class="main-content">', unsafe_allow_html=True)
 
 # --- NAVBAR ---
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile"]
@@ -144,9 +157,6 @@ nav_cols = st.columns(len(pages))
 for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
-
-# Container for standard page content
-st.markdown('<div style="padding: 0 2rem; min-height: 70vh;">', unsafe_allow_html=True)
 
 # --- PAGE ROUTING ---
 
@@ -163,7 +173,6 @@ if st.session_state.page == "Home":
         </div>
     """, unsafe_allow_html=True)
 
-    # Interactive Tab Columns styled as underlines
     t1, t2, t3 = st.columns(3)
     if t1.button("Why Napkin", use_container_width=True, key="tab_Why", type="primary" if st.session_state.home_tab == "Why Napkin" else "secondary"):
         st.session_state.home_tab = "Why Napkin"; st.rerun()
@@ -197,11 +206,9 @@ if st.session_state.page == "Home":
             st.write("Get a free trial to turn your napkin sketches into real parts today.")
             if st.button("Explore Pricing & Plans", type="primary", key="explore_pricing_btn"):
                 set_page("Pricing")
-            st.markdown("</div>", unsafe_allow_html=True)
         with right:
             st.image("static/print2.jpg", use_container_width=True)
 
-    # Testimonials
     st.markdown("---")
     testimonials = [
         {"quote": "The speed from a sketch to a real part is unlike anything we've used.", "author": "Lead Engineer, Precision Dynamics", "img": "https://i.pravatar.cc/150?u=1"},
@@ -327,13 +334,10 @@ elif st.session_state.page == "Contact":
     st.markdown("<br>Connect with us", unsafe_allow_html=True)
     s1, s2, s3, _ = st.columns([1.5, 1.5, 1.5, 4.5])
     with s1:
-        st.markdown('<div class="social-underlay"><img src="app/static/insta.png"></div>', unsafe_allow_html=True)
         st.button("Instagram", key="soc_insta", use_container_width=True)
     with s2:
-        st.markdown('<div class="social-underlay"><img src="app/static/linkedin.png"></div>', unsafe_allow_html=True)
         st.button("LinkedIn", key="soc_link", use_container_width=True)
     with s3:
-        st.markdown('<div class="social-underlay"><img src="app/static/youtube.png"></div>', unsafe_allow_html=True)
         st.button("YouTube", key="soc_yt", use_container_width=True)
 
 # 7. PROFILE PAGE
@@ -341,19 +345,11 @@ elif st.session_state.page == "Profile":
     st.markdown("### User Profile")
     prof_col1, prof_col2 = st.columns([1, 2])
     with prof_col1:
-        st.markdown("""
-            <div style="text-align: center;">
-                <img src="https://i.pravatar.cc/150?u=napkin" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px;">
-                <h4>John Doe</h4>
-                <p style="color: #8b949e;">Senior Manufacturing Engineer</p>
-            </div>
-        """, unsafe_allow_html=True)
+        st.markdown("""<div style="text-align: center;"><img src="https://i.pravatar.cc/150?u=napkin" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px;"><h4>John Doe</h4></div>""", unsafe_allow_html=True)
     with prof_col2:
-        st.markdown("#### Account Information")
         st.text_input("Full Name", value="John Doe")
         st.text_input("Company", value="Manufacturing Corporation")
         st.text_input("Email Address", value="john.doe@manufacturing-corp.com")
-        st.markdown("#### Statistics")
         stat1, stat2, stat3 = st.columns(3)
         stat1.metric("Parts Generated", "42")
         stat2.metric("Printers connected", "1")
@@ -361,33 +357,31 @@ elif st.session_state.page == "Profile":
         if st.button("Save Changes", key="save_profile_btn"):
             st.success("Profile Updated!")
 
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True) # End main-content
 
-# --- MODERN BLUE FOOTER ---
-st.markdown(f"""
+# --- FOOTER ---
+st.markdown("""
     <div class="footer-modern">
-        <div style="max-width: 1000px; margin: 0 auto; display: flex; justify-content: space-around; flex-wrap: wrap; text-align: left;">
-            <div style="margin-bottom: 20px;">
-                <h4 style="color: #58a6ff;">NAPKIN AI</h4>
-                <p style="font-size: 0.8rem; color: #8b949e; max-width: 250px;">
-                    Turning sketches into physical parts with AI precision.
-                </p>
+        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; max-width: 1200px; margin: 0 auto;">
+            <div style="flex: 1; min-width: 250px; margin-bottom: 20px;">
+                <h3 style="color: #3b82f6; margin-bottom: 15px;">NAPKIN AI</h3>
+                <p style="color: #9ca3af; font-size: 0.9rem;">Bridging the gap between manual sketching and rapid 3D manufacturing.</p>
             </div>
-            <div style="margin-bottom: 20px;">
-                <h4 style="color: #ffffff;">Navigation</h4>
-                <p style="font-size: 0.8rem; line-height: 0.5;">Home</p>
-                <p style="font-size: 0.8rem; line-height: 0.5;">Pricing</p>
-                <p style="font-size: 0.8rem; line-height: 0.5;">Help</p>
+            <div style="flex: 1; min-width: 150px; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px;">Resources</h4>
+                <p style="font-size: 0.85rem; color: #9ca3af; margin: 5px 0;">Documentation</p>
+                <p style="font-size: 0.85rem; color: #9ca3af; margin: 5px 0;">Tutorials</p>
+                <p style="font-size: 0.85rem; color: #9ca3af; margin: 5px 0;">API Access</p>
             </div>
-            <div>
-                <h4 style="color: #ffffff;">Follow Us</h4>
-                <div style="display: flex; gap: 15px; margin-top: 10px;">
-                    <img src="https://img.icons8.com/ios-filled/24/ffffff/instagram-new.png" width="20">
-                    <img src="https://img.icons8.com/ios-filled/24/ffffff/linkedin.png" width="20">
-                    <img src="https://img.icons8.com/ios-filled/24/ffffff/youtube-play.png" width="20">
-                </div>
+            <div style="flex: 1; min-width: 150px; margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px;">Support</h4>
+                <p style="font-size: 0.85rem; color: #9ca3af; margin: 5px 0;">Contact Us</p>
+                <p style="font-size: 0.85rem; color: #9ca3af; margin: 5px 0;">System Status</p>
+                <p style="font-size: 0.85rem; color: #9ca3af; margin: 5px 0;">Feedback</p>
             </div>
         </div>
-        <p style="font-size:0.75rem; margin-top: 40px; opacity: 0.5;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
+        <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #1f2937;">
+            <p style="font-size: 0.75rem; color: #6b7280;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
+        </div>
     </div>
     """, unsafe_allow_html=True)
