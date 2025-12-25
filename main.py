@@ -128,7 +128,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # --- NAVBAR ---
-nav_cols = st.columns([1,1,1,1,1,1,0.5])
+nav_cols = st.columns([1,1,1,1,1,1,1])
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact"]
 
 for i, p in enumerate(pages):
@@ -373,6 +373,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
