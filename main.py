@@ -198,6 +198,7 @@ elif st.session_state.page == "Make a Part":
                             subprocess.run([exe, "-o", "part.stl", "part.scad"], check=True)
                             stl_from_file("part.stl", color='#58a6ff')
                             st.download_button("Download STL", open("part.stl", "rb"), "part.stl", use_container_width=True)
+                            st.download_button("Send to printer", open("part.stl", "rb"), "part.stl", use_container_width=True)
                 except Exception as e: st.error(f"Error: {e}")
 
 # 3. PRICING
@@ -330,4 +331,5 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
