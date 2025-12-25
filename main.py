@@ -24,14 +24,22 @@ def set_page(page_name):
 # --- CUSTOM CSS ---
 st.markdown(f"""
     <style>
+    /* Remove default streamlit padding at the top */
+    .block-container {{
+        padding-top: 0rem !important;
+        padding-bottom: 0rem !important;
+    }}
+
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
     
-    /* New Navigation Banner Style */
-    .nav-banner {{
+    /* The blue banner that wraps the navigation */
+    .nav-wrapper {{
         background-color: #1e3a8a;
         border-bottom: 3px solid #3b82f6;
-        padding: 20px 40px;
-        margin: -6rem -5rem 2rem -5rem;
+        padding: 40px 50px 20px 50px;
+        margin-left: -5rem;
+        margin-right: -5rem;
+        margin-top: 0;
     }}
     
     .footer-minimal {{
@@ -109,13 +117,14 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # --- NAVBAR ---
-# We wrap the buttons in a div with the 'nav-banner' class
-st.markdown('<div class="nav-banner">', unsafe_allow_html=True)
+# Inject the opening div for the blue background
+st.markdown('<div class="nav-wrapper">', unsafe_allow_html=True)
 nav_cols = st.columns(6)
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact"]
 for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
+# Close the blue background div
 st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
