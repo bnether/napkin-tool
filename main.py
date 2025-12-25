@@ -59,19 +59,15 @@ st.markdown(f"""
         color: #e2e8f0;
     }}
     
-    /* 3. Profile Icon Styling - Using your uploaded profile.png */
+    /* Profile Icon Styling override */
     button[key="nav_Profile"] {{
         border-radius: 50% !important;
         width: 50px !important;
         height: 50px !important;
         padding: 0px !important;
         min-width: 50px !important;
-        background-image: url("app/static/profile.png") !important;
-        background-size: cover !important;
-        background-position: center !important;
-        background-repeat: no-repeat !important;
-        color: transparent !important; /* Hide the placeholder text */
-        border: 2px solid #3b82f6 !important;
+        background-color: #30363d !important;
+        font-size: 1.2rem !important;
     }}
 
     .social-underlay {{
@@ -118,6 +114,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # --- NAVBAR ---
+# Expanded to 7 columns to include the Profile icon
 nav_cols = st.columns([1,1,1,1,1,1,0.5])
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact"]
 
@@ -125,8 +122,8 @@ for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
 
-# The Profile Button (The CSS above will replace the text '.' with your profile.png)
-if nav_cols[6].button(".", key="nav_Profile"):
+# The Profile Icon (using a person emoji or custom character)
+if nav_cols[6].button("👤", key="nav_Profile", type="primary" if st.session_state.page == "Profile" else "secondary"):
     set_page("Profile")
 
 # Content padding for the rest of the page
@@ -295,14 +292,14 @@ elif st.session_state.page == "Contact":
         st.markdown('<div class="social-underlay"><img src="app/static/youtube.png"></div>', unsafe_allow_html=True)
         st.button("YouTube", key="soc_yt", use_container_width=True)
 
-# 7. UPDATED PROFILE PAGE
+# 7. NEW PROFILE PAGE
 elif st.session_state.page == "Profile":
     st.markdown("### User Profile")
     prof_col1, prof_col2 = st.columns([1, 2])
     with prof_col1:
         st.markdown("""
             <div style="text-align: center;">
-                <img src="app/static/profile.png" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px; height: 150px; object-fit: cover;">
+                <img src="https://i.pravatar.cc/150?u=napkin" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px;">
                 <h4>John Doe</h4>
                 <p style="color: #8b949e;">Senior Manufacturing Engineer</p>
             </div>
@@ -310,16 +307,13 @@ elif st.session_state.page == "Profile":
     with prof_col2:
         st.markdown("#### Account Information")
         st.text_input("Full Name", value="John Doe")
-        st.text_input("Company", value="TechBuild Solutions")
-        st.text_input("Email Address", value="john.doe@techbuild.com")
-        
+        st.text_input("Email Address", value="john.doe@manufacturing-corp.com")
         st.markdown("#### Statistics")
         stat1, stat2, stat3 = st.columns(3)
         stat1.metric("Parts Generated", "42")
-        stat2.metric("Printers Connected", "1")
-        stat3.metric("Current Plan", "Professional")
-        
-        if st.button("Save Changes", type="primary"):
+        stat2.metric("Print Success Rate", "98%")
+        stat3.metric("Credits Remaining", "Unlimited")
+        if st.button("Save Changes"):
             st.success("Profile Updated!")
 
 st.markdown('</div>', unsafe_allow_html=True) # End content padding
