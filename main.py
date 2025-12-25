@@ -24,37 +24,26 @@ def set_page(page_name):
 # --- CUSTOM CSS ---
 st.markdown(f"""
     <style>
-    /* 1. Global Page Setup */
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
     
-    /* Remove default Streamlit padding at the top */
+    /* 1. Remove the gap at the very top of the page */
     .block-container {{
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
     }}
 
-    /* 2. THE BLUE HEADER BACKGROUND */
-    /* This creates a fixed blue bar at the top of the screen */
-    .header-bg {{
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 110px;
-        background-color: #1e3a8a;
-        border-bottom: 3px solid #3b82f6;
-        z-index: 99;
+    /* 2. Create the Blue Header Background using a Full-Bleed effect */
+    /* This targets the container holding the navigation buttons */
+    [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
+        background-color: #1e3a8a !important;
+        border-bottom: 3px solid #3b82f6 !important;
+        padding: 40px 5rem 20px 5rem !important;
+        margin-left: -5rem !important;
+        margin-right: -5rem !important;
+        width: calc(100% + 10rem) !important;
     }}
 
-    /* 3. THE NAVIGATION CONTAINER */
-    /* This ensures the buttons sit on top of the blue bar */
-    .nav-container {{
-        position: relative;
-        z-index: 100;
-        padding: 30px 5rem 10px 5rem;
-    }}
-
-    /* 4. FOOTER STYLING */
+    /* 3. Footer Styling */
     .footer-minimal {{
         background-color: #1e3a8a;
         border-top: 3px solid #3b82f6;
@@ -76,7 +65,7 @@ st.markdown(f"""
     }}
     .footer-icon-box img {{ width: 18px !important; height: 18px !important; }}
 
-    /* 5. COMPONENTS */
+    /* 4. Home & Testimonial Components */
     .testimonial-card {{
         background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
         display: flex; align-items: center; justify-content: center; min-height: 180px;
@@ -108,18 +97,14 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-# --- HEADER & NAVIGATION ---
-st.markdown('<div class="header-bg"></div>', unsafe_allow_html=True)
-st.markdown('<div class="nav-container">', unsafe_allow_html=True)
+# --- NAVBAR ---
 nav_cols = st.columns(6)
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact"]
 for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
-st.markdown('</div>', unsafe_allow_html=True)
 
-# Main Body Padding
-st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
+st.markdown("<br>", unsafe_allow_html=True)
 
 # --- PAGE ROUTING ---
 
@@ -205,7 +190,7 @@ elif st.session_state.page == "Pricing":
         st.markdown('<div class="price-card"><h3>Enterprise</h3><div class="price-amt">Custom<span class="per-month">per month</span></div><div class="currency-sub">Tailored for large-scale operations</div><p class="price-feat">Unlimited exports</p><p class="price-feat">Unlimited connected devices</p><p class="price-feat">Unlimited connected printers</p></div>', unsafe_allow_html=True)
         st.button("Contact Sales", key="p3", use_container_width=True)
 
-# 4. HELP
+# 4. HELP - FULL CONTENT RESTORED
 elif st.session_state.page == "Help":
     st.markdown("### How to use Napkin")
     st.markdown("""
@@ -249,7 +234,7 @@ elif st.session_state.page == "Help":
         * **AI error:** Although the AI is programmed specifically for engineering component design, there may still be errors with more complicated models. For these scenarios, traditional CAD modelling methods are required. However, we are aiming to continuously improve our system, and welcome any feedback when common or valuable designs are failing to generate.        
         """)
 
-# 5. GALLERY
+# 5. GALLERY - FULL IMAGES RESTORED
 elif st.session_state.page == "Gallery":
     st.markdown("### Gallery")
     g1, g2 = st.columns(2)
@@ -262,7 +247,7 @@ elif st.session_state.page == "Gallery":
     g5.image("static/print1.jpg", use_container_width=True)
     g6.image("static/production2.jpg", use_container_width=True)
 
-# 6. CONTACT
+# 6. CONTACT - FULL FORM RESTORED
 elif st.session_state.page == "Contact":
     st.markdown("### Contact Us")
     with st.form("c"):
@@ -283,8 +268,6 @@ elif st.session_state.page == "Contact":
     with s3:
         st.markdown('<div class="social-underlay"><img src="app/static/youtube.png"></div>', unsafe_allow_html=True)
         st.button("YouTube", key="soc_yt", use_container_width=True)
-
-st.markdown('</div>', unsafe_allow_html=True) # End body padding
 
 # --- FOOTER ---
 st.markdown(f"""
