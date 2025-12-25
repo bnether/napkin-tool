@@ -173,16 +173,13 @@ if st.session_state.page == "Home":
         with left:
             st.markdown("### Engineering Speed")
             st.write("""
-                Traditional CAD workflows are a bottleneck for emergency repairs and rapid prototyping. 
-                Napkin leverages AI trained on ISO standards and machinist logic to generate 
-                production-ready geometry in seconds. 
+                Companies can lose up to millions of dollars during production downtime. This software can minimise bottlenecks by producing custom replacement parts within minutes. Technicians who are otherwise untrained in CAD can prototype or manufacture engineering solutions remotely from the click of a button.
                 
-                Reduce your downtime from days to minutes by turning physical ideas into digital assets 
-                without the need for complex modeling software.
+                We have trained the AI platform specifically for engineering component design, on aspects such as ISO standards and machinist logic. With AI and 3D printing each rapidly evolving, this is a tool that continuously improves over time. 
             """)
         with right:
-            st.image("https://via.placeholder.com/600x350/161b22/58a6ff?text=Industrial+AI+Engine+Preview", use_container_width=True)
-
+            st.image("static/production1.jpg", use_container_width=True)
+    
     elif st.session_state.home_tab == "How to use":
         st.markdown("<div style='text-align:center;'><h3>Process Overview</h3></div>", unsafe_allow_html=True)
         st.video("https://www.youtube.com/watch?v=uTKkxl8y-BI")
@@ -190,7 +187,7 @@ if st.session_state.page == "Home":
     elif st.session_state.home_tab == "Try now":
         st.markdown("<div style='text-align:center; padding: 40px 0;'>", unsafe_allow_html=True)
         st.markdown("### Ready to start printing?")
-        st.write("Join leading engineering teams and streamline your production floor.")
+        st.write("Get a free trial to turn your napkin sketches into real parts today")
         if st.button("Explore Pricing & Plans", type="primary"):
             set_page("Pricing")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -369,3 +366,4 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
