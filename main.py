@@ -186,7 +186,7 @@ if st.session_state.page == "Home":
 
     elif st.session_state.home_tab == "Try now":
 
-         left, right = st.columns([1, 1], gap="large")
+        left, right = st.columns([1, 1], gap="large")
         with left:
             st.markdown("### Ready to start printing?")
             st.write("Get a free trial to turn your napkin sketches into real parts today")
@@ -373,6 +373,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
