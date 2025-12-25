@@ -185,15 +185,19 @@ if st.session_state.page == "Home":
         st.video("https://www.youtube.com/watch?v=uTKkxl8y-BI")
 
     elif st.session_state.home_tab == "Try now":
+
         left, right = st.columns([1, 1], gap="large")
         with left:
-            st.markdown("### Ready to start printing?")
-            st.write("Get a free trial to turn your napkin sketches into real parts today")
-            if st.button("Explore Pricing & Plans", type="primary"):
-                set_page("Pricing")
-            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("### Engineering Speed")
+            st.write("""
+                Companies can lose up to millions of dollars during production downtime. This software can minimise bottlenecks by producing custom replacement parts within minutes. Technicians who are otherwise untrained in CAD can prototype or manufacture engineering solutions remotely from the click of a button.
+                
+                We have trained the AI platform specifically for engineering component design, on aspects such as ISO standards and machinist logic. With AI and 3D printing each rapidly evolving, this is a tool that continuously improves over time. 
+            """)
         with right:
-            st.image("static/print2.jpg", use_container_width=True)
+            st.image("static/production1.jpg", use_container_width=True)
+            
+       
         
 
     # Testimonials
@@ -370,5 +374,6 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
