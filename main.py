@@ -267,7 +267,6 @@ elif st.session_state.page == "Gallery":
     g3, g4 = st.columns(2)
     g3.image("static/gallery3.jpg", use_container_width=True)
     g4.image("static/gallery4.jpg", use_container_width=True)
-    g4.image("static/gallery4.jpg", use_container_width=True)
     g5, g6 = st.columns(2)
     g5.image("static/gallery5.jpg", use_container_width=True)
     g6.image("static/gallery6.jpg", use_container_width=True)
@@ -332,4 +331,5 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
