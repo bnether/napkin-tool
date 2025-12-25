@@ -48,15 +48,7 @@ st.markdown(f"""
         align-items: center;
     }}
 
-    /* Home & Component Styling */
-    .testimonial-card {{
-        background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
-        display: flex; align-items: center; justify-content: center; min-height: 180px;
-        max-width: 750px; margin: 0 auto;
-    }}
-    .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
-    .testimonial-quote {{ font-style: italic; font-size: 1.05rem; color: #d1d5db; line-height: 1.4; }}
-
+    /* Hero Sections */
     .home-section {{
         position: relative; width: 100%; min-height: 450px;
         border-radius: 20px; overflow: hidden; margin-bottom: 40px;
@@ -67,10 +59,6 @@ st.markdown(f"""
     .section-text {{ font-size: 2.5rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }}
     .highlight {{ color: #58a6ff; }}
 
-    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 350px; margin-bottom: 10px; }}
-    .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; display: inline-block; }}
-    .currency-sub {{ color: #8b949e; font-size: 0.85rem; margin-bottom: 15px; }}
-
     /* Profile Button Icon */
     button[key="nav_Profile"] {{
         border-radius: 50% !important;
@@ -78,9 +66,22 @@ st.markdown(f"""
         height: 50px !important;
         background-image: url("app/static/profile.png") !important;
         background-size: cover !important;
+        background-position: center !important;
         color: transparent !important; 
         border: 2px solid #3b82f6 !important;
     }}
+
+    /* Global UI Components */
+    .testimonial-card {{
+        background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
+        display: flex; align-items: center; justify-content: center; min-height: 180px;
+        max-width: 750px; margin: 0 auto;
+    }}
+    .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
+    
+    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 350px; }}
+    .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
+    .currency-sub {{ color: #8b949e; font-size: 0.85rem; margin-bottom: 15px; }}
 
     .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
     button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; }}
@@ -109,7 +110,7 @@ st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
 
 # --- ROUTING ---
 
-# 1. HOME SECTION (RESTORED TO ORIGINAL FULL VERSION)
+# 1. HOME SECTION
 if st.session_state.page == "Home":
     st.markdown("""
         <div class="home-section"><img class="section-bg" src="app/static/home1.jpg"><div class="section-content"><div class="section-text">Combining <span class="highlight">AI</span> with <span class="highlight">3D printing</span> to turn napkin sketches into real parts.</div></div></div>
@@ -140,15 +141,13 @@ if st.session_state.page == "Home":
 elif st.session_state.page == "Make a Part":
     c1, c2 = st.columns(2, gap="large")
     with c1:
-        upload_choice = st.radio("Mode:", ["Sketch + Description", "Text Only"], horizontal=True)
-        uploaded_file = st.file_uploader("Upload Image", type=['jpg', 'png'], label_visibility="collapsed")
-        if uploaded_file: st.image(PIL.Image.open(uploaded_file), use_container_width=True)
-        user_context = st.text_area("Specifications", placeholder="e.g. A 50x50mm cube...", height=150)
-        if st.button("Generate 3D Model", type="primary", use_container_width=True):
-            st.info("Generation logic processing...")
+        st.radio("Mode:", ["Sketch + Description", "Text Only"], horizontal=True)
+        st.file_uploader("Upload Image", type=['jpg', 'png'])
+        st.text_area("Specifications", placeholder="e.g. A 50x50mm cube...", height=150)
+        st.button("Generate 3D Model", type="primary", use_container_width=True)
     with c2: st.write("Preview Area")
 
-# 3. PRICING (RESTORED)
+# 3. PRICING
 elif st.session_state.page == "Pricing":
     p1, p2, p3 = st.columns(3)
     with p1:
@@ -161,21 +160,21 @@ elif st.session_state.page == "Pricing":
         st.markdown('<div class="price-card"><h3>Enterprise</h3><div class="price-amt">Custom</div><div class="currency-sub">Tailored Scale</div><p>Unlimited exports</p><p>Unlimited devices</p><p>Unlimited printers</p></div>', unsafe_allow_html=True)
         st.button("Contact Sales", key="p3", use_container_width=True)
 
-# 4. HELP (RESTORED)
+# 4. HELP
 elif st.session_state.page == "Help":
     st.markdown("### How to use Napkin")
-    st.write("1. **Upload or Describe:** Use a photo of your hand-drawn sketch or just type out specs.\n2. **Be Specific:** Mention exact dimensions or hole types (e.g. M5 clearance hole).\n3. **Generate:** AI translates input into geometric code.\n4. **Download:** Export your .stl file directly.")
+    st.write("1. **Upload or Describe:** Use a sketch or type out specs.\n2. **Be Specific:** Mention exact dimensions.\n3. **Generate:** AI creates geometry code.\n4. **Download:** Export .stl directly.")
     st.markdown("---")
     st.markdown("### Setting up your 3D Printer")
-    st.write("1. **Network Discovery:** Ensure same Wi-Fi.\n2. **API Access:** Find your key in printer settings.\n3. **Direct Printing:** Send parts straight to the bed.")
+    st.write("1. **Network Discovery:** Ensure same Wi-Fi.\n2. **API Access:** Find your key in settings.\n3. **Direct Printing:** Send parts straight to the bed.")
     st.markdown("---")
     st.markdown("### Frequently Asked Questions")
     with st.expander("How is this software developed?"):
-        st.write("Uses parametric precision engines and machinist logic for structural integrity and ISO-compliant tolerances.")
+        st.write("Uses parametric precision engines and machinist logic for structural integrity and ISO compliance.")
     with st.expander("Does it work with resin printers?"):
         st.write("Yes, STL files are compatible with both FDM and SLA slicers.")
 
-# 5. GALLERY (RESTORED)
+# 5. GALLERY
 elif st.session_state.page == "Gallery":
     st.markdown("### Gallery")
     g1, g2 = st.columns(2)
@@ -192,7 +191,7 @@ elif st.session_state.page == "Contact":
         st.text_input("Name"); st.text_input("Company"); st.text_input("Email"); st.text_area("Message")
         st.form_submit_button("Send Message")
 
-# 7. PROFILE (RESTORED)
+# 7. PROFILE
 elif st.session_state.page == "Profile":
     st.markdown("### User Profile")
     pr1, pr2 = st.columns([1, 2])
@@ -201,7 +200,7 @@ elif st.session_state.page == "Profile":
         if st.button("Sign Out", key="sign_out_btn", use_container_width=True): set_page("Home")
     with pr2:
         st.markdown("#### Account Information")
-        st.text_input("Full Name", "John Doe"); st.text_input("Company", "TechBuild Solutions"); st.text_input("Email Address", "john.doe@techbuild.com")
+        st.text_input("Full Name", "John Doe"); st.text_input("Company", "TechBuild Solutions"); st.text_input("Email", "john.doe@techbuild.com")
         st.markdown("#### Statistics")
         s1, s2, s3 = st.columns(3)
         s1.metric("Parts Generated", "42"); s2.metric("Printers Connected", "1"); s3.metric("Current Plan", "Professional")
