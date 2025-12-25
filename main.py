@@ -59,7 +59,7 @@ st.markdown(f"""
         color: #e2e8f0;
     }}
     
-    /* Profile Icon Styling - Using your uploaded profile.png */
+    /* 3. Profile Icon Styling - Using your uploaded profile.png */
     button[key="nav_Profile"] {{
         border-radius: 50% !important;
         width: 50px !important;
@@ -70,7 +70,7 @@ st.markdown(f"""
         background-size: cover !important;
         background-position: center !important;
         background-repeat: no-repeat !important;
-        color: transparent !important; 
+        color: transparent !important; /* Hide the placeholder text */
         border: 2px solid #3b82f6 !important;
     }}
 
@@ -112,12 +112,6 @@ st.markdown(f"""
     .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
     button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; color: white !important; }}
     
-    /* Sign out button custom style */
-    button[key="sign_out_btn"] {{
-        border-color: #f85149 !important;
-        color: #f85149 !important;
-    }}
-
     header {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     </style>
@@ -131,6 +125,7 @@ for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
 
+# The Profile Button (The CSS above will replace the text '.' with your profile.png)
 if nav_cols[6].button(".", key="nav_Profile"):
     set_page("Profile")
 
@@ -192,7 +187,9 @@ elif st.session_state.page == "Make a Part":
             with st.spinner("Generating..."):
                 try:
                     exe = shutil.which("openscad")
-                    if exe:
+                    if not exe:
+                        st.error("Engine Error: OpenSCAD not found on server.")
+                    else:
                         client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
                         prompt = f"Act as an OpenSCAD engineer. Create code based on: '{user_context}'. Use $fn=50;. Provide a JSON 'METADATA' object. Format: ```openscad [code] ``` and ```json [metadata] ```"
                         inputs = [prompt, PIL.Image.open(uploaded_file)] if uploaded_file else [prompt]
@@ -206,7 +203,7 @@ elif st.session_state.page == "Make a Part":
                             st.download_button("Download STL", open("part.stl", "rb"), "part.stl", use_container_width=True)
                 except Exception as e: st.error(f"Error: {e}")
 
-# 3. PRICING - FULL CONTENT RESTORED
+# 3. PRICING
 elif st.session_state.page == "Pricing":
     p1, p2, p3 = st.columns(3)
     with p1:
@@ -219,7 +216,7 @@ elif st.session_state.page == "Pricing":
         st.markdown('<div class="price-card"><h3>Enterprise</h3><div class="price-amt">Custom<span class="per-month">per month</span></div><div class="currency-sub">Tailored for large-scale operations</div><p class="price-feat">Unlimited exports</p><p class="price-feat">Unlimited connected devices</p><p class="price-feat">Unlimited connected printers</p></div>', unsafe_allow_html=True)
         st.button("Contact Sales", key="p3", use_container_width=True)
 
-# 4. HELP - FULL CONTENT RESTORED
+# 4. HELP
 elif st.session_state.page == "Help":
     st.markdown("### How to use Napkin")
     st.markdown("""
@@ -247,17 +244,23 @@ elif st.session_state.page == "Help":
     with st.expander("What are some examples of parts it can make?"):
         st.write("""
         * Any component that is simple enough to be described by a small sketch and text prompt.
-        * The AI will excel at engineering-specific parts and features; for example, a mounting bracket with an M6 clearance hole.
+        * The AI will excel at engineering-specific parts and features; for example, a mounting bracket with an M6 clearance hole. This is because it has been trained on real-world industrial standards such as ISO/DIN tables.
         """)
     with st.expander("Does it work with resin printers?"):
         st.write("Yes, the .STL files are compatible with both FDM and SLA (resin) slicers.")
+    with st.expander("How do I get the best results?"):
+        st.write("""
+        * **Be Specific:** Include exact dimensions (e.g., "50mm wide").
+        * **Describe the Use:** Mention if it needs to fit a specific bolt (e.g., "M5 clearance hole").
+        * **High Contrast:** If uploading a sketch, ensure the lines are dark and the background is plain.
+        """)
     with st.expander("Why is the AI not generating my model correctly?"):
         st.write("""
-        * **User error:** Check your drawing and description clarity.
-        * **AI error:** While optimized for engineering, complex models may still require traditional CAD.
+        * **User error:** Firstly, check the accuracy of your drawing and description, ensuring that all features are clearly described. Watch our tutorial to learn how to give more effective prompts.
+        * **AI error:** Although the AI is programmed specifically for engineering component design, there may still be errors with more complicated models. For these scenarios, traditional CAD modelling methods are required. However, we are aiming to continuously improve our system, and welcome any feedback when common or valuable designs are failing to generate.        
         """)
 
-# 5. GALLERY - FULL IMAGES RESTORED
+# 5. GALLERY
 elif st.session_state.page == "Gallery":
     st.markdown("### Gallery")
     g1, g2 = st.columns(2)
@@ -270,7 +273,7 @@ elif st.session_state.page == "Gallery":
     g5.image("static/print1.jpg", use_container_width=True)
     g6.image("static/production2.jpg", use_container_width=True)
 
-# 6. CONTACT - FULL FORM RESTORED
+# 6. CONTACT
 elif st.session_state.page == "Contact":
     st.markdown("### Contact Us")
     with st.form("c"):
@@ -292,7 +295,7 @@ elif st.session_state.page == "Contact":
         st.markdown('<div class="social-underlay"><img src="app/static/youtube.png"></div>', unsafe_allow_html=True)
         st.button("YouTube", key="soc_yt", use_container_width=True)
 
-# 7. PROFILE PAGE
+# 7. UPDATED PROFILE PAGE
 elif st.session_state.page == "Profile":
     st.markdown("### User Profile")
     prof_col1, prof_col2 = st.columns([1, 2])
@@ -304,10 +307,6 @@ elif st.session_state.page == "Profile":
                 <p style="color: #8b949e;">Senior Manufacturing Engineer</p>
             </div>
         """, unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Sign Out", key="sign_out_btn", use_container_width=True):
-            set_page("Home")
-            
     with prof_col2:
         st.markdown("#### Account Information")
         st.text_input("Full Name", value="John Doe")
@@ -320,10 +319,10 @@ elif st.session_state.page == "Profile":
         stat2.metric("Printers Connected", "1")
         stat3.metric("Current Plan", "Professional")
         
-        if st.button("Save Changes", type="primary", use_container_width=True):
+        if st.button("Save Changes", type="primary"):
             st.success("Profile Updated!")
 
-st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True) # End content padding
 
 # --- FOOTER ---
 st.markdown(f"""
