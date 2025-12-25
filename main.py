@@ -335,6 +335,7 @@ elif st.session_state.page == "Profile":
     with prof_col2:
         st.markdown("#### Account Information")
         st.text_input("Full Name", value="John Doe")
+        st.text_input("Company", value="Manufacturing Corporation")
         st.text_input("Email Address", value="john.doe@manufacturing-corp.com")
         st.markdown("#### Statistics")
         stat1, stat2, stat3 = st.columns(3)
@@ -358,5 +359,6 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.5;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
