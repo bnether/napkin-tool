@@ -30,8 +30,8 @@ st.markdown(f"""
     .block-container {{
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
-        padding-left: 0rem !important;
-        padding-right: 0rem !important;
+        padding-left: 5% !important;
+        padding-right: 5% !important;
     }}
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
 
@@ -323,17 +323,6 @@ elif st.session_state.page == "Contact":
         st.text_area("Message")
         st.form_submit_button("Send Message")
 
-    st.markdown("<br>Connect with us", unsafe_allow_html=True)
-    s1, s2, s3, _ = st.columns([1.5, 1.5, 1.5, 4.5])
-    with s1:
-        st.markdown('<div class="social-underlay"><img src="app/static/insta.png"></div>', unsafe_allow_html=True)
-        st.button("Instagram", key="soc_insta", use_container_width=True)
-    with s2:
-        st.markdown('<div class="social-underlay"><img src="app/static/linkedin.png"></div>', unsafe_allow_html=True)
-        st.button("LinkedIn", key="soc_link", use_container_width=True)
-    with s3:
-        st.markdown('<div class="social-underlay"><img src="app/static/youtube.png"></div>', unsafe_allow_html=True)
-        st.button("YouTube", key="soc_yt", use_container_width=True)
 
 # 7. NEW PROFILE PAGE
 elif st.session_state.page == "Profile":
@@ -373,6 +362,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
