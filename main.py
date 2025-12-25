@@ -24,33 +24,30 @@ def set_page(page_name):
 # --- CUSTOM CSS ---
 st.markdown(f"""
     <style>
-    /* 1. Eliminate the top gap entirely */
-    .stApp {{ background-color: #0e1117; color: #ffffff; }}
+    /* 1. Remove all default Streamlit padding at the top */
     .block-container {{
         padding-top: 0rem !important;
+        padding-bottom: 0rem !important;
         padding-left: 0rem !important;
         padding-right: 0rem !important;
     }}
-    
-    /* 2. Create the Background Banner (Positioned behind buttons) */
-    .nav-bg {{
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 120px; /* Adjust height to fit buttons */
-        background-color: #1e3a8a;
-        border-bottom: 3px solid #3b82f6;
-        z-index: 0;
-    }}
 
-    /* 3. Ensure the buttons are visible above the blue */
-    .nav-container {{
+    /* 2. Target the specific container that holds the nav columns */
+    [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
+        background-color: #1e3a8a !important;
+        border-bottom: 3px solid #3b82f6 !important;
+        padding: 40px 5rem 20px 5rem !important;
+        margin-top: 0rem !important;
+        width: 100vw !important;
         position: relative;
-        z-index: 1;
-        padding: 35px 5rem 10px 5rem;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
     }}
 
+    .stApp {{ background-color: #0e1117; color: #ffffff; }}
+    
     .footer-minimal {{
         background-color: #1e3a8a;
         border-top: 3px solid #3b82f6;
@@ -104,17 +101,12 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # --- NAVBAR ---
-# 1. Place the Background
-st.markdown('<div class="nav-bg"></div>', unsafe_allow_html=True)
-
-# 2. Place the Buttons inside a padded container
-st.markdown('<div class="nav-container">', unsafe_allow_html=True)
+# No more background divs needed here, the CSS targets the columns directly
 nav_cols = st.columns(6)
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact"]
 for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
-st.markdown('</div>', unsafe_allow_html=True)
 
 # Content padding for the rest of the page
 st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
