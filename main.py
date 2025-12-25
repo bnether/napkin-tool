@@ -68,19 +68,6 @@ st.markdown(f"""
     .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
     .highlight {{ color: #58a6ff; }}
 
-    /* Profile Button Icon */
-    button[key="nav_Profile"] {{
-        border-radius: 50% !important;
-        width: 50px !important;
-        height: 50px !important;
-        padding: 0px !important;
-        background-image: st.image("static/profile.png", use_container_width=True) !important;
-        background-size: cover !important;
-        background-position: center !important;
-        color: transparent !important; 
-        border: 2px solid #3b82f6 !important;
-    }}
-
     /* UI Elements */
     .testimonial-card {{
         background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
@@ -92,7 +79,6 @@ st.markdown(f"""
     .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; }}
     .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
     
-    /* MODIFIED PRICING CLASSES */
     .per-month {{ 
         font-size: 1rem; 
         color: #8b949e; 
@@ -111,7 +97,6 @@ st.markdown(f"""
     button[key="sign_out_btn"] {{ border-color: #f85149 !important; color: #f85149 !important; }}
 
     .footer-minimal {{
-        
         background-color: #1e3a8a; 
         border-top: 3px solid #3b82f6;
         padding: 20px 15px; 
@@ -123,11 +108,9 @@ st.markdown(f"""
         margin-left: -5.3% !important;
         margin-right: -5.3% !important;
         width: calc(100% + 10.6%) !important;
-
     }}
 
-
-    /* MODIFIED FOOTER ICON SIZE */
+    /* FOOTER ICON SIZE */
     .footer-icon-box img {{
         width: 30px !important;
         height: auto !important;
@@ -140,15 +123,13 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # --- NAVBAR ---
-nav_cols = st.columns([1,1,1,1,1,1,1])
-pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact"]
+# Reverted Profile to be a standard text button alongside others
+pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile"]
+nav_cols = st.columns(len(pages))
 
 for i, p in enumerate(pages):
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
-
-if nav_cols[6].button("Profile", key="nav_Profile"):
-    set_page("Profile")
 
 # Container for standard page content
 st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
@@ -199,19 +180,14 @@ if st.session_state.page == "Home":
         st.video("https://www.youtube.com/watch?v=uTKkxl8y-BI")
 
     elif st.session_state.home_tab == "Try now":
-
         left, right = st.columns([1, 1], gap="large")
         with left:
             st.markdown("### Ready to start printing?")
             st.write("Get a free trial to turn your napkin sketches into real parts today")
             if st.button("Explore Pricing & Plans", type="primary"):
                 set_page("Pricing")
-            st.markdown("</div>", unsafe_allow_html=True)
         with right:
             st.image("static/print2.jpg", use_container_width=True)
-            
-       
-        
 
     # Testimonials
     st.markdown("---")
@@ -376,26 +352,3 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
