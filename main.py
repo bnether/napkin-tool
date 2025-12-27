@@ -33,25 +33,44 @@ st.markdown(f"""
         padding-left: 5% !important;
         padding-right: 5% !important;
     }}
-    .stApp {{ background-color: #0e1117; color: #ffffff; }}
+    /* Added margin-top to stApp so content doesn't hide behind the fixed navbar */
+    .stApp {{ background-color: #0e1117; color: #ffffff; margin-top: 60px; }}
 
-    /* Navigation Bar */
-    [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
-        background-color: #1e3a8a !important;
-        border-bottom: 3px solid #3b82f6 !important;
-        padding: 40px 5rem 20px 5rem !important;
-        margin-top: 0rem !important;
-        width: 100vw !important;
-        position: relative;
-        left: 50%;
-        right: 50%;
-        margin-left: -50vw;
-        margin-right: -50vw;
+    /* --- MODERN NAVBAR (FIXED TOP) --- */
+    .nav-wrapper {{
+        background-color: #0e1117;
+        border-bottom: 1px solid #30363d;
+        width: 100vw;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 9999;
         display: flex;
+        justify-content: center;
         align-items: center;
     }}
 
-    /* Hero Section with Vertical Gradient Fade */
+    .nav-item {{
+        padding: 18px 25px;
+        color: #8b949e !important;
+        text-decoration: none !important;
+        font-size: 15px;
+        font-weight: 500;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+    }}
+
+    .nav-item:hover {{
+        color: #58a6ff !important;
+        border-bottom: 2px solid #58a6ff;
+    }}
+
+    .nav-active {{
+        color: #ffffff !important;
+        border-bottom: 2px solid #3b82f6 !important;
+    }}
+
+    /* Hero Section with Vertical Gradient Fade (Preserved from Working Script) */
     .hero-container {{
         position: relative;
         width: 100%;
@@ -76,60 +95,55 @@ st.markdown(f"""
     }}
     .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
     
-    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 16px;}}
+    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 25px;}}
     .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
     
-    .per-month {{ 
-        font-size: 1rem; 
-        color: #8b949e; 
-        font-weight: 400; 
-        margin-left: 5px;
-    }}
-    .currency-sub {{ 
-        font-size: 0.85rem; 
-        color: #8b949e; 
-        margin-top: -10px; 
-        margin-bottom: 15px;
-    }}
+    .per-month {{ font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }}
+    .currency-sub {{ font-size: 0.85rem; color: #8b949e; margin-top: -10px; margin-bottom: 15px; }}
 
     .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
     button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; }}
-    button[key="sign_out_btn"] {{ border-color: #f85149 !important; color: #f85149 !important; }}
 
+    /* Footer Styles (Merged logic) */
     .footer-minimal {{
         background-color: #1e3a8a; 
         border-top: 3px solid #3b82f6;
-        padding: 20px 15px; 
+        padding: 40px 15px; 
         text-align: center; 
         color: #e2e8f0; 
         margin-top: 4rem;
-    
-        /* These lines cancel out the 5% padding of the parent container */
-        margin-left: -5.3% !important;
-        margin-right: -5.3% !important;
-        width: calc(100% + 10.6%) !important;
+        margin-left: -6% !important;
+        margin-right: -6% !important;
+        width: 112% !important;
     }}
 
-    /* FOOTER ICON SIZE */
-    .footer-icon-box img {{
-        width: 30px !important;
-        height: auto !important;
-        margin: 0 10px;
+    .footer-icon-box {{
+        width: 40px; height: 40px; margin: 0 10px;
+        display: inline-flex; align-items: center; justify-content: center;
     }}
+    .footer-icon-box img {{ width: 24px; filter: brightness(0) invert(1); }}
 
-    header {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
+    header {{ visibility: hidden; }}
+    footer {{ visibility: hidden; }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- NAVBAR ---
-# Reverted Profile to be a standard text button alongside others
+# --- NAVBAR LOGIC (Using URL Parameters for smooth switching) ---
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile"]
-nav_cols = st.columns(len(pages))
 
-for i, p in enumerate(pages):
-    if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
-        set_page(p)
+params = st.query_params
+if "p" in params:
+    if params["p"] != st.session_state.page:
+        st.session_state.page = params["p"]
+        st.rerun()
+
+nav_html = '<div class="nav-wrapper">'
+for p in pages:
+    active_class = "nav-active" if st.session_state.page == p else ""
+    nav_html += f'<a href="/?p={p}" target="_self" class="nav-item {active_class}">{p}</a>'
+nav_html += '</div>'
+
+st.markdown(nav_html, unsafe_allow_html=True)
 
 # Container for standard page content
 st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
@@ -381,6 +395,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
