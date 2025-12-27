@@ -233,12 +233,17 @@ if st.session_state.page == "Home":
     testimonials = [
         {"quote": "The speed from a sketch to a real part is unlike anything we've used.", "author": "Lead Engineer, Precision Dynamics", "img": "https://i.pravatar.cc/150?u=1"},
         {"quote": "This has revolutionised how we conduct emergency production part replacements.", "author": "Maintenance Lead, TechBuild", "img": "https://i.pravatar.cc/150?u=2"},
-        {"quote": "Our maintenance staff have been empowered to create parts without any CAD training.", "author": "Maintenance Technician, TechBuild", "img": "https://i.pravatar.cc/150?u=2"},
-        {"quote": "Our 3D printer fleet has been transformed into one of our most valuable assets", "author": "R&D Engineer, TechBuild", "img": "https://i.pravatar.cc/150?u=2"}
+        {"quote": "Our maintenance staff have been empowered to create parts without any CAD training.", "author": "Maintenance Technician, TechBuild", "img": "https://i.pravatar.cc/150?u=3"},
+        {"quote": "Our 3D printer fleet has been transformed into one of our most valuable assets", "author": "R&D Engineer, TechBuild", "img": "https://i.pravatar.cc/150?u=4"}
     ]
+    
+    # SAFETY CHECK: Ensure the index isn't larger than the current list (prevents crashes if you shrink the list)
+    if st.session_state.testimonial_index >= len(testimonials):
+        st.session_state.testimonial_index = 0
+    
     curr_idx = st.session_state.testimonial_index
     curr = testimonials[curr_idx]
-
+    
     # Use vertical_alignment="center" to keep arrows next to the middle of the box
     tc1, tc2, tc3 = st.columns([1, 6, 1], vertical_alignment="center")
     
@@ -257,11 +262,13 @@ if st.session_state.page == "Home":
             dots_html += f'<span class="dot {active_class}"></span>'
         dots_html += '</div>'
         st.markdown(dots_html, unsafe_allow_html=True)
-
+    
     with tc3:
         if st.button("→", key="next_t"): 
             st.session_state.testimonial_index = (curr_idx + 1) % len(testimonials)
             st.rerun()
+
+
 # 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
     col1, col2 = st.columns([1, 1], gap="large")
@@ -435,6 +442,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
