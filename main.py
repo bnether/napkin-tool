@@ -179,7 +179,7 @@ if st.session_state.page == "Home":
         1. **Upload or Describe:** Upload a photo of your hand-drawn sketch or just type out what you need in the specification box.
         2. **Be Specific:** For precision engineering, mention exact dimensions or hole types (e.g. 'M5 clearance hole').
         3. **Generate:** Click the 'Generate 3D Model' button. Our AI engine will translate your input into geometric code and generate a 3D model.
-        4. **Print:** Send your part straight to the printer, or export your .stl file for use in any slicing software.
+        4. **Print:** Send your part straight to the printer using our automatic cloud slicing feature, or export your .stl file for use in any slicing software yourself.
         """)
         st.markdown("---")
         st.markdown("<div style='text-align:center;'><h3>Process Overview</h3></div>", unsafe_allow_html=True)
@@ -380,6 +380,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
