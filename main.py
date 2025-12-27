@@ -148,3 +148,4 @@ if st.session_state.page == "Home":
     if t1.button("Why Napkin", use_container_width=True, type="primary" if st.session_state.home_tab == "Why Napkin" else "secondary"):
         st.session_state.home_tab = "Why Napkin"; st.rerun()
     if t2.button("How to use", use_container_width=True, type="primary" if st.session_state.home_tab == "How
+
