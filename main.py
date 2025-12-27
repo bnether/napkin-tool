@@ -33,87 +33,103 @@ st.markdown(f"""
         padding-left: 5% !important;
         padding-right: 5% !important;
     }}
-    .stApp {{ background-color: #0e1117; color: #ffffff; margin-top: 60px; }}
+    .stApp {{ background-color: #0e1117; color: #ffffff; }}
 
-    /* --- MODERN NAVBAR (NO BUTTONS) --- */
-    .nav-wrapper {{
-        background-color: #0e1117;
-        border-bottom: 1px solid #30363d;
-        width: 100vw;
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 9999;
+    /* Navigation Bar */
+    [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
+        background-color: #1e3a8a !important;
+        border-bottom: 3px solid #3b82f6 !important;
+        padding: 40px 5rem 20px 5rem !important;
+        margin-top: 0rem !important;
+        width: 100vw !important;
+        position: relative;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
         display: flex;
-        justify-content: center;
         align-items: center;
     }}
 
-    .nav-item {{
-        padding: 18px 25px;
-        color: #8b949e !important;
-        text-decoration: none !important;
-        font-size: 15px;
-        font-weight: 500;
-        border-bottom: 2px solid transparent;
-        transition: all 0.3s ease;
+    /* Hero Section with Vertical Gradient Fade */
+    .hero-container {{
+        position: relative;
+        width: 100%;
+        height: 550px;
+        background-image: linear-gradient(to bottom, rgba(14, 17, 23, 0) 50%, rgba(14, 17, 23, 1) 100%), url("app/static/home1.jpg");
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0px;
     }}
+    .section-content {{ position: relative; z-index: 2; width: 70%; text-align: center; }}
+    .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
+    .highlight {{ color: #58a6ff; }}
 
-    .nav-item:hover {{
-        color: #58a6ff !important;
-        border-bottom: 2px solid #58a6ff;
+    /* UI Elements */
+    .testimonial-card {{
+        background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
+        display: flex; align-items: center; justify-content: center; min-height: 180px;
+        max-width: 800px; margin: 0 auto;
     }}
-
-    .nav-active {{
-        color: #ffffff !important;
-        border-bottom: 2px solid #3b82f6 !important;
-    }}
-
-    /* Standard Buttons (Generate, Download, etc) */
-    .stButton>button {{ 
-        border-radius: 10px; 
-        height: 3.5em; 
-        background-color: #21262d; 
-        color: white; 
-        border: 1px solid #30363d; 
-        font-weight: 600; 
-    }}
+    .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
     
-    button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; }}
-
-    /* Pricing Card Spacing */
-    .price-card {{ 
-        background: #161b22; 
-        padding: 30px; 
-        border-radius: 15px; 
-        border: 1px solid #30363d; 
-        text-align: center; 
-        min-height: 380px; 
-        margin-bottom: 25px; 
+    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 16px;}}
+    .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
+    
+    .per-month {{ 
+        font-size: 1rem; 
+        color: #8b949e; 
+        font-weight: 400; 
+        margin-left: 5px;
+    }}
+    .currency-sub {{ 
+        font-size: 0.85rem; 
+        color: #8b949e; 
+        margin-top: -10px; 
+        margin-bottom: 15px;
     }}
 
-    header, footer {{ visibility: hidden; }}
+    .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
+    button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; }}
+    button[key="sign_out_btn"] {{ border-color: #f85149 !important; color: #f85149 !important; }}
+
+    .footer-minimal {{
+        background-color: #1e3a8a; 
+        border-top: 3px solid #3b82f6;
+        padding: 20px 15px; 
+        text-align: center; 
+        color: #e2e8f0; 
+        margin-top: 4rem;
+    
+        /* These lines cancel out the 5% padding of the parent container */
+        margin-left: -5.3% !important;
+        margin-right: -5.3% !important;
+        width: calc(100% + 10.6%) !important;
+    }}
+
+    /* FOOTER ICON SIZE */
+    .footer-icon-box img {{
+        width: 30px !important;
+        height: auto !important;
+        margin: 0 10px;
+    }}
+
+    header {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
     </style>
     """, unsafe_allow_html=True)
 
 # --- NAVBAR ---
+# Reverted Profile to be a standard text button alongside others
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile"]
+nav_cols = st.columns(len(pages))
 
-# 1. Listen for clicks via URL parameters
-params = st.query_params
-if "p" in params:
-    if params["p"] != st.session_state.page:
-        st.session_state.page = params["p"]
-        st.rerun()
-
-# 2. Build the HTML Navbar
-nav_html = '<div class="nav-wrapper">'
-for p in pages:
-    active_class = "nav-active" if st.session_state.page == p else ""
-    nav_html += f'<a href="/?p={p}" target="_self" class="nav-item {active_class}">{p}</a>'
-nav_html += '</div>'
-
-st.markdown(nav_html, unsafe_allow_html=True)
+for i, p in enumerate(pages):
+    if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
+        set_page(p)
 
 # Container for standard page content
 st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
@@ -187,11 +203,9 @@ if st.session_state.page == "Home":
     ]
     curr = testimonials[st.session_state.testimonial_index]
     tc1, tc2, tc3 = st.columns([1, 6, 1])
-    if tc1.button("←", key="prev_t"): 
-        st.session_state.testimonial_index = (st.session_state.testimonial_index - 1) % len(testimonials); st.rerun()
+    if tc1.button("←", key="prev_t"): st.session_state.testimonial_index = (st.session_state.testimonial_index - 1) % len(testimonials); st.rerun()
     tc2.markdown(f'<div class="testimonial-card"><img src="{curr["img"]}" class="testimonial-img"><div><i>"{curr["quote"]}"</i><br><b>— {curr["author"]}</b></div></div>', unsafe_allow_html=True)
-    if tc3.button("→", key="next_t"): 
-        st.session_state.testimonial_index = (st.session_state.testimonial_index + 1) % len(testimonials); st.rerun()
+    if tc3.button("→", key="next_t"): st.session_state.testimonial_index = (st.session_state.testimonial_index + 1) % len(testimonials); st.rerun()
 
 
 # 2. MAKE A PART
@@ -269,6 +283,7 @@ elif st.session_state.page == "Pricing":
 
 # 4. HELP
 elif st.session_state.page == "Help":
+    
     st.markdown("### Setting up your 3D Printer")
     st.markdown("""
     1. **Network Discovery:** Ensure your printer and computer are on the same Wi-Fi network.
@@ -362,6 +377,12 @@ st.markdown(f"""
             <div class="footer-icon-box"><img src="app/static/linkedin.png"></div>
             <div class="footer-icon-box"><img src="app/static/youtube.png"></div>
         </div>
-        <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
+        <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
+
+
+
+
+
