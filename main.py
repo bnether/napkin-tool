@@ -208,15 +208,20 @@ if st.session_state.page == "Home":
             st.image("static/production1.jpg", use_container_width=True)
     
     elif st.session_state.home_tab == "How to use":
-        st.markdown("""
-        1. **Upload or Describe:** Upload a photo of your hand-drawn sketch or just type out what you need in the specification box.
-        2. **Be Specific:** For precision engineering, mention exact dimensions or hole types (e.g. 'M5 clearance hole').
-        3. **Generate:** Click the 'Generate 3D Model' button. Our AI engine will translate your input into geometric code and generate a 3D model.
-        4. **Print:** Send your part straight to the printer using our automatic cloud slicing feature, or export your .stl file for use in any slicing software yourself.
-        """)
-        st.markdown("---")
-        st.markdown("<div style='text-align:center;'><h3>Process Overview</h3></div>", unsafe_allow_html=True)
-        st.video("https://www.youtube.com/watch?v=uTKkxl8y-BI")
+        # Create two columns to match the styling of the other tabs
+        left, right = st.columns([1, 1], gap="large")
+        
+        with left:
+            st.markdown("""
+            1. **Upload or Describe:** Upload a photo of your hand-drawn sketch or just type out what you need in the specification box.
+            2. **Be Specific:** For precision engineering, mention exact dimensions or hole types (e.g. 'M5 clearance hole').
+            3. **Generate:** Click the 'Generate 3D Model' button. Our AI engine will translate your input into geometric code and generate a 3D model.
+            4. **Print:** Send your part straight to the printer using our automatic cloud slicing feature, or export your .stl file for use in any slicing software yourself.
+            """)
+        
+        with right:
+            # Placing the video on the right to match image placement in other tabs
+            st.video("https://www.youtube.com/watch?v=uTKkxl8y-BI")
 
     elif st.session_state.home_tab == "Try now":
         left, right = st.columns([1, 1], gap="large")
@@ -442,6 +447,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
