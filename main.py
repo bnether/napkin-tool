@@ -175,6 +175,13 @@ if st.session_state.page == "Home":
             st.image("static/production1.jpg", use_container_width=True)
     
     elif st.session_state.home_tab == "How to use":
+        st.markdown("""
+        1. **Upload or Describe:** Upload a photo of your hand-drawn sketch or just type out what you need in the specification box.
+        2. **Be Specific:** For precision engineering, mention exact dimensions or hole types (e.g. 'M5 clearance hole').
+        3. **Generate:** Click the 'Generate 3D Model' button. Our AI engine will translate your input into geometric code and generate a 3D model.
+        4. **Print:** Send your part straight to the printer, or export your .stl file for use in any slicing software.
+        """)
+        st.markdown("---")
         st.markdown("<div style='text-align:center;'><h3>Process Overview</h3></div>", unsafe_allow_html=True)
         st.video("https://www.youtube.com/watch?v=uTKkxl8y-BI")
 
@@ -202,7 +209,6 @@ if st.session_state.page == "Home":
 
 
 # 2. MAKE A PART
-# 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
     col1, col2 = st.columns([1, 1], gap="large")
     with col1:
@@ -212,7 +218,7 @@ elif st.session_state.page == "Make a Part":
         # Step 2: New Selection for Sketch Type (Only shows if Sketch is selected)
         sketch_type = "3D"
         if upload_choice == "Sketch + Description":
-            sketch_type = st.radio("Sketch Type:", ["3D Perspective", "2D Flat Profile"], horizontal=True, help="Choose 2D if you drew a flat shape to be extruded.")
+            sketch_type = st.radio("Sketch Type:", ["3D", "2D (Multiple Views)"], horizontal=True, help="Choose 2D if you drew 2D projections of the part. Make sure to give at least 2 views if you are using this method.")
             uploaded_file = st.file_uploader("Upload Image", type=['jpg', 'png'], label_visibility="collapsed")
             if uploaded_file: 
                 st.image(PIL.Image.open(uploaded_file), use_container_width=True)
@@ -277,14 +283,7 @@ elif st.session_state.page == "Pricing":
 
 # 4. HELP
 elif st.session_state.page == "Help":
-    st.markdown("### How to use Napkin")
-    st.markdown("""
-    1. **Upload or Describe:** Use a photo of your hand-drawn sketch or just type out what you need in the specification box.
-    2. **Be Specific:** For precision engineering, mention exact dimensions or hole types (e.g. 'M5 clearance hole').
-    3. **Generate:** Click the 'Generate 3D Model' button. Our AI engine will translate your input into geometric code and generate a 3D model.
-    4. **Print:** Send your part straight to the printer, or export your .stl file for use in any slicing software.
-    """)
-    st.markdown("---")
+    
     st.markdown("### Setting up your 3D Printer")
     st.markdown("""
     1. **Network Discovery:** Ensure your printer and computer are on the same Wi-Fi network.
@@ -381,5 +380,6 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
