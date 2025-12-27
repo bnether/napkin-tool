@@ -368,8 +368,9 @@ elif st.session_state.page == "Profile":
 
 st.markdown('</div>', unsafe_allow_html=True) # End content padding
 
+
 # --- FOOTER ---
-st.markdown(f"""
+st.markdown("""
     <div class="footer-minimal">
         <p style="font-size: 0.9rem; margin-bottom: 15px; font-weight: 600; color: white;">FOLLOW US</p>
         <div style="display: flex; justify-content: center; align-items: center;">
@@ -377,9 +378,10 @@ st.markdown(f"""
             <div class="footer-icon-box"><img src="app/static/linkedin.png"></div>
             <div class="footer-icon-box"><img src="app/static/youtube.png"></div>
         </div>
-        <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
+        <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
