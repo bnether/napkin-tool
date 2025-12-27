@@ -36,10 +36,10 @@ st.markdown(f"""
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
 
 
-    /* Modern Minimalist Navigation Bar */
+    /* 1. Reset the Nav Bar Container */
     [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
-        background-color: #0e1117 !important; /* Matches site background */
-        border-bottom: 1px solid #30363d !important; /* Thin, subtle divider */
+        background-color: #0e1117 !important;
+        border-bottom: 1px solid #30363d !important;
         padding: 10px 5rem !important;
         width: 100vw !important;
         position: sticky;
@@ -51,35 +51,36 @@ st.markdown(f"""
         margin-right: -50vw;
     }}
 
-    /* Remove the "Box" from Nav Buttons */
+    /* 2. Target the BUTTON and the DIV around it to kill the box look */
+    [data-testid="stHorizontalBlock"] div[data-testid="stButton"] {{
+        border: none !important;
+        background: transparent !important;
+    }}
+
     [data-testid="stHorizontalBlock"] button[key^="nav_"] {{
         background-color: transparent !important;
         border: none !important;
-        box-shadow: none !important;
-        color: #8b949e !important; 
-        font-weight: 500 !important;
         border-radius: 0px !important;
-        border-bottom: 2px solid transparent !important; 
+        box-shadow: none !important;
+        color: #8b949e !important;
+        border-bottom: 2px solid transparent !important;
         transition: all 0.3s ease !important;
-        height: 3rem !important;
+        width: 100% !important;
+        height: 3.5rem !important;
     }}
 
-    /* Hover State: Light up text and show blue underline */
+    /* 3. Hover State */
     [data-testid="stHorizontalBlock"] button[key^="nav_"]:hover {{
         color: #58a6ff !important;
         border-bottom: 2px solid #58a6ff !important;
-        background-color: rgba(88, 166, 255, 0.05) !important; 
+        background-color: rgba(88, 166, 255, 0.05) !important;
     }}
 
-    /* Active State: Keep the blue underline visible */
+    /* 4. Active State (kind="primary") */
     [data-testid="stHorizontalBlock"] button[key^="nav_"][kind="primary"] {{
         color: #ffffff !important;
         border-bottom: 2px solid #3b82f6 !important;
-    }}
-
-    /* Ensure standard buttons elsewhere (like "Generate") still look like buttons */
-    .stButton>button:not([key^="nav_"]) {{
-        border-radius: 10px;
+        background-color: transparent !important;
     }}
     
 
@@ -160,6 +161,7 @@ pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profil
 nav_cols = st.columns(len(pages))
 
 for i, p in enumerate(pages):
+    # Ensure this part matches
     if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
         set_page(p)
 
@@ -412,6 +414,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
