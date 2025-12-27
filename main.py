@@ -35,8 +35,7 @@ st.markdown(f"""
     }}
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
 
-
-    /* 1. Reset the Nav Bar Container */
+    /* 1. NAVIGATION BAR CONTAINER */
     [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
         background-color: #0e1117 !important;
         border-bottom: 1px solid #30363d !important;
@@ -51,13 +50,9 @@ st.markdown(f"""
         margin-right: -50vw;
     }}
 
-    /* 2. Target the BUTTON and the DIV around it to kill the box look */
-    [data-testid="stHorizontalBlock"] div[data-testid="stButton"] {{
-        border: none !important;
-        background: transparent !important;
-    }}
-
+    /* 2. NAVBAR BUTTONS (Text only, no boxes) */
     [data-testid="stHorizontalBlock"] button[key^="nav_"] {{
+        background: transparent !important;
         background-color: transparent !important;
         border: none !important;
         border-radius: 0px !important;
@@ -65,24 +60,42 @@ st.markdown(f"""
         color: #8b949e !important;
         border-bottom: 2px solid transparent !important;
         transition: all 0.3s ease !important;
-        width: 100% !important;
         height: 3.5rem !important;
+        width: 100% !important;
     }}
 
-    /* 3. Hover State */
+    /* Navbar Hover */
     [data-testid="stHorizontalBlock"] button[key^="nav_"]:hover {{
         color: #58a6ff !important;
         border-bottom: 2px solid #58a6ff !important;
         background-color: rgba(88, 166, 255, 0.05) !important;
     }}
 
-    /* 4. Active State (kind="primary") */
+    /* Navbar Active State */
     [data-testid="stHorizontalBlock"] button[key^="nav_"][kind="primary"] {{
         color: #ffffff !important;
         border-bottom: 2px solid #3b82f6 !important;
         background-color: transparent !important;
     }}
-    
+
+    /* 3. STANDARD BUTTONS (Only applies to buttons that are NOT in the nav) */
+    .stButton>button:not([key^="nav_"]) {{ 
+        border-radius: 10px; 
+        height: 3.5em; 
+        background-color: #21262d; 
+        color: white; 
+        border: 1px solid #30363d; 
+        font-weight: 600; 
+    }}
+
+    /* Standard Primary Button */
+    .stButton>button:not([key^="nav_"])[kind="primary"] {{ 
+        background-color: #3b82f6 !important; 
+        border: none !important; 
+    }}
+
+    /* Specific Button Overrides */
+    button[key="sign_out_btn"] {{ border-color: #f85149 !important; color: #f85149 !important; }}
 
     /* Hero Section with Vertical Gradient Fade */
     .hero-container {{
@@ -125,10 +138,6 @@ st.markdown(f"""
         margin-bottom: 15px;
     }}
 
-    .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
-    button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; }}
-    button[key="sign_out_btn"] {{ border-color: #f85149 !important; color: #f85149 !important; }}
-
     .footer-minimal {{
         background-color: #1e3a8a; 
         border-top: 3px solid #3b82f6;
@@ -136,14 +145,11 @@ st.markdown(f"""
         text-align: center; 
         color: #e2e8f0; 
         margin-top: 4rem;
-    
-        /* These lines cancel out the 5% padding of the parent container */
         margin-left: -5.3% !important;
         margin-right: -5.3% !important;
         width: calc(100% + 10.6%) !important;
     }}
 
-    /* FOOTER ICON SIZE */
     .footer-icon-box img {{
         width: 30px !important;
         height: auto !important;
@@ -414,6 +420,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
