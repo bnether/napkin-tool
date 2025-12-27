@@ -24,12 +24,14 @@ def set_page(page_name):
     st.rerun()
 
 # --- CUSTOM CSS ---
-st.markdown(f"""
+st.markdown("""
     <style>
     /* Global Layout */
     .block-container {
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
+        padding-left: 5% !important;
+        padding-right: 5% !important;
     }
     .stApp { background-color: #0e1117; color: #ffffff; margin-top: 60px; }
 
@@ -79,15 +81,33 @@ st.markdown(f"""
     
     button[kind="primary"] { background-color: #3b82f6 !important; border: none !important; }
 
-    /* Pricing & Testimonials */
-    .price-card { background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 25px;}
-    .testimonial-card { background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; display: flex; align-items: center; justify-content: center; min-height: 180px;}
+    /* Pricing Card Spacing */
+    .price-card { 
+        background: #161b22; 
+        padding: 30px; 
+        border-radius: 15px; 
+        border: 1px solid #30363d; 
+        text-align: center; 
+        min-height: 380px; 
+        margin-bottom: 25px; /* <--- THIS ADDS THE GAP YOU WANTED */
+    }
+
+    .testimonial-card { 
+        background: #161b22; 
+        padding: 30px; 
+        border-radius: 15px; 
+        border: 1px solid #30363d; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        min-height: 180px;
+    }
 
     header, footer { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- NEW NAVBAR LOGIC ---
+# --- NAVBAR ---
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile"]
 
 # 1. Listen for clicks via URL parameters
@@ -355,6 +375,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
