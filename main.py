@@ -189,7 +189,7 @@ if st.session_state.page == "Home":
         left, right = st.columns([1, 1], gap="large")
         with left:
             st.markdown("### Ready to start printing?")
-            st.write("Get a free trial to turn your napkin sketches into real parts today")
+            st.write("Get a free trial to turn your napkin sketches into real parts today.")
             if st.button("Explore Pricing & Plans", type="primary"):
                 set_page("Pricing")
         with right:
@@ -380,6 +380,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
