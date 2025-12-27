@@ -278,73 +278,76 @@ if st.session_state.page == "Home":
 elif st.session_state.page == "Make a Part":
     col1, col2 = st.columns([1, 1], gap="large")
     with col1:
-        # Step 1: Selection for Input Mode
         upload_choice = st.radio("Input Mode:", ["Sketch + Description", "Text Description Only"], horizontal=True)
         
-        # Step 2: New Selection for Sketch Type (Only shows if Sketch is selected)
         sketch_type = "3D"
         if upload_choice == "Sketch + Description":
-            sketch_type = st.radio("Sketch Type:", ["3D", "2D (Multiple Views)"], horizontal=True, help="Choose 2D if you drew 2D projections of the part. Make sure to give at least 2 views if you are using this method.")
-            # We add 'jpeg' and .convert("RGB") to handle mobile camera formats
+            sketch_type = st.radio("Sketch Type:", ["3D", "2D (Multiple Views)"], horizontal=True)
             uploaded_file = st.file_uploader("Upload Image", type=['jpg', 'png', 'jpeg'], label_visibility="collapsed")
+            
             if uploaded_file: 
                 try:
-                    # This line fixes the mobile 'tick' error by stripping problematic metadata
-                    img_display = PIL.Image.open(uploaded_file).convert("RGB")
-                    st.image(img_display, use_container_width=True)
+                    # Fix 1: Open and immediately convert/resize to prevent memory crashes
+                    img = PIL.Image.open(uploaded_file).convert("RGB")
+                    
+                    # Fix 2: Mobile photos are huge (3MB+). Resize to save the browser memory.
+                    max_size = 1200
+                    if img.width > max_size or img.height > max_size:
+                        img.thumbnail((max_size, max_size))
+                    
+                    st.image(img, use_container_width=True)
+                    # Store in session state so it doesn't disappear on re-run
+                    st.session_state.current_img = img 
                 except Exception as e:
-                    st.error("Image format not supported. Try a standard photo.")
+                    st.error("Error processing image.")
         else:
             uploaded_file = None
+            st.session_state.current_img = None
 
         user_context = st.text_area("Specifications", placeholder="e.g. A 50x50mm cube...", height=150)
         generate_btn = st.button("Generate 3D Model", type="primary", use_container_width=True)
 
     with col2:
         if generate_btn:
-            with st.spinner("Generating..."):
-                try:
-                    exe = shutil.which("openscad")
-                    if not exe:
-                        st.error("Engine Error: OpenSCAD not found on server.")
-                    else:
-                        client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
-                        
-                        # Step 3: Modified Prompt to handle 2D vs 3D
-                        if sketch_type == "2D Flat Profile":
-                            type_instruction = "The provided image is a 2D flat profile. Trace this shape and use linear_extrude() to give it thickness based on the description."
+            # Check if image is required but missing
+            if upload_choice == "Sketch + Description" and 'current_img' not in st.session_state:
+                st.error("Please upload a photo first.")
+            else:
+                with st.spinner("Generating..."):
+                    try:
+                        exe = shutil.which("openscad")
+                        if not exe:
+                            st.error("Engine Error: OpenSCAD not found on server.")
                         else:
-                            type_instruction = "The provided image is a 3D perspective sketch. Interpret the depth and geometry accordingly."
-
-                        prompt = (
-                            f"Act as an OpenSCAD engineer. {type_instruction} "
-                            f"Create code based on: '{user_context}'. Use $fn=50;. "
-                            f"Provide a JSON 'METADATA' object. Format: ```openscad [code] ``` and ```json [metadata] ```"
-                        )
-                        
-                        if uploaded_file:
-                            # We re-process the image here to ensure the AI gets a clean, readable file
-                            ai_image = PIL.Image.open(uploaded_file).convert("RGB")
-                            inputs = [prompt, ai_image]
-                        else:
-                            inputs = [prompt]
-                        
-                        # Using your model preference (2.0-flash-exp)
-                        response = client.models.generate_content(model="gemini-2.0-flash-exp", contents=inputs)
-                        
-                        scad_match = re.search(r"```openscad(.*?)```", response.text, re.DOTALL)
-                        if scad_match:
-                            scad_code = scad_match.group(1).strip()
-                            with open("part.scad", "w") as f: f.write(scad_code)
-                            subprocess.run([exe, "-o", "part.stl", "part.scad"], check=True)
-                            stl_from_file("part.stl", color='#58a6ff')
+                            client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
                             
-                            st.download_button("Download STL", open("part.stl", "rb"), "part.stl", key="dl_stl", use_container_width=True)
-                            st.download_button("Print", open("part.stl", "rb"), "part.stl", key="print_stl", use_container_width=True)
-                        else:
-                            st.error("AI failed to return valid OpenSCAD code. Try being more specific.")
-                except Exception as e: 
-                    st.error(f"Error: {e}")
+                            type_instruction = "The provided image is a 2D flat profile." if sketch_type == "2D (Multiple Views)" else "The provided image is a 3D perspective sketch."
+
+                            prompt = (
+                                f"Act as an OpenSCAD engineer. {type_instruction} "
+                                f"Create code based on: '{user_context}'. Use $fn=50;. "
+                                f"Provide a JSON 'METADATA' object. Format: ```openscad [code] ```"
+                            )
+                            
+                            # Use the stored image from session state
+                            inputs = [prompt, st.session_state.current_img] if upload_choice == "Sketch + Description" else [prompt]
+                            
+                            response = client.models.generate_content(model="gemini-2.0-flash-exp", contents=inputs)
+                            
+                            scad_match = re.search(r"```openscad(.*?)```", response.text, re.DOTALL)
+                            if scad_match:
+                                scad_code = scad_match.group(1).strip()
+                                with open("part.scad", "w") as f: f.write(scad_code)
+                                subprocess.run([exe, "-o", "part.stl", "part.scad"], check=True)
+                                stl_from_file("part.stl", color='#58a6ff')
+                                
+                                st.download_button("Download STL", open("part.stl", "rb"), "part.stl", key="dl_stl", use_container_width=True)
+                                st.download_button("Print", open("part.stl", "rb"), "part.stl", key="print_stl", use_container_width=True)
+                            else:
+                                st.error("AI failed to return valid code.")
+                    except Exception as e: 
+                        st.error(f"Error: {e}")
+                    
 # 3. PRICING
 elif st.session_state.page == "Pricing":
     p1, p2, p3 = st.columns(3)
@@ -458,6 +461,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
