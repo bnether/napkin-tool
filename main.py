@@ -35,11 +35,11 @@ st.markdown(f"""
     }}
     .stApp {{ background-color: #0e1117; color: #ffffff; }}
 
-    /* 1. NAVIGATION BAR CONTAINER */
+    /* 1. THE NAVIGATION CONTAINER */
     [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
         background-color: #0e1117 !important;
         border-bottom: 1px solid #30363d !important;
-        padding: 10px 5rem !important;
+        padding: 5px 5rem !important;
         width: 100vw !important;
         position: sticky;
         top: 0;
@@ -50,54 +50,46 @@ st.markdown(f"""
         margin-right: -50vw;
     }}
 
-    /* 2. NAVBAR BUTTONS (Text only, no boxes) */
-    [data-testid="stHorizontalBlock"] button[key^="nav_"] {{
+    /* 2. KILL THE GREY BOXES (Targeting the specific Streamlit Classes) */
+    /* This targets both Primary and Secondary buttons within the Nav block */
+    [data-testid="stHorizontalBlock"] button[key^="nav_"],
+    [data-testid="stHorizontalBlock"] button[key^="nav_"]:focus,
+    [data-testid="stHorizontalBlock"] button[key^="nav_"]:active {{
         background: transparent !important;
         background-color: transparent !important;
         border: none !important;
-        border-radius: 0px !important;
         box-shadow: none !important;
         color: #8b949e !important;
         border-bottom: 2px solid transparent !important;
-        transition: all 0.3s ease !important;
+        border-radius: 0px !important;
         height: 3.5rem !important;
-        width: 100% !important;
     }}
 
-    /* Navbar Hover */
+    /* 3. HOVER & ACTIVE STATES */
     [data-testid="stHorizontalBlock"] button[key^="nav_"]:hover {{
         color: #58a6ff !important;
         border-bottom: 2px solid #58a6ff !important;
-        background-color: rgba(88, 166, 255, 0.05) !important;
     }}
 
-    /* Navbar Active State */
+    /* Active page underline */
     [data-testid="stHorizontalBlock"] button[key^="nav_"][kind="primary"] {{
         color: #ffffff !important;
         border-bottom: 2px solid #3b82f6 !important;
-        background-color: transparent !important;
     }}
 
-    /* 3. STANDARD BUTTONS (Only applies to buttons that are NOT in the nav) */
-    .stButton>button:not([key^="nav_"]) {{ 
-        border-radius: 10px; 
-        height: 3.5em; 
-        background-color: #21262d; 
-        color: white; 
-        border: 1px solid #30363d; 
-        font-weight: 600; 
+    /* 4. PROTECT OTHER BUTTONS (Generate, Download, etc.) */
+    /* We target buttons that do NOT have the 'nav_' prefix in their key */
+    div:not([data-testid="stHorizontalBlock"]) > div > div > .stButton > button,
+    .stButton > button:not([key^="nav_"]) {{
+        border-radius: 10px !important;
+        height: 3.5em !important;
+        background-color: #21262d !important;
+        color: white !important;
+        border: 1px solid #30363d !important;
+        font-weight: 600 !important;
     }}
 
-    /* Standard Primary Button */
-    .stButton>button:not([key^="nav_"])[kind="primary"] {{ 
-        background-color: #3b82f6 !important; 
-        border: none !important; 
-    }}
-
-    /* Specific Button Overrides */
-    button[key="sign_out_btn"] {{ border-color: #f85149 !important; color: #f85149 !important; }}
-
-    /* Hero Section with Vertical Gradient Fade */
+    /* Hero Section */
     .hero-container {{
         position: relative;
         width: 100%;
@@ -108,52 +100,23 @@ st.markdown(f"""
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 0px;
     }}
-    .section-content {{ position: relative; z-index: 2; width: 70%; text-align: center; }}
-    .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
+    .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
     .highlight {{ color: #58a6ff; }}
 
-    /* UI Elements */
-    .testimonial-card {{
-        background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
-        display: flex; align-items: center; justify-content: center; min-height: 180px;
-        max-width: 800px; margin: 0 auto;
-    }}
-    .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
+    /* Pricing & Testimonials */
+    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; margin-bottom: 16px; }}
+    .testimonial-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; display: flex; align-items: center; justify-content: center; }}
     
-    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 16px;}}
-    .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
-    
-    .per-month {{ 
-        font-size: 1rem; 
-        color: #8b949e; 
-        font-weight: 400; 
-        margin-left: 5px;
-    }}
-    .currency-sub {{ 
-        font-size: 0.85rem; 
-        color: #8b949e; 
-        margin-top: -10px; 
-        margin-bottom: 15px;
-    }}
-
     .footer-minimal {{
         background-color: #1e3a8a; 
         border-top: 3px solid #3b82f6;
         padding: 20px 15px; 
         text-align: center; 
-        color: #e2e8f0; 
         margin-top: 4rem;
         margin-left: -5.3% !important;
         margin-right: -5.3% !important;
         width: calc(100% + 10.6%) !important;
-    }}
-
-    .footer-icon-box img {{
-        width: 30px !important;
-        height: auto !important;
-        margin: 0 10px;
     }}
 
     header {{visibility: hidden;}}
@@ -420,6 +383,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
