@@ -35,7 +35,7 @@ st.markdown("""
     }
     .stApp { background-color: #0e1117; color: #ffffff; margin-top: 60px; }
 
-    /* --- NEW MODERN NAVBAR (NO BUTTONS) --- */
+    /* --- MODERN NAVBAR (NO BUTTONS) --- */
     .nav-wrapper {
         background-color: #0e1117;
         border-bottom: 1px solid #30363d;
@@ -69,7 +69,7 @@ st.markdown("""
         border-bottom: 2px solid #3b82f6 !important;
     }
 
-    /* Standard Buttons (Generate, Pricing, etc) */
+    /* Standard Buttons (Generate, Download, etc) */
     .stButton>button { 
         border-radius: 10px; 
         height: 3.5em; 
@@ -89,18 +89,7 @@ st.markdown("""
         border: 1px solid #30363d; 
         text-align: center; 
         min-height: 380px; 
-        margin-bottom: 25px; /* <--- THIS ADDS THE GAP YOU WANTED */
-    }
-
-    .testimonial-card { 
-        background: #161b22; 
-        padding: 30px; 
-        border-radius: 15px; 
-        border: 1px solid #30363d; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        min-height: 180px;
+        margin-bottom: 25px; 
     }
 
     header, footer { visibility: hidden; }
@@ -121,6 +110,7 @@ if "p" in params:
 nav_html = '<div class="nav-wrapper">'
 for p in pages:
     active_class = "nav-active" if st.session_state.page == p else ""
+    # Using simple HTML links removes the gray button boxes entirely
     nav_html += f'<a href="/?p={p}" target="_self" class="nav-item {active_class}">{p}</a>'
 nav_html += '</div>'
 
@@ -375,6 +365,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
