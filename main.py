@@ -202,14 +202,26 @@ if st.session_state.page == "Home":
 
 
 # 2. MAKE A PART
+# 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
     col1, col2 = st.columns([1, 1], gap="large")
     with col1:
+        # Step 1: Selection for Input Mode
         upload_choice = st.radio("Input Mode:", ["Sketch + Description", "Text Description Only"], horizontal=True)
-        uploaded_file = st.file_uploader("Upload Image", type=['jpg', 'png'], label_visibility="collapsed") if upload_choice == "Sketch + Description" else None
-        if uploaded_file: st.image(PIL.Image.open(uploaded_file), use_container_width=True)
+        
+        # Step 2: New Selection for Sketch Type (Only shows if Sketch is selected)
+        sketch_type = "3D"
+        if upload_choice == "Sketch + Description":
+            sketch_type = st.radio("Sketch Type:", ["3D Perspective", "2D Flat Profile"], horizontal=True, help="Choose 2D if you drew a flat shape to be extruded.")
+            uploaded_file = st.file_uploader("Upload Image", type=['jpg', 'png'], label_visibility="collapsed")
+            if uploaded_file: 
+                st.image(PIL.Image.open(uploaded_file), use_container_width=True)
+        else:
+            uploaded_file = None
+
         user_context = st.text_area("Specifications", placeholder="e.g. A 50x50mm cube...", height=150)
         generate_btn = st.button("Generate 3D Model", type="primary", use_container_width=True)
+
     with col2:
         if generate_btn:
             with st.spinner("Generating..."):
@@ -219,19 +231,37 @@ elif st.session_state.page == "Make a Part":
                         st.error("Engine Error: OpenSCAD not found on server.")
                     else:
                         client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
-                        prompt = f"Act as an OpenSCAD engineer. Create code based on: '{user_context}'. Use $fn=50;. Provide a JSON 'METADATA' object. Format: ```openscad [code] ``` and ```json [metadata] ```"
+                        
+                        # Step 3: Modified Prompt to handle 2D vs 3D
+                        if sketch_type == "2D Flat Profile":
+                            type_instruction = "The provided image is a 2D flat profile. Trace this shape and use linear_extrude() to give it thickness based on the description."
+                        else:
+                            type_instruction = "The provided image is a 3D perspective sketch. Interpret the depth and geometry accordingly."
+
+                        prompt = (
+                            f"Act as an OpenSCAD engineer. {type_instruction} "
+                            f"Create code based on: '{user_context}'. Use $fn=50;. "
+                            f"Provide a JSON 'METADATA' object. Format: ```openscad [code] ``` and ```json [metadata] ```"
+                        )
+                        
                         inputs = [prompt, PIL.Image.open(uploaded_file)] if uploaded_file else [prompt]
+                        
+                        # Using your model preference (2.0-flash-exp)
                         response = client.models.generate_content(model="gemini-2.0-flash-exp", contents=inputs)
+                        
                         scad_match = re.search(r"```openscad(.*?)```", response.text, re.DOTALL)
                         if scad_match:
                             scad_code = scad_match.group(1).strip()
                             with open("part.scad", "w") as f: f.write(scad_code)
                             subprocess.run([exe, "-o", "part.stl", "part.scad"], check=True)
                             stl_from_file("part.stl", color='#58a6ff')
-                            st.download_button("Download STL", open("part.stl", "rb"), "part.stl", use_container_width=True)
-                            st.download_button("Print", open("part.stl", "rb"), "part.stl", use_container_width=True)
-                except Exception as e: st.error(f"Error: {e}")
-
+                            
+                            st.download_button("Download STL", open("part.stl", "rb"), "part.stl", key="dl_stl", use_container_width=True)
+                            st.download_button("Print", open("part.stl", "rb"), "part.stl", key="print_stl", use_container_width=True)
+                        else:
+                            st.error("AI failed to return valid OpenSCAD code. Try being more specific.")
+                except Exception as e: 
+                    st.error(f"Error: {e}")
 # 3. PRICING
 elif st.session_state.page == "Pricing":
     p1, p2, p3 = st.columns(3)
@@ -351,4 +381,5 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
