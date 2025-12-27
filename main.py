@@ -94,6 +94,25 @@ st.markdown(f"""
         max-width: 800px; margin: 0 auto;
     }}
     .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
+
+    /* Pagination Dots */
+    .dot-container {{
+        text-align: center;
+        margin-top: 15px;
+    }}
+    .dot {{
+        height: 10px;
+        width: 10px;
+        margin: 0 5px;
+        background-color: #30363d;
+        border-radius: 50%;
+        display: inline-block;
+    }}
+    .dot-active {{
+        background-color: #3b82f6;
+        width: 25px;
+        border-radius: 5px;
+    }}
     
     .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 25px;}}
     .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
@@ -215,13 +234,32 @@ if st.session_state.page == "Home":
         {"quote": "The speed from a sketch to a real part is unlike anything we've used.", "author": "Lead Engineer, Precision Dynamics", "img": "https://i.pravatar.cc/150?u=1"},
         {"quote": "Fundamental change for emergency production part replacements.", "author": "Maintenance Lead, TechBuild", "img": "https://i.pravatar.cc/150?u=2"}
     ]
-    curr = testimonials[st.session_state.testimonial_index]
-    tc1, tc2, tc3 = st.columns([1, 6, 1])
-    if tc1.button("←", key="prev_t"): st.session_state.testimonial_index = (st.session_state.testimonial_index - 1) % len(testimonials); st.rerun()
-    tc2.markdown(f'<div class="testimonial-card"><img src="{curr["img"]}" class="testimonial-img"><div><i>"{curr["quote"]}"</i><br><b>— {curr["author"]}</b></div></div>', unsafe_allow_html=True)
-    if tc3.button("→", key="next_t"): st.session_state.testimonial_index = (st.session_state.testimonial_index + 1) % len(testimonials); st.rerun()
+    curr_idx = st.session_state.testimonial_index
+    curr = testimonials[curr_idx]
 
+    # Use vertical_alignment="center" to keep arrows next to the middle of the box
+    tc1, tc2, tc3 = st.columns([1, 6, 1], vertical_alignment="center")
+    
+    with tc1:
+        if st.button("←", key="prev_t"): 
+            st.session_state.testimonial_index = (curr_idx - 1) % len(testimonials)
+            st.rerun()
+            
+    with tc2:
+        st.markdown(f'<div class="testimonial-card"><img src="{curr["img"]}" class="testimonial-img"><div><i>"{curr["quote"]}"</i><br><b>— {curr["author"]}</b></div></div>', unsafe_allow_html=True)
+        
+        # Dots logic
+        dots_html = '<div class="dot-container">'
+        for i in range(len(testimonials)):
+            active_class = "dot-active" if i == curr_idx else ""
+            dots_html += f'<span class="dot {active_class}"></span>'
+        dots_html += '</div>'
+        st.markdown(dots_html, unsafe_allow_html=True)
 
+    with tc3:
+        if st.button("→", key="next_t"): 
+            st.session_state.testimonial_index = (curr_idx + 1) % len(testimonials)
+            st.rerun()
 # 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
     col1, col2 = st.columns([1, 1], gap="large")
@@ -395,6 +433,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
