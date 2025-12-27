@@ -69,7 +69,7 @@ st.markdown("""
         border-bottom: 2px solid #3b82f6 !important;
     }
 
-    /* Standard Buttons (Generate, Download, etc) */
+    /* Standard Buttons */
     .stButton>button { 
         border-radius: 10px; 
         height: 3.5em; 
@@ -81,7 +81,7 @@ st.markdown("""
     
     button[kind="primary"] { background-color: #3b82f6 !important; border: none !important; }
 
-    /* Pricing Card Spacing */
+    /* Pricing Card & Footer Styles */
     .price-card { 
         background: #161b22; 
         padding: 30px; 
@@ -91,6 +91,28 @@ st.markdown("""
         min-height: 380px; 
         margin-bottom: 25px; 
     }
+
+    .footer-minimal {
+        background-color: #1e3a8a; 
+        border-top: 3px solid #3b82f6;
+        padding: 40px 15px; 
+        text-align: center; 
+        margin-top: 4rem;
+        margin-left: -6% !important;
+        margin-right: -6% !important;
+        width: 112% !important;
+    }
+
+    .footer-icon-box {
+        width: 40px;
+        height: 40px;
+        margin: 0 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .footer-icon-box img { width: 24px; filter: brightness(0) invert(1); }
 
     header, footer { visibility: hidden; }
     </style>
@@ -354,7 +376,7 @@ elif st.session_state.page == "Profile":
 st.markdown('</div>', unsafe_allow_html=True) # End content padding
 
 # --- FOOTER ---
-st.markdown(f"""
+st.markdown("""
     <div class="footer-minimal">
         <p style="font-size: 0.9rem; margin-bottom: 15px; font-weight: 600; color: white;">FOLLOW US</p>
         <div style="display: flex; justify-content: center; align-items: center;">
@@ -362,9 +384,10 @@ st.markdown(f"""
             <div class="footer-icon-box"><img src="app/static/linkedin.png"></div>
             <div class="footer-icon-box"><img src="app/static/youtube.png"></div>
         </div>
-        <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
+        <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
