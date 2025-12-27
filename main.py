@@ -285,9 +285,15 @@ elif st.session_state.page == "Make a Part":
         sketch_type = "3D"
         if upload_choice == "Sketch + Description":
             sketch_type = st.radio("Sketch Type:", ["3D", "2D (Multiple Views)"], horizontal=True, help="Choose 2D if you drew 2D projections of the part. Make sure to give at least 2 views if you are using this method.")
-            uploaded_file = st.file_uploader("Upload Image", type=['jpg', 'png'], label_visibility="collapsed")
+            # We add 'jpeg' and .convert("RGB") to handle mobile camera formats
+            uploaded_file = st.file_uploader("Upload Image", type=['jpg', 'png', 'jpeg'], label_visibility="collapsed")
             if uploaded_file: 
-                st.image(PIL.Image.open(uploaded_file), use_container_width=True)
+                try:
+                    # This line fixes the mobile 'tick' error by stripping problematic metadata
+                    img_display = PIL.Image.open(uploaded_file).convert("RGB")
+                    st.image(img_display, use_container_width=True)
+                except Exception as e:
+                    st.error("Image format not supported. Try a standard photo.")
         else:
             uploaded_file = None
 
@@ -316,7 +322,12 @@ elif st.session_state.page == "Make a Part":
                             f"Provide a JSON 'METADATA' object. Format: ```openscad [code] ``` and ```json [metadata] ```"
                         )
                         
-                        inputs = [prompt, PIL.Image.open(uploaded_file)] if uploaded_file else [prompt]
+                        if uploaded_file:
+                            # We re-process the image here to ensure the AI gets a clean, readable file
+                            ai_image = PIL.Image.open(uploaded_file).convert("RGB")
+                            inputs = [prompt, ai_image]
+                        else:
+                            inputs = [prompt]
                         
                         # Using your model preference (2.0-flash-exp)
                         response = client.models.generate_content(model="gemini-2.0-flash-exp", contents=inputs)
@@ -447,6 +458,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
