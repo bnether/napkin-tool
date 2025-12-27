@@ -27,112 +27,84 @@ def set_page(page_name):
 st.markdown(f"""
     <style>
     /* Global Layout */
-    .block-container {{
+    .block-container {
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
-        padding-left: 5% !important;
-        padding-right: 5% !important;
-    }}
-    .stApp {{ background-color: #0e1117; color: #ffffff; }}
+    }
+    .stApp { background-color: #0e1117; color: #ffffff; margin-top: 60px; }
 
-    /* 1. THE NAVIGATION CONTAINER */
-    [data-testid="stHorizontalBlock"]:has(button[key^="nav_"]) {{
-        background-color: #0e1117 !important;
-        border-bottom: 1px solid #30363d !important;
-        padding: 5px 5rem !important;
-        width: 100vw !important;
-        position: sticky;
+    /* --- NEW MODERN NAVBAR (NO BUTTONS) --- */
+    .nav-wrapper {
+        background-color: #0e1117;
+        border-bottom: 1px solid #30363d;
+        width: 100vw;
+        position: fixed;
         top: 0;
-        z-index: 999;
-        left: 50%;
-        right: 50%;
-        margin-left: -50vw;
-        margin-right: -50vw;
-    }}
+        left: 0;
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
 
-    /* 2. KILL THE GREY BOXES (Targeting the specific Streamlit Classes) */
-    /* This targets both Primary and Secondary buttons within the Nav block */
-    [data-testid="stHorizontalBlock"] button[key^="nav_"],
-    [data-testid="stHorizontalBlock"] button[key^="nav_"]:focus,
-    [data-testid="stHorizontalBlock"] button[key^="nav_"]:active {{
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
+    .nav-item {
+        padding: 18px 25px;
         color: #8b949e !important;
-        border-bottom: 2px solid transparent !important;
-        border-radius: 0px !important;
-        height: 3.5rem !important;
-    }}
+        text-decoration: none !important;
+        font-size: 15px;
+        font-weight: 500;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
 
-    /* 3. HOVER & ACTIVE STATES */
-    [data-testid="stHorizontalBlock"] button[key^="nav_"]:hover {{
+    .nav-item:hover {
         color: #58a6ff !important;
-        border-bottom: 2px solid #58a6ff !important;
-    }}
+        border-bottom: 2px solid #58a6ff;
+    }
 
-    /* Active page underline */
-    [data-testid="stHorizontalBlock"] button[key^="nav_"][kind="primary"] {{
+    .nav-active {
         color: #ffffff !important;
         border-bottom: 2px solid #3b82f6 !important;
-    }}
+    }
 
-    /* 4. PROTECT OTHER BUTTONS (Generate, Download, etc.) */
-    /* We target buttons that do NOT have the 'nav_' prefix in their key */
-    div:not([data-testid="stHorizontalBlock"]) > div > div > .stButton > button,
-    .stButton > button:not([key^="nav_"]) {{
-        border-radius: 10px !important;
-        height: 3.5em !important;
-        background-color: #21262d !important;
-        color: white !important;
-        border: 1px solid #30363d !important;
-        font-weight: 600 !important;
-    }}
-
-    /* Hero Section */
-    .hero-container {{
-        position: relative;
-        width: 100%;
-        height: 550px;
-        background-image: linear-gradient(to bottom, rgba(14, 17, 23, 0) 50%, rgba(14, 17, 23, 1) 100%), url("app/static/home1.jpg");
-        background-size: cover;
-        background-position: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }}
-    .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
-    .highlight {{ color: #58a6ff; }}
+    /* Standard Buttons (Generate, Pricing, etc) */
+    .stButton>button { 
+        border-radius: 10px; 
+        height: 3.5em; 
+        background-color: #21262d; 
+        color: white; 
+        border: 1px solid #30363d; 
+        font-weight: 600; 
+    }
+    
+    button[kind="primary"] { background-color: #3b82f6 !important; border: none !important; }
 
     /* Pricing & Testimonials */
-    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; margin-bottom: 16px; }}
-    .testimonial-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; display: flex; align-items: center; justify-content: center; }}
-    
-    .footer-minimal {{
-        background-color: #1e3a8a; 
-        border-top: 3px solid #3b82f6;
-        padding: 20px 15px; 
-        text-align: center; 
-        margin-top: 4rem;
-        margin-left: -5.3% !important;
-        margin-right: -5.3% !important;
-        width: calc(100% + 10.6%) !important;
-    }}
+    .price-card { background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 25px;}
+    .testimonial-card { background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; display: flex; align-items: center; justify-content: center; min-height: 180px;}
 
-    header {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
+    header, footer { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- NAVBAR ---
-# Reverted Profile to be a standard text button alongside others
+# --- NEW NAVBAR LOGIC ---
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile"]
-nav_cols = st.columns(len(pages))
 
-for i, p in enumerate(pages):
-    # Ensure this part matches
-    if nav_cols[i].button(p, use_container_width=True, key=f"nav_{p}", type="primary" if st.session_state.page == p else "secondary"):
-        set_page(p)
+# 1. Listen for clicks via URL parameters
+params = st.query_params
+if "p" in params:
+    if params["p"] != st.session_state.page:
+        st.session_state.page = params["p"]
+        st.rerun()
+
+# 2. Build the HTML Navbar
+nav_html = '<div class="nav-wrapper">'
+for p in pages:
+    active_class = "nav-active" if st.session_state.page == p else ""
+    nav_html += f'<a href="/?p={p}" target="_self" class="nav-item {active_class}">{p}</a>'
+nav_html += '</div>'
+
+st.markdown(nav_html, unsafe_allow_html=True)
 
 # Container for standard page content
 st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
@@ -383,6 +355,7 @@ st.markdown(f"""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
