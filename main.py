@@ -374,11 +374,11 @@ elif st.session_state.page == "Make a Part":
                 entry = f"\n/*\n[STATUS]: {label}\n[PROMPT]: {st.session_state.last_prompt}\n[LOGIC]: {st.session_state.last_logic}\n[CODE]:\n{st.session_state.last_code}\n*/\n"
                 with open(fn, "a") as f: f.write(entry)
 
-            if fb_col1.button("✅ Correct", use_container_width=True):
+            if fb_col1.button("Correct", use_container_width=True):
                 log_feedback("VERIFIED")
-                st.success("Thank you")
+                st.success("Verified")
 
-            if fb_col2.button("❌ Incorrect", use_container_width=True):
+            if fb_col2.button("Incorrect", use_container_width=True):
                 log_feedback("FAILED")
                 st.warning("Logged for manual review")
                     
@@ -495,6 +495,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
