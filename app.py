@@ -8,14 +8,29 @@ from datetime import datetime
 # Paste your Gemini API Key here
 client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
 
-# 2. LOAD YOUR PHOTO
-try:
-    img = Image.open("sketch.jpg")
-except FileNotFoundError:
-    print("Error: 'sketch.jpg' not found in this folder.")
-    exit()
+# 2. USER INPUT & LOAD PHOTO
+st.title("AI Mechanical Engineer")
 
-print("Sending sketch to Gemini 3 Flash (Latest 2025 Model)...")
+# Add the text input here
+user_prompt = st.text_input("What are we building?", placeholder="e.g., A 50mm cube with an M8 hole through the center")
+
+try:
+    # If you are using Streamlit's file uploader, use this:
+    uploaded_file = st.file_uploader("Upload your sketch", type=['jpg', 'jpeg', 'png'])
+    
+    if uploaded_file:
+        img = Image.open(uploaded_file)
+        # We save it locally so the AI can process 'sketch.jpg' as per your original code
+        img.save("sketch.jpg")
+    else:
+        # Fallback for manual testing if no file is uploaded yet
+        img = Image.open("sketch.jpg") 
+        
+except FileNotFoundError:
+    st.warning("Please upload a 'sketch.jpg' or provide a prompt to begin.")
+    st.stop() # Stops the script until an image is provided
+
+print(f"Sending request: {user_prompt}")
 
 
 
@@ -54,9 +69,8 @@ INSTRUCTIONS:
 
 response = client.models.generate_content(
     model="gemini-3-flash-preview", 
-    contents=[prompt_text, img]
+    contents=[prompt_text, user_prompt, img] # Added user_prompt here
 )
-
 
 # 4. PARSE AND SAVE
 full_response = response.text
@@ -136,5 +150,6 @@ with col1:
 with col2:
     if st.button("❌ Needs Fixes", use_container_width=True):
         save_feedback("FAILED")
+
 
 
