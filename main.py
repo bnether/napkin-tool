@@ -399,24 +399,42 @@ elif st.session_state.page == "Make a Part":
             
             if fb_col1.button("Correct", use_container_width=True):
                 log_feedback_to_csv("VERIFIED")
-                st.success("Verified ✅")
-                st.balloons()
+                st.success("Verified")
 
             if fb_col2.button("Incorrect", use_container_width=True):
                 log_feedback_to_csv("FAILED")
-                st.warning("Logged for manual review ❌")
+                st.warning("Logged for manual review")
 
-            # --- ALWAYS VISIBLE DOWNLOAD BUTTON ---
+            # --- DOWNLOAD & RESET SECTION ---
             st.markdown("<br>", unsafe_allow_html=True)
+            
             if os.path.exists("feedback_log.csv"):
-                with open("feedback_log.csv", "rb") as f:
-                    st.download_button(
-                        label="📊 Download Feedback Log (for LibreOffice)",
-                        data=f,
-                        file_name="napkin_feedback.csv",
-                        mime="text/csv",
-                        use_container_width=True
-                    )
+                log_col1, log_col2 = st.columns([3, 1])
+                
+                with log_col1:
+                    with open("feedback_log.csv", "rb") as f:
+                        st.download_button(
+                            label="📊 Download Feedback Log",
+                            data=f,
+                            file_name="napkin_feedback.csv",
+                            mime="text/csv",
+                            use_container_width=True
+                        )
+                
+                with log_col2:
+                    # Check if we are in "Confirm Mode"
+                    if st.session_state.get('delete_confirm', False):
+                        if st.button("⚠️ SURE?", type="primary", use_container_width=True):
+                            os.remove("feedback_log.csv")
+                            st.session_state.delete_confirm = False
+                            st.rerun()
+                        if st.button("Cancel", use_container_width=True):
+                            st.session_state.delete_confirm = False
+                            st.rerun()
+                    else:
+                        if st.button("🗑️ Reset", type="secondary", use_container_width=True):
+                            st.session_state.delete_confirm = True
+                            st.rerun()
             else:
                 st.button("📊 No Feedback Log Available Yet", disabled=True, use_container_width=True)
 
@@ -535,6 +553,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
