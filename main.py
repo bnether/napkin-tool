@@ -150,7 +150,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # --- NAVBAR LOGIC (Using URL Parameters for smooth switching) ---
-pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile"]
+pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile", "Admin"]
 
 params = st.query_params
 if "p" in params:
@@ -168,6 +168,30 @@ st.markdown(nav_html, unsafe_allow_html=True)
 
 # Container for standard page content
 st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
+
+
+# --- ADMIN HELPER FUNCTIONS ---
+def save_to_gold_standard(prompt, logic, code):
+    """Formats and appends verified code to the training file."""
+    # Ensure code has real newlines
+    clean_code = code.replace(" [NEWLINE] ", "\n")
+    entry = (
+        f"\n/* REFERENCE EXAMPLE\n"
+        f"PROMPT: {prompt}\n"
+        f"LOGIC: {logic}\n"
+        f"CODE:\n{clean_code}\n"
+        f"*/\n"
+    )
+    with open("ai_training.scad", "a") as f:
+        f.write(entry)
+    return True
+
+def remove_log_entry(index):
+    """Removes a verified row from the feedback CSV."""
+    if os.path.exists("feedback_log.csv"):
+        df = pd.read_csv("feedback_log.csv")
+        df = df.drop(df.index[index])
+        df.to_csv("feedback_log.csv", index=False)
 
 # --- PAGE ROUTING ---
 
@@ -343,18 +367,25 @@ elif st.session_state.page == "Make a Part":
                         else:
                             client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
                             
+                            # --- LOAD CONTEXT (Libraries + Training) ---
                             library_context = ""
                             if os.path.exists("libraries"):
                                 for fn in os.listdir("libraries"):
                                     if fn.endswith(".scad"):
                                         with open(os.path.join("libraries", fn), "r") as f:
                                             library_context += f"\n--- LIBRARY: {fn} ---\n{f.read()}\n"
+                            
+                            training_context = ""
+                            if os.path.exists("ai_training.scad"):
+                                with open("ai_training.scad", "r") as f:
+                                    training_context = f"\n--- GOLD STANDARD EXAMPLES ---\n{f.read()}\n"
 
                             type_instruction = "The provided image is a 2D flat profile." if sketch_type == "2D (Multiple Views)" else "The provided image is a 3D perspective sketch."
 
                             prompt = (
                                 f"Act as a Senior Mechanical Engineer. {type_instruction} "
                                 f"KNOWLEDGE BASE: {library_context} "
+                                f"REFERENCE EXAMPLES: {training_context} " 
                                 f"Create code based on: '{user_context}'. Use $fn=50;. "
                                 f"INSTRUCTIONS: For holes, you MUST use difference() {{ base(); holes(); }}. "
                                 f"Format: [DECODED LOGIC]: ... [RESULT_CODE]: ```openscad [code] ```"
@@ -540,6 +571,60 @@ elif st.session_state.page == "Profile":
 
 st.markdown('</div>', unsafe_allow_html=True) # End content padding
 
+# 8. ADMIN VERIFICATION SYSTEM
+elif st.session_state.page == "Admin":
+    st.markdown("### 🛠️ Gold Standard Verification")
+    
+    # Check if log exists
+    if not os.path.exists("feedback_log.csv") or os.stat("feedback_log.csv").st_size < 50: # Check if empty
+        st.info("No pending feedback to review. Your 'To-Do' list is empty!")
+    else:
+        df = pd.read_csv("feedback_log.csv")
+        
+        # UI for selection
+        selection = st.selectbox("Select entry to verify:", range(len(df)), 
+                                format_func=lambda x: f"{df.iloc[x]['Status']} | {df.iloc[x]['Prompt'][:60]}...")
+        
+        row = df.iloc[selection]
+        
+        col_edit, col_view = st.columns([1, 1], gap="large")
+        
+        with col_edit:
+            st.markdown("#### 1. Correct the Data")
+            edit_prompt = st.text_input("Refine Prompt", row['Prompt'])
+            edit_logic = st.text_area("Refine Logic", row['Logic'])
+            # Convert [NEWLINE] back to actual enters for editing
+            raw_code = str(row['Code']).replace(" [NEWLINE] ", "\n")
+            edit_code = st.text_area("Fix Code", raw_code, height=400)
+            
+            if st.button("🚀 Preview Correction", use_container_width=True):
+                with open("admin_preview.scad", "w") as f:
+                    f.write(edit_code)
+                
+                exe = shutil.which("openscad")
+                if exe:
+                    my_env = os.environ.copy()
+                    my_env["OPENSCADPATH"] = os.path.join(os.getcwd(), "libraries")
+                    subprocess.run([exe, "-o", "admin_preview.stl", "admin_preview.scad"], env=my_env)
+                    st.session_state.admin_preview_ready = True
+                else:
+                    st.error("OpenSCAD not found.")
+
+        with col_view:
+            st.markdown("#### 2. Verify 3D Result")
+            if st.session_state.get('admin_preview_ready'):
+                stl_from_file("admin_preview.stl", color='#3b82f6')
+            else:
+                st.info("The 3D preview will appear here after you click 'Preview Correction'.")
+            
+            st.markdown("---")
+            if st.button("✅ ADD TO GOLD STANDARD", type="primary", use_container_width=True):
+                save_to_gold_standard(edit_prompt, edit_logic, edit_code)
+                remove_log_entry(selection)
+                st.success("Training file updated! Row removed from CSV.")
+                # Clear preview state for next entry
+                st.session_state.admin_preview_ready = False
+                st.rerun()
 
 # --- FOOTER ---
 st.markdown("""
@@ -553,6 +638,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
