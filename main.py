@@ -569,38 +569,30 @@ elif st.session_state.page == "Profile":
         if st.button("Save Changes"):
             st.success("Profile Updated!")
 
-st.markdown('</div>', unsafe_allow_html=True) # End content padding
-
 # 8. ADMIN VERIFICATION SYSTEM
 elif st.session_state.page == "Admin":
     st.markdown("### 🛠️ Gold Standard Verification")
     
-    # Check if log exists
-    if not os.path.exists("feedback_log.csv") or os.stat("feedback_log.csv").st_size < 50: # Check if empty
+    if not os.path.exists("feedback_log.csv") or os.stat("feedback_log.csv").st_size < 50:
         st.info("No pending feedback to review. Your 'To-Do' list is empty!")
     else:
         df = pd.read_csv("feedback_log.csv")
-        
-        # UI for selection
         selection = st.selectbox("Select entry to verify:", range(len(df)), 
                                 format_func=lambda x: f"{df.iloc[x]['Status']} | {df.iloc[x]['Prompt'][:60]}...")
         
         row = df.iloc[selection]
-        
         col_edit, col_view = st.columns([1, 1], gap="large")
         
         with col_edit:
             st.markdown("#### 1. Correct the Data")
             edit_prompt = st.text_input("Refine Prompt", row['Prompt'])
             edit_logic = st.text_area("Refine Logic", row['Logic'])
-            # Convert [NEWLINE] back to actual enters for editing
             raw_code = str(row['Code']).replace(" [NEWLINE] ", "\n")
             edit_code = st.text_area("Fix Code", raw_code, height=400)
             
             if st.button("🚀 Preview Correction", use_container_width=True):
                 with open("admin_preview.scad", "w") as f:
                     f.write(edit_code)
-                
                 exe = shutil.which("openscad")
                 if exe:
                     my_env = os.environ.copy()
@@ -622,25 +614,19 @@ elif st.session_state.page == "Admin":
                 save_to_gold_standard(edit_prompt, edit_logic, edit_code)
                 remove_log_entry(selection)
                 st.success("Training file updated! Row removed from CSV.")
-                # Clear preview state for next entry
                 st.session_state.admin_preview_ready = False
                 st.rerun()
+
+# --- CLOSE CONTENT PADDING ---
+# This must be outside of all the IF/ELIF blocks so it closes regardless of the page
+st.markdown('</div>', unsafe_allow_html=True) 
 
 # --- FOOTER ---
 st.markdown("""
     <div class="footer-minimal">
-        <p style="font-size: 0.9rem; margin-bottom: 15px; font-weight: 600; color: white;">FOLLOW US</p>
-        <div style="display: flex; justify-content: center; align-items: center;">
-            <div class="footer-icon-box"><img src="app/static/insta.png"></div>
-            <div class="footer-icon-box"><img src="app/static/linkedin.png"></div>
-            <div class="footer-icon-box"><img src="app/static/youtube.png"></div>
-        </div>
-        <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
+        ... (Your Footer HTML) ...
     </div>
     """, unsafe_allow_html=True)
-
-
-
 
 
 
