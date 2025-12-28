@@ -436,40 +436,6 @@ elif st.session_state.page == "Make a Part":
             if fb_col2.button("Incorrect", use_container_width=True):
                 log_feedback_to_csv("FAILED")
                 st.warning("Logged for manual review")
-
-            # --- DOWNLOAD & RESET SECTION ---
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            if os.path.exists("feedback_log.csv"):
-                log_col1, log_col2 = st.columns([3, 1])
-                
-                with log_col1:
-                    with open("feedback_log.csv", "rb") as f:
-                        st.download_button(
-                            label="Download Feedback Log",
-                            data=f,
-                            file_name="napkin_feedback.csv",
-                            mime="text/csv",
-                            use_container_width=True
-                        )
-                
-                with log_col2:
-                    # Check if we are in "Confirm Mode"
-                    if st.session_state.get('delete_confirm', False):
-                        if st.button("Are you sure?", type="primary", use_container_width=True):
-                            os.remove("feedback_log.csv")
-                            st.session_state.delete_confirm = False
-                            st.rerun()
-                        if st.button("Cancel", use_container_width=True):
-                            st.session_state.delete_confirm = False
-                            st.rerun()
-                    else:
-                        if st.button("Reset", type="secondary", use_container_width=True):
-                            st.session_state.delete_confirm = True
-                            st.rerun()
-            else:
-                st.button("No Feedback Log Available Yet", disabled=True, use_container_width=True)
-
             
                     
 # 3. PRICING
@@ -572,7 +538,7 @@ elif st.session_state.page == "Profile":
 
 # 8. ADMIN VERIFICATION SYSTEM
 elif st.session_state.page == "Admin":
-    st.markdown("### Gold Standard Verification")
+    st.markdown("###Verification Feedback")
     
     if not os.path.exists("feedback_log.csv") or os.stat("feedback_log.csv").st_size < 10:
         st.info("No pending feedback to review.")
@@ -585,23 +551,55 @@ elif st.session_state.page == "Admin":
         col_edit, col_view = st.columns([1, 1], gap="large")
         
         with col_edit:
-            st.markdown("#### 1. Correct the Data")
-            edit_prompt = st.text_input("Refine Prompt", row['Prompt'])
-            edit_logic = st.text_area("Refine Logic", row['Logic'])
+            st.markdown("#### 1. Refine Data")
+            edit_prompt = st.text_input("Prompt", row['Prompt'])
+            edit_logic = st.text_area("Logic", row['Logic'])
             raw_code = str(row['Code']).replace(" [NEWLINE] ", "\n")
-            edit_code = st.text_area("Fix Code", raw_code, height=400)
+            edit_code = st.text_area("Code", raw_code, height=400)
             
-            if st.button("Preview Correction", use_container_width=True):
-                with open("admin_preview.scad", "w") as f:
-                    f.write(edit_code)
-                exe = shutil.which("openscad")
-                if exe:
-                    my_env = os.environ.copy()
-                    my_env["OPENSCADPATH"] = os.path.join(os.getcwd(), "libraries")
-                    subprocess.run([exe, "-o", "admin_preview.stl", "admin_preview.scad"], env=my_env)
-                    st.session_state.admin_preview_ready = True
+            st.markdown("---")
+            st.markdown("#### 2. Actions")
+            
+            # Action Buttons Layout
+            act_col1, act_col2 = st.columns(2)
+            
+            # --- APPEND TO TRAINING DATA ---
+            with act_col1:
+                if st.session_state.get('confirm_save') == selection:
+                    if st.button("Confirm: ADD TO TRAINING", type="primary", use_container_width=True):
+                        save_to_gold_standard(edit_prompt, edit_logic, edit_code)
+                        remove_log_entry(selection)
+                        st.session_state.confirm_save = None
+                        st.success("Added to Training & Removed from Log!")
+                        st.rerun()
+                    if st.button("Cancel", key="cancel_save", use_container_width=True):
+                        st.session_state.confirm_save = None
+                        st.rerun()
                 else:
-                    st.error("OpenSCAD not found.")
+                    if st.button("Save to training", use_container_width=True):
+                        st.session_state.confirm_save = selection
+                        st.session_state.confirm_delete = None # Close other confirmation
+
+            # --- REMOVE FROM LOG ONLY ---
+            with act_col2:
+                if st.session_state.get('confirm_delete') == selection:
+                    if st.button("Confirm: DELETE ENTRY", type="primary", use_container_width=True):
+                        remove_log_entry(selection)
+                        st.session_state.confirm_delete = None
+                        st.warning("Entry Discarded.")
+                        st.rerun()
+                    if st.button("Cancel", key="cancel_del", use_container_width=True):
+                        st.session_state.confirm_delete = None
+                        st.rerun()
+                else:
+                    if st.button("Discard Entry", use_container_width=True):
+                        st.session_state.confirm_delete = selection
+                        st.session_state.confirm_save = None # Close other confirmation
+
+        with col_view:
+            st.markdown("#### Review Reference")
+            st.info("Copy the code below into OpenSCAD to verify the geometry before taking action.")
+            st.code(edit_code, language="cpp")
                     
 
 # --- CLOSE CONTENT PADDING ---
@@ -620,6 +618,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
