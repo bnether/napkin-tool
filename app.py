@@ -43,29 +43,38 @@ response = client.models.generate_content(
         KNOWLEDGE BASE (Libraries and Examples):
         {all_library_context}
 
+        """
         INSTRUCTIONS:
         1. Scan the KNOWLEDGE BASE for relevant modules and 'AI REFERENCE EXAMPLES'.
-        2. Follow the coordinate logic shown in the examples to ensure holes are centered correctly.
+        2. Follow the coordinate logic shown in the examples (e.g., centering math).
         3. Always include 'include <libraries/FILENAME.scad>;' for any library used.
-        4. Output ONLY raw code.""",
+        4. Output your response in this EXACT format:
+           [DECODED LOGIC]: (A one-sentence summary of the math/standards used)
+           [RESULT_CODE]: (The raw OpenSCAD code)
+           """,
         img
     ]
 )
 
 
-# 4. SAVE AND CLEAN
-scad_code = response.text
+# 4. PARSE AND SAVE
+full_response = response.text
 
-# THE "SAFE STUFF": Aggressively remove Markdown formatting
-clean_code = scad_code.replace("```openscad", "") \
-                      .replace("```scad", "") \
-                      .replace("```", "") \
-                      .strip()
+# Split the response into Logic and Code
+if "[RESULT_CODE]:" in full_response:
+    parts = full_response.split("[RESULT_CODE]:")
+    decoded_logic = parts[0].replace("[DECODED LOGIC]:", "").strip()
+    scad_code = parts[1].strip()
+else:
+    # Fallback if AI forgets the tag
+    decoded_logic = "Standard generation"
+    scad_code = full_response
 
-# DEBUG: Print the code to your console so you can see what the AI wrote
-print("\n--- GENERATED CODE START ---")
-print(clean_code)
-print("--- GENERATED CODE END ---\n")
+# Aggressively remove Markdown formatting
+clean_code = scad_code.replace("```openscad", "").replace("```scad", "").replace("```", "").strip()
+
+# Store the logic in a variable so you can use it for your 'Yes' button later
+print(f"AI LOGIC: {decoded_logic}")
 
 with open("part.scad", "w") as f:
     f.write(clean_code)
@@ -92,5 +101,6 @@ except subprocess.CalledProcessError as e:
     # Check if it's a library path error
     if "libraries/iso_standards.scad" in e.stderr:
         print("\nSUGGESTION: OpenSCAD can't find your library. Check your folder name and 'include' path.")
+
 
 
