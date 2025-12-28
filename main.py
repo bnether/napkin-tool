@@ -538,7 +538,7 @@ elif st.session_state.page == "Profile":
 
 # 8. ADMIN VERIFICATION SYSTEM
 elif st.session_state.page == "Admin":
-    st.markdown("###Verification Feedback")
+    st.markdown("Verification Feedback")
     
     if not os.path.exists("feedback_log.csv") or os.stat("feedback_log.csv").st_size < 10:
         st.info("No pending feedback to review.")
@@ -551,14 +551,14 @@ elif st.session_state.page == "Admin":
         col_edit, col_view = st.columns([1, 1], gap="large")
         
         with col_edit:
-            st.markdown("#### 1. Refine Data")
+            st.markdown("#### Data")
             edit_prompt = st.text_input("Prompt", row['Prompt'])
             edit_logic = st.text_area("Logic", row['Logic'])
             raw_code = str(row['Code']).replace(" [NEWLINE] ", "\n")
             edit_code = st.text_area("Code", raw_code, height=400)
             
             st.markdown("---")
-            st.markdown("#### 2. Actions")
+            st.markdown("#### Actions")
             
             # Action Buttons Layout
             act_col1, act_col2 = st.columns(2)
@@ -618,6 +618,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
