@@ -1,6 +1,8 @@
 import os
+import streamlit as st
 from google import genai
 from PIL import Image
+from datetime import datetime
 
 # 1. SETUP
 # Paste your Gemini API Key here
@@ -47,6 +49,7 @@ INSTRUCTIONS:
 4. Output your response in this EXACT format:
    [DECODED LOGIC]: (A one-sentence summary of the math/standards used)
    [RESULT_CODE]: (The raw OpenSCAD code)
+"5. CRITICAL: For holes or subtractions, you MUST wrap the code in a difference() block. The first object is the base, and all following objects are the holes to be removed."
 """
 
 response = client.models.generate_content(
@@ -80,26 +83,58 @@ with open("part.scad", "w") as f:
 # 5. RENDER TO STL
 import subprocess
 
-print("Attempting to render STL...")
+st.subheader("3D Preview & Feedback")
+
 try:
-    # We add 'capture_output=True' to catch the specific OpenSCAD error message
+    # Use 'openscad' without path if it's in your system PATH
     result = subprocess.run(
-        ['/usr/bin/openscad', '-o', 'part.stl', 'part.scad'], 
+        ['openscad', '-o', 'part.stl', 'part.scad'], 
         capture_output=True, 
         text=True, 
         check=True
     )
-    print("--- SUCCESS: 'part.stl' created ---")
+    st.success("✅ STL Rendered Successfully!")
+    # Optional: If you want to show the code to the user
+    with st.expander("View Generated OpenSCAD Code"):
+        st.code(clean_code, language='cpp')
 
 except subprocess.CalledProcessError as e:
-    print("\n!!! OPENSCAD RENDER ERROR !!!")
-    # This prints the ACTUAL error from OpenSCAD (e.g., "File not found" or "Syntax error")
-    print(f"Error Message: {e.stderr}")
+    st.error(f"OpenSCAD Error: {e.stderr}")
+
+# 6. USER FEEDBACK SYSTEM
+st.divider()
+st.write("### Is this part correct?")
+col1, col2 = st.columns(2)
+
+def save_feedback(category):
+    os.makedirs("feedback", exist_ok=True)
+    filename = "verified.scad" if category == "VERIFIED" else "review_needed.scad"
+    path = os.path.join("feedback", filename)
     
-    # Check if it's a library path error
-    if "libraries/iso_standards.scad" in e.stderr:
-        print("\nSUGGESTION: OpenSCAD can't find your library. Check your folder name and 'include' path.")
+    # Format the entry for your future training
+    entry = f"""
+/* ===========================================================
+[USER_STATUS]: {category}
+[TIMESTAMP]: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+[DECODED LOGIC]: {decoded_logic}
+[RESULT CODE]:
+{clean_code}
+=========================================================== */
+"""
+    with open(path, "a") as f:
+        f.write(entry)
+    
+    if category == "VERIFIED":
+        st.toast("Awesome! Added to verified list.", icon="🚀")
+    else:
+        st.toast("Logged for engineering review.", icon="🔧")
 
+with col1:
+    if st.button("✅ Perfect", use_container_width=True):
+        save_feedback("VERIFIED")
 
+with col2:
+    if st.button("❌ Needs Fixes", use_container_width=True):
+        save_feedback("FAILED")
 
 
