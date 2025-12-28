@@ -70,6 +70,14 @@ function iso7089_thickness(d)   = lookup(d, ISO_7089_DATA, 3);
 // SECTION 3: UTILITY MODULES (Physical Implementation)
 // =================================================================
 
+// PLAIN CLEARANCE HOLE (ISO 273)
+// Use this for simple pass-through bolts without heads or recesses.
+module iso_273_clearance(d, h, fit="medium") {
+    h_dia = iso273_hole(d, fit);
+    // h_total * 3 and center=true ensures it cuts through any surface
+    cylinder(d = h_dia, h = h, center = true, $fn = 32);
+}
+
 // SOCKET HEAD COUNTERBORE (ISO 4762 + ISO 273)
 module hole_socket_head(d, h_total, fit="medium", extra_depth=0) {
     h_dia = iso273_hole(d, fit);
@@ -101,3 +109,4 @@ module hole_nut_trap(d, depth_extra=0) {
     rotate([0, 0, 30])
         cylinder(d = s / cos(30), h = m + depth_extra, $fn = 6);
 }
+
