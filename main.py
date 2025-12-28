@@ -287,16 +287,12 @@ elif st.session_state.page == "Make a Part":
             
             if uploaded_file: 
                 try:
-                    # Fix 1: Open and immediately convert/resize to prevent memory crashes
                     img = PIL.Image.open(uploaded_file).convert("RGB")
-                    
-                    # Fix 2: Mobile photos are huge (3MB+). Resize to save the browser memory.
                     max_size = 1200
                     if img.width > max_size or img.height > max_size:
                         img.thumbnail((max_size, max_size))
                     
                     st.image(img, use_container_width=True)
-                    # Store in session state so it doesn't disappear on re-run
                     st.session_state.current_img = img 
                 except Exception as e:
                     st.error("Error processing image.")
@@ -309,7 +305,6 @@ elif st.session_state.page == "Make a Part":
 
     with col2:
         if generate_btn:
-            # Check if image is required but missing
             if upload_choice == "Sketch + Description" and 'current_img' not in st.session_state:
                 st.error("Please upload a photo first.")
             else:
@@ -321,32 +316,72 @@ elif st.session_state.page == "Make a Part":
                         else:
                             client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
                             
+                            # --- LOAD LIBRARIES FOR CONTEXT ---
+                            library_context = ""
+                            if os.path.exists("libraries"):
+                                for fn in os.listdir("libraries"):
+                                    if fn.endswith(".scad"):
+                                        with open(os.path.join("libraries", fn), "r") as f:
+                                            library_context += f"\n--- LIBRARY: {fn} ---\n{f.read()}\n"
+
                             type_instruction = "The provided image is a 2D flat profile." if sketch_type == "2D (Multiple Views)" else "The provided image is a 3D perspective sketch."
 
                             prompt = (
-                                f"Act as an OpenSCAD engineer. {type_instruction} "
+                                f"Act as a Senior Mechanical Engineer. {type_instruction} "
+                                f"KNOWLEDGE BASE: {library_context} "
                                 f"Create code based on: '{user_context}'. Use $fn=50;. "
-                                f"Provide a JSON 'METADATA' object. Format: ```openscad [code] ```"
+                                f"INSTRUCTIONS: For holes, you MUST use difference() {{ base(); holes(); }}. "
+                                f"Format: [DECODED LOGIC]: ... [RESULT_CODE]: ```openscad [code] ```"
                             )
                             
-                            # Use the stored image from session state
                             inputs = [prompt, st.session_state.current_img] if upload_choice == "Sketch + Description" else [prompt]
-                            
                             response = client.models.generate_content(model="gemini-2.0-flash-exp", contents=inputs)
                             
+                            # PARSE RESPONSE
                             scad_match = re.search(r"```openscad(.*?)```", response.text, re.DOTALL)
+                            logic_match = re.search(r"\[DECODED LOGIC\]:(.*?)\[", response.text, re.DOTALL)
+                            
                             if scad_match:
-                                scad_code = scad_match.group(1).strip()
-                                with open("part.scad", "w") as f: f.write(scad_code)
-                                subprocess.run([exe, "-o", "part.stl", "part.scad"], check=True)
-                                stl_from_file("part.stl", color='#58a6ff')
+                                st.session_state.last_code = scad_match.group(1).strip()
+                                st.session_state.last_logic = logic_match.group(1).strip() if logic_match else "Standard generation"
+                                st.session_state.last_prompt = user_context
                                 
-                                st.download_button("Download STL", open("part.stl", "rb"), "part.stl", key="dl_stl", use_container_width=True)
-                                st.download_button("Print", open("part.stl", "rb"), "part.stl", key="print_stl", use_container_width=True)
+                                # SAVE AND RENDER
+                                with open("part.scad", "w") as f: f.write(st.session_state.last_code)
+                                my_env = os.environ.copy()
+                                my_env["OPENSCADPATH"] = os.path.join(os.getcwd(), "libraries")
+                                subprocess.run([exe, "-o", "part.stl", "part.scad"], env=my_env, check=True)
+                                
                             else:
                                 st.error("AI failed to return valid code.")
                     except Exception as e: 
                         st.error(f"Error: {e}")
+
+        # --- DISPLAY RESULTS AND FEEDBACK BUTTONS ---
+        if 'last_code' in st.session_state:
+            stl_from_file("part.stl", color='#58a6ff')
+            st.download_button("Download STL", open("part.stl", "rb"), "part.stl", use_container_width=True)
+            st.download_button("Print", open("part.stl", "rb"), "part.stl", use_container_width=True)
+            
+            # --- FEEDBACK SECTION ---
+            st.markdown("---")
+            st.write("**Is this model correct?**")
+            fb_col1, fb_col2 = st.columns(2)
+            
+            def log_feedback(label):
+                os.makedirs("feedback", exist_ok=True)
+                fn = "feedback/verified.scad" if label == "VERIFIED" else "feedback/review_needed.scad"
+                entry = f"\n/*\n[STATUS]: {label}\n[PROMPT]: {st.session_state.last_prompt}\n[LOGIC]: {st.session_state.last_logic}\n[CODE]:\n{st.session_state.last_code}\n*/\n"
+                with open(fn, "a") as f: f.write(entry)
+
+            if fb_col1.button("✅ Correct", use_container_width=True):
+                log_feedback("VERIFIED")
+                st.success("Added to verified.scad")
+                st.balloons()
+
+            if fb_col2.button("❌ Incorrect", use_container_width=True):
+                log_feedback("FAILED")
+                st.warning("Logged for review")
                     
 # 3. PRICING
 elif st.session_state.page == "Pricing":
@@ -461,6 +496,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
