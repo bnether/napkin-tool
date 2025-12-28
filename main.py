@@ -414,7 +414,7 @@ elif st.session_state.page == "Make a Part":
                 with log_col1:
                     with open("feedback_log.csv", "rb") as f:
                         st.download_button(
-                            label="📊 Download Feedback Log",
+                            label="Download Feedback Log",
                             data=f,
                             file_name="napkin_feedback.csv",
                             mime="text/csv",
@@ -424,7 +424,7 @@ elif st.session_state.page == "Make a Part":
                 with log_col2:
                     # Check if we are in "Confirm Mode"
                     if st.session_state.get('delete_confirm', False):
-                        if st.button("⚠️ SURE?", type="primary", use_container_width=True):
+                        if st.button("Are you sure?", type="primary", use_container_width=True):
                             os.remove("feedback_log.csv")
                             st.session_state.delete_confirm = False
                             st.rerun()
@@ -432,11 +432,11 @@ elif st.session_state.page == "Make a Part":
                             st.session_state.delete_confirm = False
                             st.rerun()
                     else:
-                        if st.button("🗑️ Reset", type="secondary", use_container_width=True):
+                        if st.button("Reset", type="secondary", use_container_width=True):
                             st.session_state.delete_confirm = True
                             st.rerun()
             else:
-                st.button("📊 No Feedback Log Available Yet", disabled=True, use_container_width=True)
+                st.button("No Feedback Log Available Yet", disabled=True, use_container_width=True)
 
             
                     
@@ -553,6 +553,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
