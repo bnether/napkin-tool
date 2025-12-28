@@ -41,12 +41,14 @@ response = client.models.generate_content(
         I have provided a collection of standard libraries below.
         
         INSTRUCTIONS:
-        1. Review the LIBRARY CONTENT to see available modules and functions.
-        2. If the user's request matches a library capability, include that library 
+        1. Analyze the sketch and text description, and identify dimensions.
+        2. PLAN the coordinates (e.g., 'The box is 50x50, so the center is 0,0') before writing the code.
+        3. Review the LIBRARY CONTENT to see available modules and functions.
+        4. If the user's request matches a library capability, include that library 
            at the top using 'include <libraries/FILENAME.scad>'.
-        3. Use high-level modules from the libraries (like 'hole_socket_head') instead of raw cylinders.
-        4. If no libraries are relevant, generate standard OpenSCAD code using $fn=50.
-        5. Output ONLY raw code. No explanations.
+        5. Use high-level modules from the libraries (like 'hole_socket_head') instead of raw cylinders.
+        6. If no libraries are relevant, generate standard OpenSCAD code using $fn=50.
+        7. Output ONLY raw code. No explanations.
 
         AVAILABLE LIBRARIES: {', '.join(library_list)}
         
@@ -98,3 +100,4 @@ except subprocess.CalledProcessError as e:
     # Check if it's a library path error
     if "libraries/iso_standards.scad" in e.stderr:
         print("\nSUGGESTION: OpenSCAD can't find your library. Check your folder name and 'include' path.")
+
