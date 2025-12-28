@@ -173,19 +173,32 @@ st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
 
 # --- ADMIN HELPER FUNCTIONS ---
 def save_to_gold_standard(prompt, logic, code):
-    """Formats and appends verified code to the training file."""
-    # Ensure code has real newlines
+    file_path = "ai_training.scad"
+    
+    # 1. Determine the entry number for your records
+    entry_num = 1
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            content = f.read()
+            entry_num = content.count("ENTRY #") + 1
+    
+    # 2. Get current date
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    
+    # 3. Format the block (Prioritizing Logic)
     clean_code = code.replace(" [NEWLINE] ", "\n")
-    entry = (
-        f"\n/* REFERENCE EXAMPLE\n"
-        f"PROMPT: {prompt}\n"
-        f"LOGIC: {logic}\n"
-        f"CODE:\n{clean_code}\n"
-        f"*/\n"
-    )
-    with open("ai_training.scad", "a") as f:
+    
+    entry = f"""
+/* ENTRY #{entry_num} | {date_str}
+   PROMPT: {prompt}
+   LOGIC: {logic}
+   CODE:
+{clean_code}
+*/
+
+"""
+    with open(file_path, "a") as f:
         f.write(entry)
-    return True
 
 def remove_log_entry(index):
     if os.path.exists("feedback_log.csv"):
@@ -668,6 +681,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
