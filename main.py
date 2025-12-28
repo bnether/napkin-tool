@@ -601,7 +601,7 @@ elif st.session_state.page == "Admin":
         selection = st.selectbox(
             "Select entry to verify:", 
             range(len(df)), 
-            key="admin_selector",
+            key="admin_selector", # <--- Ensure this matches the 'del' command above
             format_func=lambda x: f"{df.iloc[x]['Status']} | {str(df.iloc[x]['Prompt'])[:60]}..."
         )
         
@@ -626,8 +626,11 @@ elif st.session_state.page == "Admin":
                     if st.button("CONFIRM SAVE", type="primary", use_container_width=True):
                         save_to_gold_standard(edit_prompt, edit_logic, edit_code)
                         remove_log_entry(selection)
-                        # Reset selector to safe index
-                        st.session_state.admin_selector = 0
+                        
+                        # Fix: Delete the key instead of setting it to 0
+                        if 'admin_selector' in st.session_state:
+                            del st.session_state.admin_selector
+                            
                         st.session_state.confirm_save = None
                         st.success("Saved!")
                         st.rerun()
@@ -645,8 +648,11 @@ elif st.session_state.page == "Admin":
                 if st.session_state.get('confirm_delete') == selection:
                     if st.button("CONFIRM DELETE", type="primary", use_container_width=True):
                         remove_log_entry(selection)
-                        # Reset selector to safe index
-                        st.session_state.admin_selector = 0
+                        
+                        # Fix: Delete the key instead of setting it to 0
+                        if 'admin_selector' in st.session_state:
+                            del st.session_state.admin_selector
+                            
                         st.session_state.confirm_delete = None
                         st.warning("Discarded.")
                         st.rerun()
@@ -681,6 +687,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
