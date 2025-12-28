@@ -7,6 +7,8 @@ import json
 import re
 import os
 import shutil
+import csv # <--- ADD THIS
+from datetime import datetime # <--- ADD THIS
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Napkin", layout="wide", initial_sidebar_state="collapsed")
@@ -368,19 +370,47 @@ elif st.session_state.page == "Make a Part":
             st.write("**Feedback: Is this model correct?**")
             fb_col1, fb_col2 = st.columns(2)
             
-            def log_feedback(label):
-                os.makedirs("feedback", exist_ok=True)
-                fn = "feedback/verified.scad" if label == "VERIFIED" else "feedback/review_needed.scad"
-                entry = f"\n/*\n[STATUS]: {label}\n[PROMPT]: {st.session_state.last_prompt}\n[LOGIC]: {st.session_state.last_logic}\n[CODE]:\n{st.session_state.last_code}\n*/\n"
-                with open(fn, "a") as f: f.write(entry)
+            def log_feedback_to_csv(category):
+                file_path = "feedback_log.csv"
+                file_exists = os.path.isfile(file_path)
+                
+                # We clean the code string to keep it on one line for the spreadsheet
+                clean_code_entry = st.session_state.last_code.replace("\n", " [NEWLINE] ")
+                
+                row = [
+                    category,
+                    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    st.session_state.last_prompt,
+                    st.session_state.last_logic,
+                    clean_code_entry
+                ]
 
-            if fb_col1.button("Correct", use_container_width=True):
-                log_feedback("VERIFIED")
-                st.success("Verified")
+                with open(file_path, "a", newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    if not file_exists:
+                        writer.writerow(["Status", "Timestamp", "Prompt", "Logic", "Code"])
+                    writer.writerow(row)
 
-            if fb_col2.button("Incorrect", use_container_width=True):
-                log_feedback("FAILED")
-                st.warning("Logged for manual review")
+            if fb_col1.button("✅ Correct", use_container_width=True):
+                log_feedback_to_csv("VERIFIED")
+                st.success("Logged for LibreOffice!")
+                st.balloons()
+
+            if fb_col2.button("❌ Incorrect", use_container_width=True):
+                log_feedback_to_csv("FAILED")
+                st.warning("Issue logged.")
+
+            # --- NEW DOWNLOAD BUTTON ---
+            st.markdown("<br>", unsafe_allow_html=True)
+            if os.path.exists("feedback_log.csv"):
+                with open("feedback_log.csv", "rb") as f:
+                    st.download_button(
+                        label="📊 Download Feedback Log (for LibreOffice)",
+                        data=f,
+                        file_name="napkin_feedback.csv",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
                     
 # 3. PRICING
 elif st.session_state.page == "Pricing":
@@ -495,6 +525,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
