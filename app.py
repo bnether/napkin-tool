@@ -116,20 +116,26 @@ except subprocess.CalledProcessError as e:
     st.error(f"OpenSCAD Error: {e.stderr}")
 
 # 6. USER FEEDBACK SYSTEM
-st.divider()
-st.write("### Is this part correct?")
-col1, col2 = st.columns(2)
 
+st.divider() # This creates a physical line on the page
+st.subheader("Human-in-the-Loop Feedback")
+st.write("Help train the AI: Did this code follow the standards and logic correctly?")
+
+# Create the layout for the buttons
+col_a, col_b = st.columns(2)
+
+# Define the function within the script flow
 def save_feedback(category):
     os.makedirs("feedback", exist_ok=True)
     filename = "verified.scad" if category == "VERIFIED" else "review_needed.scad"
     path = os.path.join("feedback", filename)
     
-    # Format the entry for your future training
+    # We use 'clean_code' and 'decoded_logic' which were defined in Section 4
     entry = f"""
 /* ===========================================================
 [USER_STATUS]: {category}
 [TIMESTAMP]: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+[USER PROMPT]: {user_prompt}
 [DECODED LOGIC]: {decoded_logic}
 [RESULT CODE]:
 {clean_code}
@@ -139,17 +145,17 @@ def save_feedback(category):
         f.write(entry)
     
     if category == "VERIFIED":
-        st.toast("Awesome! Added to verified list.", icon="🚀")
+        st.success("Saved to verified.scad! This will be used for future training.")
+        st.balloons()
     else:
-        st.toast("Logged for engineering review.", icon="🔧")
+        st.warning("Logged to review_needed.scad. I'll check the math later.")
 
-with col1:
-    if st.button("✅ Perfect", use_container_width=True):
+# Place the buttons in the columns
+with col_a:
+    if st.button("✅ Perfect (Add to Training)", use_container_width=True):
         save_feedback("VERIFIED")
 
-with col2:
-    if st.button("❌ Needs Fixes", use_container_width=True):
+with col_b:
+    if st.button("❌ Needs Fixes (Flag for Review)", use_container_width=True):
         save_feedback("FAILED")
-
-
 
