@@ -7,8 +7,9 @@ import json
 import re
 import os
 import shutil
-import csv # <--- ADD THIS
-from datetime import datetime # <--- ADD THIS
+import csv
+from datetime import datetime
+import pandas as pd
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Napkin", layout="wide", initial_sidebar_state="collapsed")
@@ -571,14 +572,14 @@ elif st.session_state.page == "Profile":
 
 # 8. ADMIN VERIFICATION SYSTEM
 elif st.session_state.page == "Admin":
-    st.markdown("### 🛠️ Gold Standard Verification")
+    st.markdown("### Gold Standard Verification")
     
-    if not os.path.exists("feedback_log.csv") or os.stat("feedback_log.csv").st_size < 50:
-        st.info("No pending feedback to review. Your 'To-Do' list is empty!")
+    if not os.path.exists("feedback_log.csv") or os.stat("feedback_log.csv").st_size < 10:
+        st.info("No pending feedback to review.")
     else:
         df = pd.read_csv("feedback_log.csv")
         selection = st.selectbox("Select entry to verify:", range(len(df)), 
-                                format_func=lambda x: f"{df.iloc[x]['Status']} | {df.iloc[x]['Prompt'][:60]}...")
+                                format_func=lambda x: f"{df.iloc[x]['Status']} | {str(df.iloc[x]['Prompt'])[:60]}...")
         
         row = df.iloc[selection]
         col_edit, col_view = st.columns([1, 1], gap="large")
@@ -590,7 +591,7 @@ elif st.session_state.page == "Admin":
             raw_code = str(row['Code']).replace(" [NEWLINE] ", "\n")
             edit_code = st.text_area("Fix Code", raw_code, height=400)
             
-            if st.button("🚀 Preview Correction", use_container_width=True):
+            if st.button("Preview Correction", use_container_width=True):
                 with open("admin_preview.scad", "w") as f:
                     f.write(edit_code)
                 exe = shutil.which("openscad")
@@ -601,21 +602,7 @@ elif st.session_state.page == "Admin":
                     st.session_state.admin_preview_ready = True
                 else:
                     st.error("OpenSCAD not found.")
-
-        with col_view:
-            st.markdown("#### 2. Verify 3D Result")
-            if st.session_state.get('admin_preview_ready'):
-                stl_from_file("admin_preview.stl", color='#3b82f6')
-            else:
-                st.info("The 3D preview will appear here after you click 'Preview Correction'.")
-            
-            st.markdown("---")
-            if st.button("✅ ADD TO GOLD STANDARD", type="primary", use_container_width=True):
-                save_to_gold_standard(edit_prompt, edit_logic, edit_code)
-                remove_log_entry(selection)
-                st.success("Training file updated! Row removed from CSV.")
-                st.session_state.admin_preview_ready = False
-                st.rerun()
+                    
 
 # --- CLOSE CONTENT PADDING ---
 # This must be outside of all the IF/ELIF blocks so it closes regardless of the page
@@ -627,6 +614,7 @@ st.markdown("""
         ... (Your Footer HTML) ...
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
