@@ -411,9 +411,9 @@ elif st.session_state.page == "Make a Part":
                         mime="text/csv",
                         use_container_width=True
                     )
-else:
-    # This shows a "greyed out" version if no data exists yet
-    st.button("📊 No Feedback Log Available Yet", disabled=True, use_container_width=True)
+            else:
+                # This shows a "greyed out" version if no data exists yet
+                st.button("📊 No Feedback Log Available Yet", disabled=True, use_container_width=True)
                     
 # 3. PRICING
 elif st.session_state.page == "Pricing":
@@ -528,6 +528,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
