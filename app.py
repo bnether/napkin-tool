@@ -61,13 +61,15 @@ response = client.models.generate_content(
 
 # 4. SAVE AND CLEAN
 scad_code = response.text
-# Removes markdown formatting if present
-clean_code = scad_code.replace("```openscad", "").replace("```", "").strip()
+
+# This is the "Safe Stuff": It removes all common variations of Markdown code blocks
+clean_code = scad_code.replace("```openscad", "") \
+                      .replace("```scad", "") \
+                      .replace("```", "") \
+                      .strip()
 
 with open("part.scad", "w") as f:
     f.write(clean_code)
 
 print("\n--- SUCCESS ---")
 print("Successfully created 'part.scad'.")
-
-print("Open OpenSCAD and hit F5 to see your 3D model!")
