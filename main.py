@@ -391,14 +391,14 @@ elif st.session_state.page == "Make a Part":
                         writer.writerow(["Status", "Timestamp", "Prompt", "Logic", "Code"])
                     writer.writerow(row)
 
-            if fb_col1.button("✅ Correct", use_container_width=True):
+            if fb_col1.button("Correct", use_container_width=True):
                 log_feedback_to_csv("VERIFIED")
-                st.success("Logged for LibreOffice!")
-                st.balloons()
+                st.success("Verified")
 
-            if fb_col2.button("❌ Incorrect", use_container_width=True):
+            if fb_col2.button("Incorrect", use_container_width=True):
                 log_feedback_to_csv("FAILED")
-                st.warning("Issue logged.")
+                st.warning("Logged for manual review")
+
 
             # --- ALWAYS VISIBLE DOWNLOAD BUTTON ---
             st.markdown("<br>", unsafe_allow_html=True)
@@ -414,6 +414,8 @@ elif st.session_state.page == "Make a Part":
             else:
                 # This shows a "greyed out" version if no data exists yet
                 st.button("📊 No Feedback Log Available Yet", disabled=True, use_container_width=True)
+
+            
                     
 # 3. PRICING
 elif st.session_state.page == "Pricing":
@@ -528,6 +530,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
