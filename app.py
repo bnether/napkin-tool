@@ -62,14 +62,39 @@ response = client.models.generate_content(
 # 4. SAVE AND CLEAN
 scad_code = response.text
 
-# This is the "Safe Stuff": It removes all common variations of Markdown code blocks
+# THE "SAFE STUFF": Aggressively remove Markdown formatting
 clean_code = scad_code.replace("```openscad", "") \
                       .replace("```scad", "") \
                       .replace("```", "") \
                       .strip()
 
+# DEBUG: Print the code to your console so you can see what the AI wrote
+print("\n--- GENERATED CODE START ---")
+print(clean_code)
+print("--- GENERATED CODE END ---\n")
+
 with open("part.scad", "w") as f:
     f.write(clean_code)
 
-print("\n--- SUCCESS ---")
-print("Successfully created 'part.scad'.")
+# 5. RENDER TO STL
+import subprocess
+
+print("Attempting to render STL...")
+try:
+    # We add 'capture_output=True' to catch the specific OpenSCAD error message
+    result = subprocess.run(
+        ['/usr/bin/openscad', '-o', 'part.stl', 'part.scad'], 
+        capture_output=True, 
+        text=True, 
+        check=True
+    )
+    print("--- SUCCESS: 'part.stl' created ---")
+
+except subprocess.CalledProcessError as e:
+    print("\n!!! OPENSCAD RENDER ERROR !!!")
+    # This prints the ACTUAL error from OpenSCAD (e.g., "File not found" or "Syntax error")
+    print(f"Error Message: {e.stderr}")
+    
+    # Check if it's a library path error
+    if "libraries/iso_standards.scad" in e.stderr:
+        print("\nSUGGESTION: OpenSCAD can't find your library. Check your folder name and 'include' path.")
