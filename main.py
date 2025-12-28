@@ -365,7 +365,7 @@ elif st.session_state.page == "Make a Part":
             
             # --- FEEDBACK SECTION ---
             st.markdown("---")
-            st.write("**Is this model correct?**")
+            st.write("**Feedback: Is this model correct?**")
             fb_col1, fb_col2 = st.columns(2)
             
             def log_feedback(label):
@@ -376,12 +376,11 @@ elif st.session_state.page == "Make a Part":
 
             if fb_col1.button("✅ Correct", use_container_width=True):
                 log_feedback("VERIFIED")
-                st.success("Added to verified.scad")
-                st.balloons()
+                st.success("Thank you")
 
             if fb_col2.button("❌ Incorrect", use_container_width=True):
                 log_feedback("FAILED")
-                st.warning("Logged for review")
+                st.warning("Logged for manual review")
                     
 # 3. PRICING
 elif st.session_state.page == "Pricing":
@@ -496,6 +495,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
