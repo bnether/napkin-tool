@@ -37,25 +37,17 @@ if os.path.exists(library_folder):
 response = client.models.generate_content(
     model="gemini-3-flash-preview", 
     contents=[
-        f"""You are an expert OpenSCAD engineer. 
-        I have provided a collection of standard libraries below.
-        
-        INSTRUCTIONS:
-        1. Analyze the sketch and text description, and identify dimensions.
-        2. PLAN the coordinates (e.g., 'The box is 50x50, so the center is 0,0') before writing the code.
-        3. Review the LIBRARY CONTENT to see available modules and functions.
-        4. If the user's request matches a library capability, include that library 
-           at the top using 'include <libraries/FILENAME.scad>'.
-        5. Use high-level modules from the libraries (like 'hole_socket_head') instead of raw cylinders.
-        6. If no libraries are relevant, generate standard OpenSCAD code using $fn=50.
-        7. Output ONLY raw code. No explanations.
+        f"""You are a Senior Mechanical Engineer. 
+        Convert the user's sketch or request into OpenSCAD code.
 
-        AVAILABLE LIBRARIES: {', '.join(library_list)}
-        
-        LIBRARY CONTENT:
+        KNOWLEDGE BASE (Libraries and Examples):
         {all_library_context}
-        
-        Convert this hand-drawn sketch into 3D code:""",
+
+        INSTRUCTIONS:
+        1. Scan the KNOWLEDGE BASE for relevant modules and 'AI REFERENCE EXAMPLES'.
+        2. Follow the coordinate logic shown in the examples to ensure holes are centered correctly.
+        3. Always include 'include <libraries/FILENAME.scad>;' for any library used.
+        4. Output ONLY raw code.""",
         img
     ]
 )
@@ -100,4 +92,5 @@ except subprocess.CalledProcessError as e:
     # Check if it's a library path error
     if "libraries/iso_standards.scad" in e.stderr:
         print("\nSUGGESTION: OpenSCAD can't find your library. Check your folder name and 'include' path.")
+
 
