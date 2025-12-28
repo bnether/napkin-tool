@@ -188,9 +188,10 @@ def save_to_gold_standard(prompt, logic, code):
     return True
 
 def remove_log_entry(index):
-    """Removes a verified row from the feedback CSV."""
     if os.path.exists("feedback_log.csv"):
         df = pd.read_csv("feedback_log.csv")
+        # Store the row in session state for the Undo button
+        st.session_state.last_deleted_row = df.iloc[index].to_dict()
         df = df.drop(df.index[index])
         df.to_csv("feedback_log.csv", index=False)
 
@@ -540,16 +541,36 @@ elif st.session_state.page == "Profile":
 elif st.session_state.page == "Admin":
     st.markdown("### Verification Feedback")
     
-    # --- TRAINING FILE DOWNLOAD ---
-    if os.path.exists("ai_training.scad"):
-        with open("ai_training.scad", "r") as f:
-            st.download_button(
-                label="Download AI Training File",
-                data=f.read(),
-                file_name="ai_training.scad",
-                mime="text/plain",
-                use_container_width=True
-            )
+    # --- TOP ACTIONS: DOWNLOAD & UNDO ---
+    dl_col, undo_col = st.columns([2, 1])
+    
+    with dl_col:
+        if os.path.exists("ai_training.scad"):
+            with open("ai_training.scad", "r") as f:
+                st.download_button(
+                    label="Download AI Training File",
+                    data=f.read(),
+                    file_name="ai_training.scad",
+                    mime="text/plain",
+                    use_container_width=True
+                )
+    
+    with undo_col:
+        if st.session_state.get('last_deleted_row'):
+            if st.button("↩️ Undo Last Delete", use_container_width=True):
+                # Restore the dictionary back to the CSV
+                restored_row = st.session_state.last_deleted_row
+                file_path = "feedback_log.csv"
+                file_exists = os.path.isfile(file_path)
+                with open(file_path, "a", newline='', encoding='utf-8') as f:
+                    writer = csv.DictWriter(f, fieldnames=restored_row.keys())
+                    if not file_exists:
+                        writer.writeheader()
+                    writer.writerow(restored_row)
+                st.session_state.last_deleted_row = None # Clear undo buffer
+                st.success("Entry Restored!")
+                st.rerun()
+
     st.markdown("---")
 
     if not os.path.exists("feedback_log.csv") or os.stat("feedback_log.csv").st_size < 10:
@@ -557,7 +578,13 @@ elif st.session_state.page == "Admin":
     else:
         df = pd.read_csv("feedback_log.csv")
         
-        # We use a key for the selectbox to keep it stable across reruns
+        # --- INDEX SAFETY CHECK ---
+        # If selection index is out of bounds (after a delete), reset it to 0
+        current_sel = st.session_state.get('admin_selector', 0)
+        if current_sel >= len(df):
+            st.session_state.admin_selector = 0
+            st.rerun()
+            
         selection = st.selectbox(
             "Select entry to verify:", 
             range(len(df)), 
@@ -586,10 +613,12 @@ elif st.session_state.page == "Admin":
                     if st.button("CONFIRM SAVE", type="primary", use_container_width=True):
                         save_to_gold_standard(edit_prompt, edit_logic, edit_code)
                         remove_log_entry(selection)
+                        # Reset selector to safe index
+                        st.session_state.admin_selector = 0
                         st.session_state.confirm_save = None
                         st.success("Saved!")
                         st.rerun()
-                    if st.button("Cancel", key="c_save"):
+                    if st.button("Cancel", key="c_save", use_container_width=True):
                         st.session_state.confirm_save = None
                         st.rerun()
                 else:
@@ -603,10 +632,12 @@ elif st.session_state.page == "Admin":
                 if st.session_state.get('confirm_delete') == selection:
                     if st.button("CONFIRM DELETE", type="primary", use_container_width=True):
                         remove_log_entry(selection)
+                        # Reset selector to safe index
+                        st.session_state.admin_selector = 0
                         st.session_state.confirm_delete = None
                         st.warning("Discarded.")
                         st.rerun()
-                    if st.button("Cancel", key="c_del"):
+                    if st.button("Cancel", key="c_del", use_container_width=True):
                         st.session_state.confirm_delete = None
                         st.rerun()
                 else:
@@ -637,6 +668,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
