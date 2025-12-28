@@ -96,24 +96,42 @@ with open("part.scad", "w") as f:
 
 # 5. RENDER TO STL
 import subprocess
+import os
 
 st.subheader("3D Preview & Feedback")
 
 try:
-    # Use 'openscad' without path if it's in your system PATH
+    # Get the current folder path
+    current_dir = os.getcwd()
+    
+    # Set the Environment to include your libraries folder
+    # This fixes the "can't find include file" error on websites
+    my_env = os.environ.copy()
+    my_env["OPENSCADPATH"] = os.path.join(current_dir, "libraries")
+
+    # Run OpenSCAD
+    # Note: We use 'openscad' instead of '/usr/bin/openscad' for web compatibility
     result = subprocess.run(
         ['openscad', '-o', 'part.stl', 'part.scad'], 
+        env=my_env,
         capture_output=True, 
         text=True, 
         check=True
     )
     st.success("✅ STL Rendered Successfully!")
-    # Optional: If you want to show the code to the user
-    with st.expander("View Generated OpenSCAD Code"):
-        st.code(clean_code, language='cpp')
 
 except subprocess.CalledProcessError as e:
-    st.error(f"OpenSCAD Error: {e.stderr}")
+    # THIS SECTION IS KEY: It shows you why it failed
+    st.error("OpenSCAD failed to render the part.")
+    with st.expander("Show Technical Error Logs"):
+        st.text("--- STDERR (The Error) ---")
+        st.code(e.stderr)
+        st.text("--- STDOUT (The Output) ---")
+        st.code(e.stdout)
+        
+except FileNotFoundError:
+    st.error("CRITICAL: OpenSCAD is not installed on this server. Please ensure 'openscad' is in your packages.txt.")
+    
 
 # 6. USER FEEDBACK SYSTEM
 st.divider() # This creates a physical line on the page
@@ -157,3 +175,4 @@ with col_a:
 with col_b:
     if st.button("❌ Needs Fixes (Flag for Review)", use_container_width=True):
         save_feedback("FAILED")
+
