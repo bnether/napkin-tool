@@ -116,7 +116,6 @@ except subprocess.CalledProcessError as e:
     st.error(f"OpenSCAD Error: {e.stderr}")
 
 # 6. USER FEEDBACK SYSTEM
-
 st.divider() # This creates a physical line on the page
 st.subheader("Human-in-the-Loop Feedback")
 st.write("Help train the AI: Did this code follow the standards and logic correctly?")
@@ -158,4 +157,3 @@ with col_a:
 with col_b:
     if st.button("❌ Needs Fixes (Flag for Review)", use_container_width=True):
         save_feedback("FAILED")
-
