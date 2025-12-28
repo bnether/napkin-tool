@@ -538,14 +538,32 @@ elif st.session_state.page == "Profile":
 
 # 8. ADMIN VERIFICATION SYSTEM
 elif st.session_state.page == "Admin":
-    st.markdown("Verification Feedback")
+    st.markdown("### Verification Feedback")
     
+    # --- TRAINING FILE DOWNLOAD ---
+    if os.path.exists("ai_training.scad"):
+        with open("ai_training.scad", "r") as f:
+            st.download_button(
+                label="Download AI Training File",
+                data=f.read(),
+                file_name="ai_training.scad",
+                mime="text/plain",
+                use_container_width=True
+            )
+    st.markdown("---")
+
     if not os.path.exists("feedback_log.csv") or os.stat("feedback_log.csv").st_size < 10:
         st.info("No pending feedback to review.")
     else:
         df = pd.read_csv("feedback_log.csv")
-        selection = st.selectbox("Select entry to verify:", range(len(df)), 
-                                format_func=lambda x: f"{df.iloc[x]['Status']} | {str(df.iloc[x]['Prompt'])[:60]}...")
+        
+        # We use a key for the selectbox to keep it stable across reruns
+        selection = st.selectbox(
+            "Select entry to verify:", 
+            range(len(df)), 
+            key="admin_selector",
+            format_func=lambda x: f"{df.iloc[x]['Status']} | {str(df.iloc[x]['Prompt'])[:60]}..."
+        )
         
         row = df.iloc[selection]
         col_edit, col_view = st.columns([1, 1], gap="large")
@@ -560,45 +578,46 @@ elif st.session_state.page == "Admin":
             st.markdown("---")
             st.markdown("#### Actions")
             
-            # Action Buttons Layout
             act_col1, act_col2 = st.columns(2)
             
-            # --- APPEND TO TRAINING DATA ---
+            # --- SAVE LOGIC ---
             with act_col1:
                 if st.session_state.get('confirm_save') == selection:
-                    if st.button("Confirm: ADD TO TRAINING", type="primary", use_container_width=True):
+                    if st.button("CONFIRM SAVE", type="primary", use_container_width=True):
                         save_to_gold_standard(edit_prompt, edit_logic, edit_code)
                         remove_log_entry(selection)
                         st.session_state.confirm_save = None
-                        st.success("Added to Training & Removed from Log!")
+                        st.success("Saved!")
                         st.rerun()
-                    if st.button("Cancel", key="cancel_save", use_container_width=True):
+                    if st.button("Cancel", key="c_save"):
                         st.session_state.confirm_save = None
                         st.rerun()
                 else:
-                    if st.button("Save to training", use_container_width=True):
+                    if st.button("Save to Training", use_container_width=True):
                         st.session_state.confirm_save = selection
-                        st.session_state.confirm_delete = None # Close other confirmation
+                        st.session_state.confirm_delete = None
+                        st.rerun()
 
-            # --- REMOVE FROM LOG ONLY ---
+            # --- DISCARD LOGIC ---
             with act_col2:
                 if st.session_state.get('confirm_delete') == selection:
-                    if st.button("Confirm: DELETE ENTRY", type="primary", use_container_width=True):
+                    if st.button("CONFIRM DELETE", type="primary", use_container_width=True):
                         remove_log_entry(selection)
                         st.session_state.confirm_delete = None
-                        st.warning("Entry Discarded.")
+                        st.warning("Discarded.")
                         st.rerun()
-                    if st.button("Cancel", key="cancel_del", use_container_width=True):
+                    if st.button("Cancel", key="c_del"):
                         st.session_state.confirm_delete = None
                         st.rerun()
                 else:
                     if st.button("Discard Entry", use_container_width=True):
                         st.session_state.confirm_delete = selection
-                        st.session_state.confirm_save = None # Close other confirmation
+                        st.session_state.confirm_save = None
+                        st.rerun()
 
         with col_view:
             st.markdown("#### Review Reference")
-            st.info("Copy the code below into OpenSCAD to verify the geometry before taking action.")
+            st.info("Copy the code below into OpenSCAD to verify.")
             st.code(edit_code, language="cpp")
                     
 
@@ -618,6 +637,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
