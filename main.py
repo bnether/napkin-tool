@@ -278,7 +278,33 @@ if st.session_state.page == "Home":
 
 # 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
+    # --- HELPER FUNCTION (Defined at the top of the page scope) ---
+    def log_feedback_to_csv(category):
+        file_path = "feedback_log.csv"
+        file_exists = os.path.isfile(file_path)
+        
+        # Clean the code string to keep it on one line for the spreadsheet
+        # We use .get() to prevent errors if the state was cleared
+        code = st.session_state.get('last_code', "").replace("\n", " [NEWLINE] ")
+        prompt = st.session_state.get('last_prompt', "")
+        logic = st.session_state.get('last_logic', "")
+        
+        row = [
+            category,
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            prompt,
+            logic,
+            code
+        ]
+
+        with open(file_path, "a", newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(["Status", "Timestamp", "Prompt", "Logic", "Code"])
+            writer.writerow(row)
+
     col1, col2 = st.columns([1, 1], gap="large")
+    
     with col1:
         upload_choice = st.radio("Input Mode:", ["Sketch + Description", "Text Description Only"], horizontal=True)
         
@@ -299,7 +325,6 @@ elif st.session_state.page == "Make a Part":
                 except Exception as e:
                     st.error("Error processing image.")
         else:
-            uploaded_file = None
             st.session_state.current_img = None
 
         user_context = st.text_area("Specifications", placeholder="e.g. A 50x50mm cube...", height=150)
@@ -318,7 +343,6 @@ elif st.session_state.page == "Make a Part":
                         else:
                             client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
                             
-                            # --- LOAD LIBRARIES FOR CONTEXT ---
                             library_context = ""
                             if os.path.exists("libraries"):
                                 for fn in os.listdir("libraries"):
@@ -339,7 +363,6 @@ elif st.session_state.page == "Make a Part":
                             inputs = [prompt, st.session_state.current_img] if upload_choice == "Sketch + Description" else [prompt]
                             response = client.models.generate_content(model="gemini-2.0-flash-exp", contents=inputs)
                             
-                            # PARSE RESPONSE
                             scad_match = re.search(r"```openscad(.*?)```", response.text, re.DOTALL)
                             logic_match = re.search(r"\[DECODED LOGIC\]:(.*?)\[", response.text, re.DOTALL)
                             
@@ -348,12 +371,12 @@ elif st.session_state.page == "Make a Part":
                                 st.session_state.last_logic = logic_match.group(1).strip() if logic_match else "Standard generation"
                                 st.session_state.last_prompt = user_context
                                 
-                                # SAVE AND RENDER
-                                with open("part.scad", "w") as f: f.write(st.session_state.last_code)
+                                with open("part.scad", "w") as f: 
+                                    f.write(st.session_state.last_code)
+                                
                                 my_env = os.environ.copy()
                                 my_env["OPENSCADPATH"] = os.path.join(os.getcwd(), "libraries")
                                 subprocess.run([exe, "-o", "part.stl", "part.scad"], env=my_env, check=True)
-                                
                             else:
                                 st.error("AI failed to return valid code.")
                     except Exception as e: 
@@ -362,43 +385,26 @@ elif st.session_state.page == "Make a Part":
         # --- DISPLAY RESULTS AND FEEDBACK BUTTONS ---
         if 'last_code' in st.session_state:
             stl_from_file("part.stl", color='#58a6ff')
-            st.download_button("Download STL", open("part.stl", "rb"), "part.stl", use_container_width=True)
-            st.download_button("Print", open("part.stl", "rb"), "part.stl", use_container_width=True)
             
-            # --- FEEDBACK SECTION ---
+            # Use columns for the download/print row
+            d1, d2 = st.columns(2)
+            with open("part.stl", "rb") as file:
+                stl_data = file.read()
+                d1.download_button("Download STL", data=stl_data, file_name="part.stl", use_container_width=True)
+                d2.download_button("Print", data=stl_data, file_name="part.stl", use_container_width=True)
+            
             st.markdown("---")
             st.write("**Feedback: Is this model correct?**")
             fb_col1, fb_col2 = st.columns(2)
             
-            def log_feedback_to_csv(category):
-                file_path = "feedback_log.csv"
-                file_exists = os.path.isfile(file_path)
-                
-                # We clean the code string to keep it on one line for the spreadsheet
-                clean_code_entry = st.session_state.last_code.replace("\n", " [NEWLINE] ")
-                
-                row = [
-                    category,
-                    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    st.session_state.last_prompt,
-                    st.session_state.last_logic,
-                    clean_code_entry
-                ]
-
-                with open(file_path, "a", newline='', encoding='utf-8') as f:
-                    writer = csv.writer(f)
-                    if not file_exists:
-                        writer.writerow(["Status", "Timestamp", "Prompt", "Logic", "Code"])
-                    writer.writerow(row)
-
             if fb_col1.button("Correct", use_container_width=True):
                 log_feedback_to_csv("VERIFIED")
-                st.success("Verified")
+                st.success("Verified ✅")
+                st.balloons()
 
             if fb_col2.button("Incorrect", use_container_width=True):
                 log_feedback_to_csv("FAILED")
-                st.warning("Logged for manual review")
-
+                st.warning("Logged for manual review ❌")
 
             # --- ALWAYS VISIBLE DOWNLOAD BUTTON ---
             st.markdown("<br>", unsafe_allow_html=True)
@@ -412,7 +418,6 @@ elif st.session_state.page == "Make a Part":
                         use_container_width=True
                     )
             else:
-                # This shows a "greyed out" version if no data exists yet
                 st.button("📊 No Feedback Log Available Yet", disabled=True, use_container_width=True)
 
             
@@ -530,6 +535,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
