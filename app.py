@@ -33,27 +33,25 @@ if os.path.exists(library_folder):
                 all_library_context += f"\n--- LIBRARY: {filename} ---\n{f.read()}\n"
 
 # 3b. THE REQUEST
-# This is the updated version that gives the AI your library "Knowledge"
+# Updated with correct string formatting
+prompt_text = f"""You are a Senior Mechanical Engineer. 
+Convert the user's sketch or request into OpenSCAD code.
+
+KNOWLEDGE BASE (Libraries and Examples):
+{all_library_context}
+
+INSTRUCTIONS:
+1. Scan the KNOWLEDGE BASE for relevant modules and 'AI REFERENCE EXAMPLES'.
+2. Follow the coordinate logic shown in the examples (e.g., centering math).
+3. Always include 'include <libraries/FILENAME.scad>;' for any library used.
+4. Output your response in this EXACT format:
+   [DECODED LOGIC]: (A one-sentence summary of the math/standards used)
+   [RESULT_CODE]: (The raw OpenSCAD code)
+"""
+
 response = client.models.generate_content(
     model="gemini-3-flash-preview", 
-    contents=[
-        f"""You are a Senior Mechanical Engineer. 
-        Convert the user's sketch or request into OpenSCAD code.
-
-        KNOWLEDGE BASE (Libraries and Examples):
-        {all_library_context}
-
-        """
-        INSTRUCTIONS:
-        1. Scan the KNOWLEDGE BASE for relevant modules and 'AI REFERENCE EXAMPLES'.
-        2. Follow the coordinate logic shown in the examples (e.g., centering math).
-        3. Always include 'include <libraries/FILENAME.scad>;' for any library used.
-        4. Output your response in this EXACT format:
-           [DECODED LOGIC]: (A one-sentence summary of the math/standards used)
-           [RESULT_CODE]: (The raw OpenSCAD code)
-           """,
-        img
-    ]
+    contents=[prompt_text, img]
 )
 
 
@@ -101,6 +99,7 @@ except subprocess.CalledProcessError as e:
     # Check if it's a library path error
     if "libraries/iso_standards.scad" in e.stderr:
         print("\nSUGGESTION: OpenSCAD can't find your library. Check your folder name and 'include' path.")
+
 
 
 
