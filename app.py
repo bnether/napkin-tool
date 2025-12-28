@@ -15,16 +15,49 @@ except FileNotFoundError:
 
 print("Sending sketch to Gemini 3 Flash (Latest 2025 Model)...")
 
-# 3. THE REQUEST
-# Using the updated 2025 model ID
+
+
+# 3a. DYNAMICALLY LOAD ALL LIBRARIES
+# This part looks into your folder and reads the text for the AI
+library_folder = "libraries"
+all_library_context = ""
+library_list = []
+
+if os.path.exists(library_folder):
+    for filename in os.listdir(library_folder):
+        if filename.endswith(".scad"):
+            library_list.append(filename)
+            path = os.path.join(library_folder, filename)
+            with open(path, "r") as f:
+                # We wrap each file in a header so the AI doesn't get confused
+                all_library_context += f"\n--- LIBRARY: {filename} ---\n{f.read()}\n"
+
+# 3b. THE REQUEST
+# This is the updated version that gives the AI your library "Knowledge"
 response = client.models.generate_content(
     model="gemini-3-flash-preview", 
     contents=[
-        "You are an OpenSCAD engineer. Convert this hand-drawn sketch into 3D code. "
-        "Use $fn=50; and difference() for any holes. Output ONLY raw code.",
+        f"""You are an expert OpenSCAD engineer. 
+        I have provided a collection of standard libraries below.
+        
+        INSTRUCTIONS:
+        1. Review the LIBRARY CONTENT to see available modules and functions.
+        2. If the user's request matches a library capability, include that library 
+           at the top using 'include <libraries/FILENAME.scad>'.
+        3. Use high-level modules from the libraries (like 'hole_socket_head') instead of raw cylinders.
+        4. If no libraries are relevant, generate standard OpenSCAD code using $fn=50.
+        5. Output ONLY raw code. No explanations.
+
+        AVAILABLE LIBRARIES: {', '.join(library_list)}
+        
+        LIBRARY CONTENT:
+        {all_library_context}
+        
+        Convert this hand-drawn sketch into 3D code:""",
         img
     ]
 )
+
 
 # 4. SAVE AND CLEAN
 scad_code = response.text
@@ -36,4 +69,5 @@ with open("part.scad", "w") as f:
 
 print("\n--- SUCCESS ---")
 print("Successfully created 'part.scad'.")
+
 print("Open OpenSCAD and hit F5 to see your 3D model!")
