@@ -571,7 +571,6 @@ elif st.session_state.page == "Admin":
     with undo_col:
         if st.session_state.get('last_deleted_row'):
             if st.button("↩️ Undo Last Delete", use_container_width=True):
-                # Restore the dictionary back to the CSV
                 restored_row = st.session_state.last_deleted_row
                 file_path = "feedback_log.csv"
                 file_exists = os.path.isfile(file_path)
@@ -580,7 +579,7 @@ elif st.session_state.page == "Admin":
                     if not file_exists:
                         writer.writeheader()
                     writer.writerow(restored_row)
-                st.session_state.last_deleted_row = None # Clear undo buffer
+                st.session_state.last_deleted_row = None
                 st.success("Entry Restored!")
                 st.rerun()
 
@@ -591,19 +590,25 @@ elif st.session_state.page == "Admin":
     else:
         df = pd.read_csv("feedback_log.csv")
         
-        # --- INDEX SAFETY CHECK ---
-        # If selection index is out of bounds (after a delete), reset it to 0
-        current_sel = st.session_state.get('admin_selector', 0)
-        if current_sel >= len(df):
-            st.session_state.admin_selector = 0
-            st.rerun()
+        # --- NEW INDEX MANAGEMENT ---
+        if 'admin_index' not in st.session_state:
+            st.session_state.admin_index = 0
+            
+        # Safety check: if the list shrunk, reset index to 0
+        if st.session_state.admin_index >= len(df):
+            st.session_state.admin_index = 0
             
         selection = st.selectbox(
             "Select entry to verify:", 
             range(len(df)), 
-            key="admin_selector", # <--- Ensure this matches the 'del' command above
+            index=st.session_state.admin_index,
             format_func=lambda x: f"{df.iloc[x]['Status']} | {str(df.iloc[x]['Prompt'])[:60]}..."
         )
+        
+        # Update the session state variable if the user manually clicks the dropdown
+        if selection != st.session_state.admin_index:
+            st.session_state.admin_index = selection
+            st.rerun()
         
         row = df.iloc[selection]
         col_edit, col_view = st.columns([1, 1], gap="large")
@@ -627,10 +632,9 @@ elif st.session_state.page == "Admin":
                         save_to_gold_standard(edit_prompt, edit_logic, edit_code)
                         remove_log_entry(selection)
                         
-                        # Reset state and force selector to top of the new list
                         st.session_state.confirm_save = None
-                        st.session_state.admin_selector = 0 
-                        st.success("Saved and added to training!")
+                        st.session_state.admin_index = 0  # Safe manual update
+                        st.success("Saved!")
                         st.rerun()
                         
                     if st.button("Cancel", key="c_save", use_container_width=True):
@@ -641,17 +645,16 @@ elif st.session_state.page == "Admin":
                         st.session_state.confirm_save = selection
                         st.session_state.confirm_delete = None
                         st.rerun()
-            
+
             # --- DISCARD LOGIC ---
             with act_col2:
                 if st.session_state.get('confirm_delete') == selection:
                     if st.button("CONFIRM DELETE", type="primary", use_container_width=True):
                         remove_log_entry(selection)
                         
-                        # Reset state and force selector to top of the new list
                         st.session_state.confirm_delete = None
-                        st.session_state.admin_selector = 0
-                        st.warning("Entry discarded.")
+                        st.session_state.admin_index = 0 # Safe manual update
+                        st.warning("Discarded.")
                         st.rerun()
                         
                     if st.button("Cancel", key="c_del", use_container_width=True):
@@ -685,6 +688,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
