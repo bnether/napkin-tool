@@ -23,12 +23,24 @@ ISO_4762_DATA = [
     [12, 18.0, 12.0, 10.0], [16, 24.0, 16.0, 14.0], [20, 30.0, 20.0, 17.0]
 ];
 
+// ISO 7380 Button Head: [Nominal, Head_Dia(dk), Head_Height(k)]
+ISO_7380_DATA = [
+    [3, 5.7, 1.65], [4, 7.6, 2.2], [5, 9.5, 2.75], 
+    [6, 10.5, 3.3], [8, 14.0, 4.4], [10, 17.5, 5.5], [12, 21.0, 6.6]
+];
+
 // ISO 4032 Nut: [Nominal, Width_Across_Flats(s), Height(m)]
 ISO_4032_DATA = [
     [1.6, 3.2, 1.3], [2, 4.0, 1.6], [2.5, 5.0, 2.0],
     [3, 5.5, 2.4], [4, 7.0, 3.2], [5, 8.0, 4.7],
     [6, 10.0, 5.2], [8, 13.0, 6.8], [10, 16.0, 8.4],
     [12, 18.0, 10.8], [16, 24.0, 14.8], [20, 30.0, 18.0]
+];
+
+// DIN 985 Nyloc Nut (Taller than standard): [Nominal, s, Height(m)]
+DIN_985_DATA = [
+    [3, 5.5, 4.0], [4, 7.0, 5.0], [5, 8.0, 5.0], 
+    [6, 10.0, 6.0], [8, 13.0, 8.0], [10, 16.0, 10.0], [12, 18.0, 12.0]
 ];
 
 // ISO 7046 Countersunk: [Nominal, Head_Dia(dk)_Max, Head_Height(k)_Max]
@@ -38,11 +50,24 @@ ISO_7046_DATA = [
     [8, 15.8, 4.65], [10, 18.3, 5.0]
 ];
 
-// ISO 7089 Washer: [Nominal_Bolt, Inside_Dia(d1), Outside_Dia(d2), Thickness(h)]
-ISO_7089_DATA = [
-    [3, 3.2, 7, 0.5], [4, 4.3, 9, 0.8], [5, 5.3, 10, 1.0],
-    [6, 6.4, 12, 1.6], [8, 8.4, 16, 1.6], [10, 10.5, 20, 2.0],
-    [12, 13, 24, 2.5], [16, 17, 30, 3.0], [20, 21, 37, 3.0]
+// ISO 7093 Fender Washer: [Nominal_Bolt, Inside_Dia, Outside_Dia, Thickness]
+ISO_7093_DATA = [
+    [3, 3.2, 9, 0.8], [4, 4.3, 12, 1.0], [5, 5.3, 15, 1.2], 
+    [6, 6.4, 18, 1.6], [8, 8.4, 24, 2.0], [10, 10.5, 30, 2.5]
+];
+
+// ISO 262 Metric Coarse Threads: [Nominal, Pitch, Tap_Drill_Dia]
+ISO_262_TAP_DATA = [
+    [1.6, 0.35, 1.25], [2, 0.4, 1.6], [2.5, 0.45, 2.05],
+    [3, 0.5, 2.5], [4, 0.7, 3.3], [5, 0.8, 4.2],
+    [6, 1.0, 5.0], [8, 1.25, 6.8], [10, 1.5, 8.5],
+    [12, 1.75, 10.2], [16, 2.0, 14.0], [20, 2.5, 17.5]
+];
+
+// ISO 15 Rolling Bearings (6000 Series): [Nominal_ID, Inside, Outside, Width]
+BEARING_6000_DATA = [
+    [608, 8, 22, 7], [6000, 10, 26, 8], [6001, 12, 28, 8], 
+    [6002, 15, 32, 9], [6003, 17, 35, 10], [6004, 20, 42, 12]
 ];
 
 // =================================================================
@@ -55,57 +80,87 @@ function iso273_hole(d, fit="medium") =
 
 function iso4762_head_dia(d)    = lookup(d, ISO_4762_DATA, 1);
 function iso4762_head_height(d) = lookup(d, ISO_4762_DATA, 2);
-function iso4762_hex_key(d)     = lookup(d, ISO_4762_DATA, 3);
+
+function iso7380_head_dia(d)    = lookup(d, ISO_7380_DATA, 1);
+function iso7380_head_height(d) = lookup(d, ISO_7380_DATA, 2);
 
 function iso4032_nut_width(d)   = lookup(d, ISO_4032_DATA, 1);
 function iso4032_nut_height(d)  = lookup(d, ISO_4032_DATA, 2);
 
+function din985_nut_width(d)    = lookup(d, DIN_985_DATA, 1);
+function din985_nut_height(d)   = lookup(d, DIN_985_DATA, 2);
+
 function iso7046_head_dia(d)    = lookup(d, ISO_7046_DATA, 1);
 function iso7046_head_height(d) = lookup(d, ISO_7046_DATA, 2);
 
-function iso7089_outer_dia(d)   = lookup(d, ISO_7089_DATA, 2);
-function iso7089_thickness(d)   = lookup(d, ISO_7089_DATA, 3);
+function iso7093_fender_dia(d)  = lookup(d, ISO_7093_DATA, 2);
+function iso7093_thickness(d)   = lookup(d, ISO_7093_DATA, 3);
+
+function iso262_tap_drill(d)    = lookup(d, ISO_262_TAP_DATA, 2);
+
+function bearing_od(type)       = lookup(type, BEARING_6000_DATA, 2);
+function bearing_width(type)    = lookup(type, BEARING_6000_DATA, 3);
 
 // =================================================================
 // SECTION 3: UTILITY MODULES (Physical Implementation)
 // =================================================================
 
-// PLAIN CLEARANCE HOLE (ISO 273)
-// Use this for simple pass-through bolts without heads or recesses.
 module iso_273_clearance(d, h, fit="medium") {
     h_dia = iso273_hole(d, fit);
-    // h_total * 3 and center=true ensures it cuts through any surface
-    cylinder(d = h_dia, h = h, center = true, $fn = 32);
+    cylinder(d = h_dia, h = h * 3, center = true, $fn = 32);
 }
 
-// SOCKET HEAD COUNTERBORE (ISO 4762 + ISO 273)
 module hole_socket_head(d, h_total, fit="medium", extra_depth=0) {
     h_dia = iso273_hole(d, fit);
     dk = iso4762_head_dia(d);
     k = iso4762_head_height(d);
     union() {
         cylinder(d = h_dia, h = h_total * 3, center = true, $fn = 32);
-        translate([0, 0, -0.01]) 
-            cylinder(d = dk, h = k + extra_depth, $fn = 32);
+        translate([0, 0, -0.01]) cylinder(d = dk, h = k + extra_depth, $fn = 32);
     }
 }
 
-// COUNTERSINK HOLE (ISO 7046 + ISO 273)
+module hole_button_head(d, h_total, fit="medium", extra_depth=0) {
+    h_dia = iso273_hole(d, fit);
+    dk = iso7380_head_dia(d);
+    k = iso7380_head_height(d);
+    union() {
+        cylinder(d = h_dia, h = h_total * 3, center = true, $fn = 32);
+        translate([0, 0, -0.01]) cylinder(d = dk, h = k + extra_depth, $fn = 32);
+    }
+}
+
 module hole_countersunk(d, h_total, fit="medium") {
     h_dia = iso273_hole(d, fit);
     dk = iso7046_head_dia(d);
     k = iso7046_head_height(d);
     union() {
         cylinder(d = h_dia, h = h_total * 3, center = true, $fn = 32);
-        translate([0, 0, -0.01])
-            cylinder(d1 = dk, d2 = h_dia, h = k, $fn = 32);
+        translate([0, 0, -0.01]) cylinder(d1 = dk, d2 = h_dia, h = k, $fn = 32);
     }
 }
 
-// NUT TRAP (ISO 4032)
-module hole_nut_trap(d, depth_extra=0) {
-    s = iso4032_nut_width(d);
-    m = iso4032_nut_height(d);
-    rotate([0, 0, 30])
-        cylinder(d = s / cos(30), h = m + depth_extra, $fn = 6);
+module hole_nut_trap(d, depth_extra=0, nyloc=false) {
+    s = nyloc ? din985_nut_width(d) : iso4032_nut_width(d);
+    m = nyloc ? din985_nut_height(d) : iso4032_nut_height(d);
+    rotate([0, 0, 30]) cylinder(d = s / cos(30), h = m + depth_extra, $fn = 6);
+}
+
+module hole_fender_washer(d, depth_extra=0) {
+    dw = iso7093_fender_dia(d);
+    hw = iso7093_thickness(d);
+    cylinder(d = dw, h = hw + depth_extra, $fn = 64);
+}
+
+module hole_threaded_tap(d, h_total) {
+    drill_dia = iso262_tap_drill(d);
+    cylinder(d = drill_dia, h = h_total * 3, center = true, $fn = 32);
+}
+
+// BEARING HOUSING (ISO 15)
+// clearance_3dp: adds a tiny buffer (default 0.15mm) for 3D printer expansion
+module bearing_housing(type, depth_extra=0, clearance_3dp=0.15) {
+    od = bearing_od(type);
+    w = bearing_width(type);
+    cylinder(d = od + (clearance_3dp * 2), h = w + depth_extra, $fn = 100);
 }
