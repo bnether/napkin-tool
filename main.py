@@ -147,7 +147,7 @@ st.markdown("""
     .stButton>button { border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; width: 100%; }
     button[kind="primary"] { background-color: #3b82f6 !important; border: none !important; }
 
-    /* --- FOOTER --- */
+    /* --- FOOTER (RESTORED SIZE) --- */
     .footer-minimal {
         background-color: #1e3a8a; 
         border-top: 3px solid #3b82f6;
@@ -155,7 +155,31 @@ st.markdown("""
         text-align: center; 
         color: #e2e8f0; 
         margin-top: 4rem;
-        width: 100%;
+        
+        /* This restores the "original" desktop size */
+        max-width: 1200px; 
+        margin-left: auto !important;
+        margin-right: auto !important;
+        border-radius: 15px 15px 0 0; /* Optional: makes it look more like a contained box */
+    }
+
+    /* On phones, let it take up the full width so it doesn't look tiny */
+    @media (max-width: 768px) {
+        .footer-minimal {
+            max-width: 100%;
+            margin-top: 2rem;
+            border-radius: 0;
+        }
+    }
+
+    .footer-icon-box {
+        display: inline-block;
+        margin: 0 15px;
+    }
+
+    .footer-icon-box img {
+        width: 24px; /* Adjust this to match your original icon size */
+        height: auto;
     }
 
     header { visibility: hidden; }
@@ -715,6 +739,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
