@@ -590,26 +590,37 @@ elif st.session_state.page == "Admin":
     else:
         df = pd.read_csv("feedback_log.csv")
         
-        # --- NEW INDEX MANAGEMENT ---
+        # --- ROBUST INDEX MANAGEMENT ---
         if 'admin_index' not in st.session_state:
             st.session_state.admin_index = 0
-            
-        # Safety check: if the list shrunk, reset index to 0
-        if st.session_state.admin_index >= len(df):
+
+        # Safety: Force to integer and check bounds
+        try:
+            current_idx = int(st.session_state.admin_index)
+        except (TypeError, ValueError):
+            current_idx = 0
             st.session_state.admin_index = 0
-            
+
+        if df.empty:
+            st.warning("Feedback log is empty.")
+            st.stop()
+        elif current_idx >= len(df):
+            st.session_state.admin_index = 0
+            st.rerun()
+
         selection = st.selectbox(
             "Select entry to verify:", 
             range(len(df)), 
-            index=st.session_state.admin_index,
+            index=int(st.session_state.admin_index),
             format_func=lambda x: f"{df.iloc[x]['Status']} | {str(df.iloc[x]['Prompt'])[:60]}..."
         )
         
-        # Update the session state variable if the user manually clicks the dropdown
+        # Update state if user changes selection
         if selection != st.session_state.admin_index:
             st.session_state.admin_index = selection
             st.rerun()
-        
+
+        # Load the selected data
         row = df.iloc[selection]
         col_edit, col_view = st.columns([1, 1], gap="large")
         
@@ -633,7 +644,7 @@ elif st.session_state.page == "Admin":
                         remove_log_entry(selection)
                         
                         st.session_state.confirm_save = None
-                        st.session_state.admin_index = 0  # Safe manual update
+                        st.session_state.admin_index = 0 
                         st.success("Saved!")
                         st.rerun()
                         
@@ -653,7 +664,7 @@ elif st.session_state.page == "Admin":
                         remove_log_entry(selection)
                         
                         st.session_state.confirm_delete = None
-                        st.session_state.admin_index = 0 # Safe manual update
+                        st.session_state.admin_index = 0
                         st.warning("Discarded.")
                         st.rerun()
                         
@@ -688,6 +699,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
