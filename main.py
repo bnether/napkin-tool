@@ -590,13 +590,14 @@ elif st.session_state.page == "Admin":
     else:
         df = pd.read_csv("feedback_log.csv")
         
-        # --- ROBUST INDEX MANAGEMENT ---
-        if 'admin_index' not in st.session_state:
+        # --- IRONCLAD INDEX MANAGEMENT ---
+        # Ensure the state exists and is an integer
+        if 'admin_index' not in st.session_state or st.session_state.admin_index is None:
             st.session_state.admin_index = 0
 
-        # Safety: Force to integer and check bounds
+        # Defensive check to extract a clean integer
         try:
-            current_idx = int(st.session_state.admin_index)
+            current_idx = int(st.session_state.get('admin_index', 0))
         except (TypeError, ValueError):
             current_idx = 0
             st.session_state.admin_index = 0
@@ -604,7 +605,9 @@ elif st.session_state.page == "Admin":
         if df.empty:
             st.warning("Feedback log is empty.")
             st.stop()
-        elif current_idx >= len(df):
+        
+        # Check bounds before rendering selectbox
+        if current_idx >= len(df):
             st.session_state.admin_index = 0
             st.rerun()
 
@@ -615,12 +618,12 @@ elif st.session_state.page == "Admin":
             format_func=lambda x: f"{df.iloc[x]['Status']} | {str(df.iloc[x]['Prompt'])[:60]}..."
         )
         
-        # Update state if user changes selection
+        # Update the variable if the user manually changes the dropdown
         if selection != st.session_state.admin_index:
             st.session_state.admin_index = selection
             st.rerun()
 
-        # Load the selected data
+        # Load the selected data row
         row = df.iloc[selection]
         col_edit, col_view = st.columns([1, 1], gap="large")
         
@@ -699,6 +702,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
