@@ -565,12 +565,14 @@ elif st.session_state.page == "Admin":
                     data=f.read(),
                     file_name="ai_training.scad",
                     mime="text/plain",
-                    use_container_width=True
+                    use_container_width=True  # Ensures standard height
                 )
     
     with undo_col:
+        # Check if there is something in the temporary buffer to restore
         if st.session_state.get('last_deleted_row'):
-            if st.button("↩️ Undo Last Delete", use_container_width=True):
+            if st.button("↩️ Undo last entry", use_container_width=True):
+                # Restore the dictionary back to the CSV
                 restored_row = st.session_state.last_deleted_row
                 file_path = "feedback_log.csv"
                 file_exists = os.path.isfile(file_path)
@@ -579,9 +581,15 @@ elif st.session_state.page == "Admin":
                     if not file_exists:
                         writer.writeheader()
                     writer.writerow(restored_row)
-                st.session_state.last_deleted_row = None
+                
+                # Clear undo buffer and reset index to show the restored item
+                st.session_state.last_deleted_row = None 
+                st.session_state.admin_index = 0
                 st.success("Entry Restored!")
                 st.rerun()
+        else:
+            # Placeholder button to keep the layout height consistent even when empty
+            st.button("↩️ Undo last entry", disabled=True, use_container_width=True)
 
     st.markdown("---")
 
@@ -591,11 +599,9 @@ elif st.session_state.page == "Admin":
         df = pd.read_csv("feedback_log.csv")
         
         # --- IRONCLAD INDEX MANAGEMENT ---
-        # Ensure the state exists and is an integer
         if 'admin_index' not in st.session_state or st.session_state.admin_index is None:
             st.session_state.admin_index = 0
 
-        # Defensive check to extract a clean integer
         try:
             current_idx = int(st.session_state.get('admin_index', 0))
         except (TypeError, ValueError):
@@ -606,7 +612,6 @@ elif st.session_state.page == "Admin":
             st.warning("Feedback log is empty.")
             st.stop()
         
-        # Check bounds before rendering selectbox
         if current_idx >= len(df):
             st.session_state.admin_index = 0
             st.rerun()
@@ -618,12 +623,11 @@ elif st.session_state.page == "Admin":
             format_func=lambda x: f"{df.iloc[x]['Status']} | {str(df.iloc[x]['Prompt'])[:60]}..."
         )
         
-        # Update the variable if the user manually changes the dropdown
         if selection != st.session_state.admin_index:
             st.session_state.admin_index = selection
             st.rerun()
 
-        # Load the selected data row
+        # Load data
         row = df.iloc[selection]
         col_edit, col_view = st.columns([1, 1], gap="large")
         
@@ -645,12 +649,10 @@ elif st.session_state.page == "Admin":
                     if st.button("CONFIRM SAVE", type="primary", use_container_width=True):
                         save_to_gold_standard(edit_prompt, edit_logic, edit_code)
                         remove_log_entry(selection)
-                        
                         st.session_state.confirm_save = None
                         st.session_state.admin_index = 0 
                         st.success("Saved!")
                         st.rerun()
-                        
                     if st.button("Cancel", key="c_save", use_container_width=True):
                         st.session_state.confirm_save = None
                         st.rerun()
@@ -665,12 +667,10 @@ elif st.session_state.page == "Admin":
                 if st.session_state.get('confirm_delete') == selection:
                     if st.button("CONFIRM DELETE", type="primary", use_container_width=True):
                         remove_log_entry(selection)
-                        
                         st.session_state.confirm_delete = None
                         st.session_state.admin_index = 0
                         st.warning("Discarded.")
                         st.rerun()
-                        
                     if st.button("Cancel", key="c_del", use_container_width=True):
                         st.session_state.confirm_delete = None
                         st.rerun()
@@ -702,6 +702,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
