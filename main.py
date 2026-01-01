@@ -28,133 +28,139 @@ def set_page(page_name):
 
 # --- CUSTOM CSS ---
 st.markdown("""
-    <style>
-        /* --- GLOBAL LAYOUT & SCALING --- */
+<style>
+    /* --- GLOBAL LAYOUT & SCALING --- */
+    .block-container {
+        padding-top: 0rem !important;
+        padding-bottom: 0rem !important;
+        padding-left: 5% !important;
+        padding-right: 5% !important;
+    }
+    
+    /* NEW: Mobile-only padding and navbar spacing */
+    @media (max-width: 768px) {
         .block-container {
-            padding-top: 0rem !important;
-            padding-bottom: 0rem !important;
-            padding-left: 5% !important;
-            padding-right: 5% !important;
+            padding-left: 3% !important;
+            padding-right: 3% !important;
         }
-        
-        /* Adjusts padding for mobile screens */
-        @media (max-width: 768px) {
-            .block-container {
-                padding-left: 3% !important;
-                padding-right: 3% !important;
-            }
-            .stApp { margin-top: 100px !important; } 
-        }
-    
-        .stApp { background-color: #0e1117; color: #ffffff; margin-top: 60px; }
-    
-        /* --- MODERN NAVBAR (MOBILE RESPONSIVE) --- */
-        .nav-wrapper {
-            background-color: #0e1117;
-            border-bottom: 1px solid #30363d;
-            width: 100%;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 9999;
-            display: flex;
-            flex-wrap: wrap; 
-            justify-content: center;
-            align-items: center;
-            padding: 0 10px;
-        }
-    
+        .stApp { margin-top: 110px !important; } 
+    }
+
+    .stApp { background-color: #0e1117; color: #ffffff; margin-top: 60px; }
+
+    /* --- MODERN NAVBAR --- */
+    .nav-wrapper {
+        background-color: #0e1117;
+        border-bottom: 1px solid #30363d;
+        width: 100%;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 9999;
+        display: flex;
+        flex-wrap: wrap; /* NEW: Allows menu items to stack on phones */
+        justify-content: center;
+        align-items: center;
+        padding: 0 10px;
+    }
+
+    .nav-item {
+        padding: 18px 20px;
+        color: #8b949e !important;
+        text-decoration: none !important;
+        font-size: 15px;
+        font-weight: 500;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+        white-space: nowrap; 
+    }
+
+    /* NEW: Slightly smaller nav text on tiny phones */
+    @media (max-width: 480px) {
         .nav-item {
-            padding: 18px 20px;
-            color: #8b949e !important;
-            text-decoration: none !important;
-            font-size: 15px;
-            font-weight: 500;
-            border-bottom: 2px solid transparent;
-            transition: all 0.3s ease;
-            white-space: nowrap; 
+            padding: 10px 12px;
+            font-size: 13px;
         }
+    }
+
+    .nav-item:hover {
+        color: #58a6ff !important;
+        border-bottom: 2px solid #58a6ff;
+    }
+
+    .nav-active {
+        color: #ffffff !important;
+        border-bottom: 2px solid #3b82f6 !important;
+    }
+
+    /* --- HERO SECTION --- */
+    .hero-container {
+        position: relative;
+        width: 100%;
+        height: 550px;
+        background-image: linear-gradient(to bottom, rgba(14, 17, 23, 0) 50%, rgba(14, 17, 23, 1) 100%), url("app/static/home1.jpg");
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0px;
+    }
     
-        @media (max-width: 480px) {
-            .nav-item {
-                padding: 10px 12px;
-                font-size: 13px;
-            }
-        }
+    /* NEW: Shrinks hero image height on phones so content is visible */
+    @media (max-width: 768px) {
+        .hero-container { height: 300px !important; }
+        .section-text { font-size: 1.6rem !important; }
+        .section-content { width: 95% !important; }
+    }
+
+    .section-content { position: relative; z-index: 2; width: 70%; text-align: center; }
+    .section-text { font-size: 2.8rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }
+    .highlight { color: #58a6ff; }
+
+    /* --- UI ELEMENTS (Testimonials) --- */
+    .testimonial-card {
+        background: #161b22; padding: 25px; border-radius: 15px; border: 1px solid #30363d;
+        display: flex; align-items: center; justify-content: center; min-height: 150px;
+        max-width: 800px; margin: 0 auto;
+    }
+
+    /* NEW: Stacks user photo above text on portrait phones */
+    @media (max-width: 480px) {
+        .testimonial-card { flex-direction: column; text-align: center; }
+        .testimonial-img { margin-right: 0px !important; margin-bottom: 15px; }
+    }
+
+    .testimonial-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }
+
+    /* Pagination Dots */
+    .dot-container { text-align: center; margin-top: 15px; }
+    .dot { height: 10px; width: 10px; margin: 0 5px; background-color: #30363d; border-radius: 50%; display: inline-block; }
+    .dot-active { background-color: #3b82f6; width: 25px; border-radius: 5px; }
     
-        .nav-item:hover {
-            color: #58a6ff !important;
-            border-bottom: 2px solid #58a6ff;
-        }
-    
-        .nav-active {
-            color: #ffffff !important;
-            border-bottom: 2px solid #3b82f6 !important;
-        }
-    
-        /* --- HERO SECTION --- */
-        .hero-container {
-            position: relative;
-            width: 100%;
-            height: 550px;
-            background-image: linear-gradient(to bottom, rgba(14, 17, 23, 0) 50%, rgba(14, 17, 23, 1) 100%), url("app/static/home1.jpg");
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 0px;
-        }
-        
-        @media (max-width: 768px) {
-            .hero-container { height: 300px; }
-            .section-text { font-size: 1.6rem !important; }
-            .section-content { width: 95% !important; }
-        }
-    
-        .section-content { position: relative; z-index: 2; width: 70%; text-align: center; }
-        .section-text { font-size: 2.8rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }
-        .highlight { color: #58a6ff; }
-    
-        /* --- UI ELEMENTS --- */
-        .testimonial-card {
-            background: #161b22; padding: 25px; border-radius: 15px; border: 1px solid #30363d;
-            display: flex; align-items: center; justify-content: center; min-height: 150px;
-            max-width: 800px; margin: 0 auto;
-        }
-    
-        @media (max-width: 480px) {
-            .testimonial-card { flex-direction: column; text-align: center; }
-            .testimonial-img { margin-right: 0px !important; margin-bottom: 15px; }
-        }
-    
-        .testimonial-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }
-    
-        .dot-container { text-align: center; margin-top: 15px; }
-        .dot { height: 10px; width: 10px; margin: 0 5px; background-color: #30363d; border-radius: 50%; display: inline-block; }
-        .dot-active { background-color: #3b82f6; width: 25px; border-radius: 5px; }
-        
-        .price-card { background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 25px;}
-        .price-amt { font-size: 2.8rem; font-weight: 800; color: #58a6ff; }
-        .per-month { font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }
-        .currency-sub { font-size: 0.85rem; color: #8b949e; margin-top: -10px; margin-bottom: 15px; }
-    
-        .stButton>button { border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; width: 100%; }
-        button[kind="primary"] { background-color: #3b82f6 !important; border: none !important; }
-    
-        .footer-minimal {
-            background-color: #1e3a8a; 
-            border-top: 3px solid #3b82f6;
-            padding: 40px 15px; 
-            text-align: center; 
-            color: #e2e8f0; 
-            margin-top: 4rem;
-            width: 100%;
-        }
-    
-        header { visibility: hidden; }
-        footer { visibility: hidden; }
-    </style>
+    /* --- PRICING CARDS --- */
+    .price-card { background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 25px;}
+    .price-amt { font-size: 2.8rem; font-weight: 800; color: #58a6ff; }
+    .per-month { font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }
+    .currency-sub { font-size: 0.85rem; color: #8b949e; margin-top: -10px; margin-bottom: 15px; }
+
+    .stButton>button { border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; width: 100%; }
+    button[kind="primary"] { background-color: #3b82f6 !important; border: none !important; }
+
+    /* --- FOOTER --- */
+    .footer-minimal {
+        background-color: #1e3a8a; 
+        border-top: 3px solid #3b82f6;
+        padding: 40px 15px; 
+        text-align: center; 
+        color: #e2e8f0; 
+        margin-top: 4rem;
+        width: 100%;
+    }
+
+    header { visibility: hidden; }
+    footer { visibility: hidden; }
+</style>
 """, unsafe_allow_html=True)
 
 # --- NAVBAR LOGIC (Using URL Parameters for smooth switching) ---
@@ -709,6 +715,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
