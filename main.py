@@ -27,7 +27,7 @@ def set_page(page_name):
     st.rerun()
 
 # --- CUSTOM CSS ---
-st.markdown(f"""
+st.markdown("""
     <style>
         /* --- GLOBAL LAYOUT & SCALING --- */
         .block-container {
@@ -43,7 +43,7 @@ st.markdown(f"""
                 padding-left: 3% !important;
                 padding-right: 3% !important;
             }
-            .stApp { margin-top: 100px !important; } /* More space for wrapped nav */
+            .stApp { margin-top: 100px !important; } 
         }
     
         .stApp { background-color: #0e1117; color: #ffffff; margin-top: 60px; }
@@ -58,7 +58,7 @@ st.markdown(f"""
             left: 0;
             z-index: 9999;
             display: flex;
-            flex-wrap: wrap; /* Allows menu to wrap on small phones */
+            flex-wrap: wrap; 
             justify-content: center;
             align-items: center;
             padding: 0 10px;
@@ -72,10 +72,9 @@ st.markdown(f"""
             font-weight: 500;
             border-bottom: 2px solid transparent;
             transition: all 0.3s ease;
-            white-space: nowrap; /* Prevents single words from breaking */
+            white-space: nowrap; 
         }
     
-        /* Smaller nav items for phones */
         @media (max-width: 480px) {
             .nav-item {
                 padding: 10px 12px;
@@ -107,7 +106,6 @@ st.markdown(f"""
             margin-bottom: 0px;
         }
         
-        /* Hero scaling for mobile */
         @media (max-width: 768px) {
             .hero-container { height: 300px; }
             .section-text { font-size: 1.6rem !important; }
@@ -125,7 +123,6 @@ st.markdown(f"""
             max-width: 800px; margin: 0 auto;
         }
     
-        /* Stack testimonial image on top for very small phones */
         @media (max-width: 480px) {
             .testimonial-card { flex-direction: column; text-align: center; }
             .testimonial-img { margin-right: 0px !important; margin-bottom: 15px; }
@@ -133,12 +130,10 @@ st.markdown(f"""
     
         .testimonial-img { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }
     
-        /* Pagination Dots */
         .dot-container { text-align: center; margin-top: 15px; }
         .dot { height: 10px; width: 10px; margin: 0 5px; background-color: #30363d; border-radius: 50%; display: inline-block; }
         .dot-active { background-color: #3b82f6; width: 25px; border-radius: 5px; }
         
-        /* --- PRICING CARDS --- */
         .price-card { background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 25px;}
         .price-amt { font-size: 2.8rem; font-weight: 800; color: #58a6ff; }
         .per-month { font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }
@@ -147,7 +142,6 @@ st.markdown(f"""
         .stButton>button { border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; width: 100%; }
         button[kind="primary"] { background-color: #3b82f6 !important; border: none !important; }
     
-        /* --- FOOTER (RESPONSIVE WIDTH) --- */
         .footer-minimal {
             background-color: #1e3a8a; 
             border-top: 3px solid #3b82f6;
@@ -156,14 +150,12 @@ st.markdown(f"""
             color: #e2e8f0; 
             margin-top: 4rem;
             width: 100%;
-            margin-left: 0 !important;
-            margin-right: 0 !important;
         }
     
         header { visibility: hidden; }
         footer { visibility: hidden; }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # --- NAVBAR LOGIC (Using URL Parameters for smooth switching) ---
 pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile", "Admin"]
@@ -717,6 +709,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
