@@ -627,13 +627,12 @@ elif st.session_state.page == "Admin":
                         save_to_gold_standard(edit_prompt, edit_logic, edit_code)
                         remove_log_entry(selection)
                         
-                        # Fix: Delete the key instead of setting it to 0
-                        if 'admin_selector' in st.session_state:
-                            del st.session_state.admin_selector
-                            
+                        # Reset state and force selector to top of the new list
                         st.session_state.confirm_save = None
-                        st.success("Saved!")
+                        st.session_state.admin_selector = 0 
+                        st.success("Saved and added to training!")
                         st.rerun()
+                        
                     if st.button("Cancel", key="c_save", use_container_width=True):
                         st.session_state.confirm_save = None
                         st.rerun()
@@ -642,20 +641,19 @@ elif st.session_state.page == "Admin":
                         st.session_state.confirm_save = selection
                         st.session_state.confirm_delete = None
                         st.rerun()
-
+            
             # --- DISCARD LOGIC ---
             with act_col2:
                 if st.session_state.get('confirm_delete') == selection:
                     if st.button("CONFIRM DELETE", type="primary", use_container_width=True):
                         remove_log_entry(selection)
                         
-                        # Fix: Delete the key instead of setting it to 0
-                        if 'admin_selector' in st.session_state:
-                            del st.session_state.admin_selector
-                            
+                        # Reset state and force selector to top of the new list
                         st.session_state.confirm_delete = None
-                        st.warning("Discarded.")
+                        st.session_state.admin_selector = 0
+                        st.warning("Entry discarded.")
                         st.rerun()
+                        
                     if st.button("Cancel", key="c_del", use_container_width=True):
                         st.session_state.confirm_delete = None
                         st.rerun()
@@ -687,6 +685,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
