@@ -325,8 +325,8 @@ elif st.session_state.page == "Make a Part":
     def log_feedback_to_sheets(category):
         try:
             # 1. Fetch current data from the sheet
-            # Note: Ensure worksheet name "Sheet1" matches your Google Sheet tab name
-            existing_data = conn.read(worksheet="Sheet1", ttl=0) 
+            # Note: Ensure worksheet name "Pending" matches your Google Sheet tab name
+            existing_data = conn.read(worksheet="Pending", ttl=0) 
             
             # 2. Format the new entry
             code = st.session_state.get('last_code', "").replace("\n", " [NEWLINE] ")
@@ -340,7 +340,7 @@ elif st.session_state.page == "Make a Part":
 
             # 3. Append and update cloud sheet
             updated_df = pd.concat([existing_data, new_row], ignore_index=True)
-            conn.update(worksheet="Sheet1", data=updated_df)
+            conn.update(worksheet="Pending", data=updated_df)
             
             # 4. Clear cache so the Admin page and AI can see the new data immediately
             st.cache_data.clear()
@@ -398,7 +398,7 @@ elif st.session_state.page == "Make a Part":
                             # Fetch verified training data from Google Sheets instead of local file
                             training_context = ""
                             try:
-                                training_df = conn.read(worksheet="Sheet1", ttl=0)
+                                training_df = conn.read(worksheet="Pending", ttl=0)
                                 # Only pull rows marked as "VERIFIED" to train the AI
                                 verified_entries = training_df[training_df["Status"] == "VERIFIED"]
                                 
@@ -572,34 +572,32 @@ elif st.session_state.page == "Admin":
     # --- TOP ACTIONS: FETCH & UNDO ---
     dl_col, undo_col = st.columns([2, 1])
     
-    # Fetch the latest data from the Cloud Sheet
     try:
-        df = conn.read(worksheet="Sheet1", ttl=0)
+        # Pull from the "Pending" tab for review
+        df = conn.read(worksheet="Pending", ttl=0)
     except Exception as e:
-        st.error(f"Could not connect to Google Sheets: {e}")
+        st.error(f"Could not connect to 'Pending' sheet: {e}")
         st.stop()
     
     with dl_col:
-        # We can still provide a download button, but now it generates a CSV from the cloud data
         csv_data = df.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="Download Cloud Data as CSV",
+            label="Download Pending Data (CSV)",
             data=csv_data,
-            file_name=f"napkin_backup_{datetime.now().strftime('%Y%m%d')}.csv",
+            file_name=f"pending_backup_{datetime.now().strftime('%Y%m%d')}.csv",
             mime="text/csv",
-            use_container_width=True
+            width="stretch"
         )
     
     with undo_col:
         if st.session_state.get('last_deleted_row'):
-            if st.button("Undo Last Entry", use_container_width=True):
+            if st.button("↩️ Undo Last Delete", width="stretch"):
                 restored_row = pd.DataFrame([st.session_state.last_deleted_row])
                 updated_df = pd.concat([df, restored_row], ignore_index=True)
-                conn.update(worksheet="Sheet1", data=updated_df)
-                
+                conn.update(worksheet="Pending", data=updated_df)
                 st.session_state.last_deleted_row = None
                 st.cache_data.clear()
-                st.success("Entry Restored to Cloud!")
+                st.success("Entry Restored to Pending!")
                 st.rerun()
 
     st.markdown("---")
@@ -607,7 +605,6 @@ elif st.session_state.page == "Admin":
     if df.empty or len(df) == 0:
         st.info("No pending feedback to review.")
     else:
-        # --- IRONCLAD INDEX MANAGEMENT ---
         if 'admin_index' not in st.session_state or st.session_state.admin_index is None:
             st.session_state.admin_index = 0
 
@@ -615,9 +612,7 @@ elif st.session_state.page == "Admin":
             current_idx = int(st.session_state.get('admin_index', 0))
         except (TypeError, ValueError):
             current_idx = 0
-            st.session_state.admin_index = 0
-        
-        # Check bounds
+
         if current_idx >= len(df):
             st.session_state.admin_index = 0
             st.rerun()
@@ -633,7 +628,6 @@ elif st.session_state.page == "Admin":
             st.session_state.admin_index = selection
             st.rerun()
 
-        # Load the selected data row
         row = df.iloc[selection]
         col_edit, col_view = st.columns([1, 1], gap="large")
         
@@ -646,66 +640,83 @@ elif st.session_state.page == "Admin":
             
             st.markdown("---")
             st.markdown("#### Actions")
-            
             act_col1, act_col2 = st.columns(2)
             
-            # --- SAVE LOGIC (Updates the Status to VERIFIED in the Sheet) ---
+            # --- SAVE LOGIC (Updates Pending AND Appends to Corrected) ---
             with act_col1:
                 if st.session_state.get('confirm_save') == selection:
-                    if st.button("CONFIRM SAVE", type="primary", use_container_width=True):
-                        # Update the DataFrame locally
-                        df.at[selection, 'Status'] = "VERIFIED"
-                        df.at[selection, 'Prompt'] = edit_prompt
-                        df.at[selection, 'Logic'] = edit_logic
-                        df.at[selection, 'Code'] = edit_code.replace("\n", " [NEWLINE] ")
-                        
-                        # Push the entire updated DataFrame back to Sheets
-                        conn.update(worksheet="Sheet1", data=df)
-                        
-                        st.session_state.confirm_save = None
-                        st.session_state.admin_index = 0 
-                        st.cache_data.clear()
-                        st.success("Verified and Saved to Cloud!")
-                        st.rerun()
-                        
-                    if st.button("Cancel", key="c_save", use_container_width=True):
+                    if st.button("CONFIRM SAVE", type="primary", width="stretch"):
+                        try:
+                            # 1. Update Pending Status to VERIFIED
+                            df.at[selection, 'Status'] = "VERIFIED"
+                            df.at[selection, 'Prompt'] = edit_prompt
+                            df.at[selection, 'Logic'] = edit_logic
+                            df.at[selection, 'Code'] = edit_code.replace("\n", " [NEWLINE] ")
+                            conn.update(worksheet="Pending", data=df)
+
+                            # 2. Append to "Corrected" Sheet
+                            try:
+                                corrected_df = conn.read(worksheet="Corrected", ttl=0)
+                            except:
+                                corrected_df = pd.DataFrame(columns=["Status", "Timestamp", "Prompt", "Logic", "Code"])
+
+                            new_row = pd.DataFrame([{
+                                "Status": "CORRECTED",
+                                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "Prompt": edit_prompt,
+                                "Logic": edit_logic,
+                                "Code": edit_code.replace("\n", " [NEWLINE] ")
+                            }])
+                            
+                            updated_corrected = pd.concat([corrected_df, new_row], ignore_index=True)
+                            conn.update(worksheet="Corrected", data=updated_corrected)
+
+                            # 3. Update local SCAD file for AI training
+                            with open("ai_training.scad", "a") as f:
+                                f.write(f"\n/* PROMPT: {edit_prompt}\n   LOGIC: {edit_logic}\n*/\n{edit_code}\n")
+
+                            st.session_state.confirm_save = None
+                            st.session_state.admin_index = 0 
+                            st.cache_data.clear()
+                            st.success("Moved to Corrected & SCAD updated!")
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Save Error: {e}")
+
+                    if st.button("Cancel", key="c_save", width="stretch"):
                         st.session_state.confirm_save = None
                         st.rerun()
                 else:
-                    if st.button("Save to Training", use_container_width=True):
+                    if st.button("Save to Training", width="stretch"):
                         st.session_state.confirm_save = selection
                         st.session_state.confirm_delete = None
                         st.rerun()
 
-            # --- DISCARD LOGIC (Removes the Row from the Sheet) ---
+            # --- DISCARD LOGIC (Removes from Pending) ---
             with act_col2:
                 if st.session_state.get('confirm_delete') == selection:
-                    if st.button("CONFIRM DELETE", type="primary", use_container_width=True):
-                        # Store for Undo
+                    if st.button("CONFIRM DELETE", type="primary", width="stretch"):
                         st.session_state.last_deleted_row = df.iloc[selection].to_dict()
-                        
-                        # Drop row and update Cloud
                         updated_df = df.drop(df.index[selection])
-                        conn.update(worksheet="Sheet1", data=updated_df)
-                        
+                        conn.update(worksheet="Pending", data=updated_df)
                         st.session_state.confirm_delete = None
                         st.session_state.admin_index = 0
                         st.cache_data.clear()
-                        st.warning("Removed from Cloud.")
+                        st.warning("Removed from Pending.")
                         st.rerun()
                         
-                    if st.button("Cancel", key="c_del", use_container_width=True):
+                    if st.button("Cancel", key="c_del", width="stretch"):
                         st.session_state.confirm_delete = None
                         st.rerun()
                 else:
-                    if st.button("Discard Entry", use_container_width=True):
+                    if st.button("Discard Entry", width="stretch"):
                         st.session_state.confirm_delete = selection
                         st.session_state.confirm_save = None
                         st.rerun()
 
         with col_view:
             st.markdown("#### Review Reference")
-            st.info("Visualizing selected entry logic:")
+            st.info("Check logic and syntax below:")
             st.code(edit_code, language="cpp")
 
 # --- CLOSE CONTENT PADDING ---
@@ -724,6 +735,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
