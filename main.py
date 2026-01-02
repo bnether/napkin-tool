@@ -344,14 +344,9 @@ if st.session_state.page == "Home":
 
 # 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
-    # --- HELPER FUNCTION (Modified for Google Sheets) ---
     def log_feedback_to_sheets(category):
         try:
-            # 1. Fetch current data from the sheet
-            # Note: Ensure worksheet name "Pending" matches your Google Sheet tab name
             existing_data = conn.read(worksheet="Pending", ttl=0) 
-            
-            # 2. Format the new entry
             code = st.session_state.get('last_code', "").replace("\n", " [NEWLINE] ")
             new_row = pd.DataFrame([{
                 "Status": category,
@@ -360,12 +355,8 @@ elif st.session_state.page == "Make a Part":
                 "Logic": st.session_state.get('last_logic', ""),
                 "Code": code
             }])
-
-            # 3. Append and update cloud sheet
             updated_df = pd.concat([existing_data, new_row], ignore_index=True)
             conn.update(worksheet="Pending", data=updated_df)
-            
-            # 4. Clear cache so the Admin page and AI can see the new data immediately
             st.cache_data.clear()
         except Exception as e:
             st.error(f"Cloud Logging Error: {e}")
@@ -375,21 +366,15 @@ elif st.session_state.page == "Make a Part":
     with col1:
         upload_choice = st.radio("Input Mode:", ["Sketch + Description", "Text Description Only"], horizontal=True)
         
-        sketch_type = "3D"
         if upload_choice == "Sketch + Description":
             sketch_type = st.radio("Sketch Type:", ["3D", "2D (Multiple Views)"], horizontal=True)
             uploaded_file = st.file_uploader("Upload Image", type=['jpg', 'png', 'jpeg'], label_visibility="collapsed")
-            
             if uploaded_file: 
                 try:
                     img = PIL.Image.open(uploaded_file).convert("RGB")
-                    max_size = 1200
-                    if img.width > max_size or img.height > max_size:
-                        img.thumbnail((max_size, max_size))
-                    
                     st.image(img, use_container_width=True)
                     st.session_state.current_img = img 
-                except Exception as e:
+                except:
                     st.error("Error processing image.")
         else:
             st.session_state.current_img = None
@@ -410,7 +395,6 @@ elif st.session_state.page == "Make a Part":
                         else:
                             client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
                             
-                            # --- LOAD CONTEXT (Libraries from local + Training from Sheets) ---
                             library_context = ""
                             if os.path.exists("libraries"):
                                 for fn in os.listdir("libraries"):
@@ -418,30 +402,32 @@ elif st.session_state.page == "Make a Part":
                                         with open(os.path.join("libraries", fn), "r") as f:
                                             library_context += f"\n--- LIBRARY: {fn} ---\n{f.read()}\n"
                             
-                            # Fetch verified training data from Google Sheets instead of local file
                             training_context = ""
                             try:
-                                training_df = conn.read(worksheet="Pending", ttl=0)
-                                # Only pull rows marked as "VERIFIED" to train the AI
-                                verified_entries = training_df[training_df["Status"] == "VERIFIED"]
-                                
-                                if not verified_entries.empty:
+                                # ONLY use Corrected sheet for training
+                                training_df = conn.read(worksheet="Corrected", ttl=0)
+                                if not training_df.empty:
                                     training_context = "\n--- GOLD STANDARD EXAMPLES ---\n"
-                                    for _, row in verified_entries.iterrows():
+                                    for _, row in training_df.iterrows():
                                         clean_code = str(row['Code']).replace(" [NEWLINE] ", "\n")
                                         training_context += f"/* PROMPT: {row['Prompt']} \n LOGIC: {row['Logic']} \n CODE: \n {clean_code} */\n\n"
                             except:
-                                training_context = "" # Fallback if sheet is empty
+                                training_context = ""
 
-                            type_instruction = "The provided image is a 2D flat profile." if sketch_type == "2D (Multiple Views)" else "The provided image is a 3D perspective sketch."
-
+                            type_inst = "The provided image is a 2D profile." if upload_choice == "Sketch + Description" and sketch_type == "2D (Multiple Views)" else "The provided image is a 3D sketch."
+                            
                             prompt = (
-                                f"Act as a Senior Mechanical Engineer. {type_instruction} "
-                                f"KNOWLEDGE BASE: {library_context} "
-                                f"REFERENCE EXAMPLES: {training_context} " 
-                                f"Create code based on: '{user_context}'. Use $fn=50;. "
-                                f"INSTRUCTIONS: For holes, you MUST use difference() {{ base(); holes(); }}. "
-                                f"Format: [DECODED LOGIC]: ... [RESULT_CODE]: ```openscad [code] ```"
+                                f"Act as a Senior Mechanical Engineer specializing in OpenSCAD. {type_instruction}\n\n"
+                                f"OBJECTIVE: Create valid OpenSCAD code for: '{user_context}'.\n\n"
+                                f"ISO STANDARDS & MODULES:\n{library_context}\n"
+                                "IMPORTANT: Use the modules from the library above for standardized parts (screws, threads, holes) rather than primitive cylinders.\n\n"
+                                f"SYNTAX EXAMPLES (Follow this style but adapt logic to the new part):\n{training_context}\n\n"
+                                "CRITICAL RULES:\n"
+                                "1. For holes/subtractions, you MUST use: difference() { base_shape(); holes(); }\n"
+                                "2. All dimensions are in mm unless otherwise stated. Use $fn=50;\n"
+                                "3. Ensure all variables are defined before use.\n"
+                                "4. Return ONLY the logic and the code block.\n\n"
+                                "Format:\n[DECODED LOGIC]: (Briefly explain the geometry)\n[RESULT_CODE]: ```openscad\n[code]\n```"
                             )
                             
                             inputs = [prompt, st.session_state.current_img] if upload_choice == "Sketch + Description" else [prompt]
@@ -460,34 +446,36 @@ elif st.session_state.page == "Make a Part":
                                 
                                 my_env = os.environ.copy()
                                 my_env["OPENSCADPATH"] = os.path.join(os.getcwd(), "libraries")
-                                subprocess.run([exe, "-o", "part.stl", "part.scad"], env=my_env, check=True)
+                                
+                                # Render and capture errors if they happen
+                                result = subprocess.run([exe, "-o", "part.stl", "part.scad"], env=my_env, capture_output=True, text=True)
+                                
+                                if result.returncode != 0:
+                                    st.error("Render Failed")
+                                    st.text_area("OpenSCAD Error Log", result.stderr, height=150)
+                                else:
+                                    stl_from_file("part.stl", color='#58a6ff')
                             else:
                                 st.error("AI failed to return valid code.")
                     except Exception as e: 
                         st.error(f"Error: {e}")
 
-        # --- DISPLAY RESULTS AND FEEDBACK BUTTONS ---
-        if 'last_code' in st.session_state:
-            stl_from_file("part.stl", color='#58a6ff')
-            
+        if 'last_code' in st.session_state and os.path.exists("part.stl"):
             d1, d2 = st.columns(2)
-            if os.path.exists("part.stl"):
-                with open("part.stl", "rb") as file:
-                    stl_data = file.read()
-                    d1.download_button("Download STL", data=stl_data, file_name="part.stl", use_container_width=True)
-                    d2.download_button("Print", data=stl_data, file_name="part.stl", use_container_width=True)
+            with open("part.stl", "rb") as file:
+                stl_data = file.read()
+                d1.download_button("Download STL", data=stl_data, file_name="part.stl", use_container_width=True)
+                d2.download_button("Print", data=stl_data, file_name="part.stl", use_container_width=True)
             
             st.markdown("---")
             st.write("**Feedback: Is this model correct?**")
             fb_col1, fb_col2 = st.columns(2)
-            
             if fb_col1.button("Correct", use_container_width=True):
                 log_feedback_to_sheets("VERIFIED")
-                st.success("Verified & Added to Cloud Training Data")
-
+                st.success("Verified!")
             if fb_col2.button("Incorrect", use_container_width=True):
                 log_feedback_to_sheets("FAILED")
-                st.warning("Logged for manual review")
+                st.warning("Logged for review")
             
                     
 # 3. PRICING
@@ -756,6 +744,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
