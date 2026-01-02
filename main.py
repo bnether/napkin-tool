@@ -414,7 +414,8 @@ elif st.session_state.page == "Make a Part":
                             except:
                                 training_context = ""
 
-                            type_inst = "The provided image is a 2D profile." if upload_choice == "Sketch + Description" and sketch_type == "2D (Multiple Views)" else "The provided image is a 3D sketch."
+                            # Fixed variable name to match the prompt template
+                            type_instruction = "The provided image is a 2D profile." if upload_choice == "Sketch + Description" and sketch_type == "2D (Multiple Views)" else "The provided image is a 3D sketch."
                             
                             prompt = (
                                 f"Act as a Senior Mechanical Engineer specializing in OpenSCAD. {type_instruction}\n\n"
@@ -744,6 +745,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
