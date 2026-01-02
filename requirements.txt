@@ -2,3 +2,5 @@ streamlit
 google-genai
 Pillow
 streamlit-stl
+st-gsheets-connection
+pandas
