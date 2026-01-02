@@ -569,7 +569,7 @@ elif st.session_state.page == "Profile":
 elif st.session_state.page == "Admin":
     st.markdown("### Verification Feedback")
     
-    # --- TOP ACTIONS: FETCH & UNDO ---
+    # --- TOP ACTIONS: DOWNLOAD SCAD & UNDO ---
     dl_col, undo_col = st.columns([2, 1])
     
     try:
@@ -580,14 +580,19 @@ elif st.session_state.page == "Admin":
         st.stop()
     
     with dl_col:
-        csv_data = df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="Download Pending Data (CSV)",
-            data=csv_data,
-            file_name=f"pending_backup_{datetime.now().strftime('%Y%m%d')}.csv",
-            mime="text/csv",
-            width="stretch"
-        )
+        # Load the current training file content for download
+        try:
+            with open("ai_training.scad", "r") as f:
+                scad_content = f.read()
+            st.download_button(
+                label="Download ai_training.scad",
+                data=scad_content,
+                file_name="ai_training.scad",
+                mime="text/plain",
+                width="stretch"
+            )
+        except FileNotFoundError:
+            st.button("No SCAD file found", disabled=True, width="stretch")
     
     with undo_col:
         if st.session_state.get('last_deleted_row'):
@@ -642,19 +647,12 @@ elif st.session_state.page == "Admin":
             st.markdown("#### Actions")
             act_col1, act_col2 = st.columns(2)
             
-            # --- SAVE LOGIC (Updates Pending AND Appends to Corrected) ---
+            # --- MOVE LOGIC (Pending -> Corrected, then Delete from Pending) ---
             with act_col1:
                 if st.session_state.get('confirm_save') == selection:
                     if st.button("CONFIRM SAVE", type="primary", width="stretch"):
                         try:
-                            # 1. Update Pending Status to VERIFIED
-                            df.at[selection, 'Status'] = "VERIFIED"
-                            df.at[selection, 'Prompt'] = edit_prompt
-                            df.at[selection, 'Logic'] = edit_logic
-                            df.at[selection, 'Code'] = edit_code.replace("\n", " [NEWLINE] ")
-                            conn.update(worksheet="Pending", data=df)
-
-                            # 2. Append to "Corrected" Sheet
+                            # 1. Append the corrected data to 'Corrected' sheet
                             try:
                                 corrected_df = conn.read(worksheet="Corrected", ttl=0)
                             except:
@@ -670,6 +668,10 @@ elif st.session_state.page == "Admin":
                             
                             updated_corrected = pd.concat([corrected_df, new_row], ignore_index=True)
                             conn.update(worksheet="Corrected", data=updated_corrected)
+
+                            # 2. DELETE the row from 'Pending' sheet to prevent double-ups
+                            updated_pending = df.drop(df.index[selection])
+                            conn.update(worksheet="Pending", data=updated_pending)
 
                             # 3. Update local SCAD file for AI training
                             with open("ai_training.scad", "a") as f:
@@ -735,6 +737,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
