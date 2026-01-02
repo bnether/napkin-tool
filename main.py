@@ -10,9 +10,13 @@ import shutil
 import csv
 from datetime import datetime
 import pandas as pd
+from streamlit_gsheets import GSheetsConnection
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Napkin", layout="wide", initial_sidebar_state="collapsed")
+
+# Initialize the connection (Place this after st.set_page_config)
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- STATE MANAGEMENT ---
 if 'page' not in st.session_state:
@@ -317,30 +321,31 @@ if st.session_state.page == "Home":
 
 # 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
-    # --- HELPER FUNCTION (Defined at the top of the page scope) ---
-    def log_feedback_to_csv(category):
-        file_path = "feedback_log.csv"
-        file_exists = os.path.isfile(file_path)
-        
-        # Clean the code string to keep it on one line for the spreadsheet
-        # We use .get() to prevent errors if the state was cleared
-        code = st.session_state.get('last_code', "").replace("\n", " [NEWLINE] ")
-        prompt = st.session_state.get('last_prompt', "")
-        logic = st.session_state.get('last_logic', "")
-        
-        row = [
-            category,
-            datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            prompt,
-            logic,
-            code
-        ]
+    # --- HELPER FUNCTION (Modified for Google Sheets) ---
+    def log_feedback_to_sheets(category):
+        try:
+            # 1. Fetch current data from the sheet
+            # Note: Ensure worksheet name "Sheet1" matches your Google Sheet tab name
+            existing_data = conn.read(worksheet="Sheet1", ttl=0) 
+            
+            # 2. Format the new entry
+            code = st.session_state.get('last_code', "").replace("\n", " [NEWLINE] ")
+            new_row = pd.DataFrame([{
+                "Status": category,
+                "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "Prompt": st.session_state.get('last_prompt', ""),
+                "Logic": st.session_state.get('last_logic', ""),
+                "Code": code
+            }])
 
-        with open(file_path, "a", newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            if not file_exists:
-                writer.writerow(["Status", "Timestamp", "Prompt", "Logic", "Code"])
-            writer.writerow(row)
+            # 3. Append and update cloud sheet
+            updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+            conn.update(worksheet="Sheet1", data=updated_df)
+            
+            # 4. Clear cache so the Admin page and AI can see the new data immediately
+            st.cache_data.clear()
+        except Exception as e:
+            st.error(f"Cloud Logging Error: {e}")
 
     col1, col2 = st.columns([1, 1], gap="large")
     
@@ -382,7 +387,7 @@ elif st.session_state.page == "Make a Part":
                         else:
                             client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
                             
-                            # --- LOAD CONTEXT (Libraries + Training) ---
+                            # --- LOAD CONTEXT (Libraries from local + Training from Sheets) ---
                             library_context = ""
                             if os.path.exists("libraries"):
                                 for fn in os.listdir("libraries"):
@@ -390,10 +395,20 @@ elif st.session_state.page == "Make a Part":
                                         with open(os.path.join("libraries", fn), "r") as f:
                                             library_context += f"\n--- LIBRARY: {fn} ---\n{f.read()}\n"
                             
+                            # Fetch verified training data from Google Sheets instead of local file
                             training_context = ""
-                            if os.path.exists("ai_training.scad"):
-                                with open("ai_training.scad", "r") as f:
-                                    training_context = f"\n--- GOLD STANDARD EXAMPLES ---\n{f.read()}\n"
+                            try:
+                                training_df = conn.read(worksheet="Sheet1", ttl=0)
+                                # Only pull rows marked as "VERIFIED" to train the AI
+                                verified_entries = training_df[training_df["Status"] == "VERIFIED"]
+                                
+                                if not verified_entries.empty:
+                                    training_context = "\n--- GOLD STANDARD EXAMPLES ---\n"
+                                    for _, row in verified_entries.iterrows():
+                                        clean_code = str(row['Code']).replace(" [NEWLINE] ", "\n")
+                                        training_context += f"/* PROMPT: {row['Prompt']} \n LOGIC: {row['Logic']} \n CODE: \n {clean_code} */\n\n"
+                            except:
+                                training_context = "" # Fallback if sheet is empty
 
                             type_instruction = "The provided image is a 2D flat profile." if sketch_type == "2D (Multiple Views)" else "The provided image is a 3D perspective sketch."
 
@@ -432,23 +447,23 @@ elif st.session_state.page == "Make a Part":
         if 'last_code' in st.session_state:
             stl_from_file("part.stl", color='#58a6ff')
             
-            # Use columns for the download/print row
             d1, d2 = st.columns(2)
-            with open("part.stl", "rb") as file:
-                stl_data = file.read()
-                d1.download_button("Download STL", data=stl_data, file_name="part.stl", use_container_width=True)
-                d2.download_button("Print", data=stl_data, file_name="part.stl", use_container_width=True)
+            if os.path.exists("part.stl"):
+                with open("part.stl", "rb") as file:
+                    stl_data = file.read()
+                    d1.download_button("Download STL", data=stl_data, file_name="part.stl", use_container_width=True)
+                    d2.download_button("Print", data=stl_data, file_name="part.stl", use_container_width=True)
             
             st.markdown("---")
             st.write("**Feedback: Is this model correct?**")
             fb_col1, fb_col2 = st.columns(2)
             
             if fb_col1.button("Correct", use_container_width=True):
-                log_feedback_to_csv("VERIFIED")
-                st.success("Verified")
+                log_feedback_to_sheets("VERIFIED")
+                st.success("Verified & Added to Cloud Training Data")
 
             if fb_col2.button("Incorrect", use_container_width=True):
-                log_feedback_to_csv("FAILED")
+                log_feedback_to_sheets("FAILED")
                 st.warning("Logged for manual review")
             
                     
@@ -554,59 +569,55 @@ elif st.session_state.page == "Profile":
 elif st.session_state.page == "Admin":
     st.markdown("### Verification Feedback")
     
-    # --- TOP ACTIONS: DOWNLOAD & UNDO ---
+    # --- TOP ACTIONS: FETCH & UNDO ---
     dl_col, undo_col = st.columns([2, 1])
     
+    # Fetch the latest data from the Cloud Sheet
+    try:
+        df = conn.read(worksheet="Sheet1", ttl=0)
+    except Exception as e:
+        st.error(f"Could not connect to Google Sheets: {e}")
+        st.stop()
+    
     with dl_col:
-        if os.path.exists("ai_training.scad"):
-            with open("ai_training.scad", "r") as f:
-                st.download_button(
-                    label="Download AI Training File",
-                    data=f.read(),
-                    file_name="ai_training.scad",
-                    mime="text/plain",
-                    use_container_width=True
-                )
+        # We can still provide a download button, but now it generates a CSV from the cloud data
+        csv_data = df.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Download Cloud Data as CSV",
+            data=csv_data,
+            file_name=f"napkin_backup_{datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
     
     with undo_col:
         if st.session_state.get('last_deleted_row'):
-            if st.button("↩️ Undo Last Delete", use_container_width=True):
-                restored_row = st.session_state.last_deleted_row
-                file_path = "feedback_log.csv"
-                file_exists = os.path.isfile(file_path)
-                with open(file_path, "a", newline='', encoding='utf-8') as f:
-                    writer = csv.DictWriter(f, fieldnames=restored_row.keys())
-                    if not file_exists:
-                        writer.writeheader()
-                    writer.writerow(restored_row)
+            if st.button("Undo Last Entry", use_container_width=True):
+                restored_row = pd.DataFrame([st.session_state.last_deleted_row])
+                updated_df = pd.concat([df, restored_row], ignore_index=True)
+                conn.update(worksheet="Sheet1", data=updated_df)
+                
                 st.session_state.last_deleted_row = None
-                st.success("Entry Restored!")
+                st.cache_data.clear()
+                st.success("Entry Restored to Cloud!")
                 st.rerun()
 
     st.markdown("---")
 
-    if not os.path.exists("feedback_log.csv") or os.stat("feedback_log.csv").st_size < 10:
+    if df.empty or len(df) == 0:
         st.info("No pending feedback to review.")
     else:
-        df = pd.read_csv("feedback_log.csv")
-        
         # --- IRONCLAD INDEX MANAGEMENT ---
-        # Ensure the state exists and is an integer
         if 'admin_index' not in st.session_state or st.session_state.admin_index is None:
             st.session_state.admin_index = 0
 
-        # Defensive check to extract a clean integer
         try:
             current_idx = int(st.session_state.get('admin_index', 0))
         except (TypeError, ValueError):
             current_idx = 0
             st.session_state.admin_index = 0
-
-        if df.empty:
-            st.warning("Feedback log is empty.")
-            st.stop()
         
-        # Check bounds before rendering selectbox
+        # Check bounds
         if current_idx >= len(df):
             st.session_state.admin_index = 0
             st.rerun()
@@ -618,7 +629,6 @@ elif st.session_state.page == "Admin":
             format_func=lambda x: f"{df.iloc[x]['Status']} | {str(df.iloc[x]['Prompt'])[:60]}..."
         )
         
-        # Update the variable if the user manually changes the dropdown
         if selection != st.session_state.admin_index:
             st.session_state.admin_index = selection
             st.rerun()
@@ -639,16 +649,23 @@ elif st.session_state.page == "Admin":
             
             act_col1, act_col2 = st.columns(2)
             
-            # --- SAVE LOGIC ---
+            # --- SAVE LOGIC (Updates the Status to VERIFIED in the Sheet) ---
             with act_col1:
                 if st.session_state.get('confirm_save') == selection:
                     if st.button("CONFIRM SAVE", type="primary", use_container_width=True):
-                        save_to_gold_standard(edit_prompt, edit_logic, edit_code)
-                        remove_log_entry(selection)
+                        # Update the DataFrame locally
+                        df.at[selection, 'Status'] = "VERIFIED"
+                        df.at[selection, 'Prompt'] = edit_prompt
+                        df.at[selection, 'Logic'] = edit_logic
+                        df.at[selection, 'Code'] = edit_code.replace("\n", " [NEWLINE] ")
+                        
+                        # Push the entire updated DataFrame back to Sheets
+                        conn.update(worksheet="Sheet1", data=df)
                         
                         st.session_state.confirm_save = None
                         st.session_state.admin_index = 0 
-                        st.success("Saved!")
+                        st.cache_data.clear()
+                        st.success("Verified and Saved to Cloud!")
                         st.rerun()
                         
                     if st.button("Cancel", key="c_save", use_container_width=True):
@@ -660,15 +677,21 @@ elif st.session_state.page == "Admin":
                         st.session_state.confirm_delete = None
                         st.rerun()
 
-            # --- DISCARD LOGIC ---
+            # --- DISCARD LOGIC (Removes the Row from the Sheet) ---
             with act_col2:
                 if st.session_state.get('confirm_delete') == selection:
                     if st.button("CONFIRM DELETE", type="primary", use_container_width=True):
-                        remove_log_entry(selection)
+                        # Store for Undo
+                        st.session_state.last_deleted_row = df.iloc[selection].to_dict()
+                        
+                        # Drop row and update Cloud
+                        updated_df = df.drop(df.index[selection])
+                        conn.update(worksheet="Sheet1", data=updated_df)
                         
                         st.session_state.confirm_delete = None
                         st.session_state.admin_index = 0
-                        st.warning("Discarded.")
+                        st.cache_data.clear()
+                        st.warning("Removed from Cloud.")
                         st.rerun()
                         
                     if st.button("Cancel", key="c_del", use_container_width=True):
@@ -682,9 +705,8 @@ elif st.session_state.page == "Admin":
 
         with col_view:
             st.markdown("#### Review Reference")
-            st.info("Copy the code below into OpenSCAD to verify.")
+            st.info("Visualizing selected entry logic:")
             st.code(edit_code, language="cpp")
-                    
 
 # --- CLOSE CONTENT PADDING ---
 # This must be outside of all the IF/ELIF blocks so it closes regardless of the page
@@ -702,6 +724,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
