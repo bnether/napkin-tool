@@ -18,6 +18,29 @@ st.set_page_config(page_title="Napkin", layout="wide", initial_sidebar_state="co
 # Initialize the connection (Place this after st.set_page_config)
 conn = st.connection("gsheets", type=GSheetsConnection)
 
+def sync_scad_from_sheets():
+    try:
+        # Read the master list of corrected data
+        corrected_df = conn.read(worksheet="Corrected", ttl=0)
+        
+        if not corrected_df.empty:
+            with open("ai_training.scad", "w") as f: # "w" overwrites the file entirely
+                for _, row in corrected_df.iterrows():
+                    p = row['Prompt']
+                    l = row['Logic']
+                    # Restore newlines for the actual SCAD file
+                    c = str(row['Code']).replace(" [NEWLINE] ", "\n")
+                    f.write(f"\n/* PROMPT: {p}\n   LOGIC: {l}\n*/\n{c}\n")
+            return True
+    except Exception as e:
+        st.error(f"Sync Error: {e}")
+    return False
+
+# --- AUTO-SYNC ON STARTUP ---
+if 'initial_sync_done' not in st.session_state:
+    if sync_scad_from_sheets():
+        st.session_state.initial_sync_done = True
+
 # --- STATE MANAGEMENT ---
 if 'page' not in st.session_state:
     st.session_state.page = "Home"
@@ -580,7 +603,6 @@ elif st.session_state.page == "Admin":
         st.stop()
     
     with dl_col:
-        # Load the current training file content for download
         try:
             with open("ai_training.scad", "r") as f:
                 scad_content = f.read()
@@ -596,7 +618,7 @@ elif st.session_state.page == "Admin":
     
     with undo_col:
         if st.session_state.get('last_deleted_row'):
-            if st.button("↩️ Undo Last Delete", width="stretch"):
+            if st.button("Undo Last Entry", width="stretch"):
                 restored_row = pd.DataFrame([st.session_state.last_deleted_row])
                 updated_df = pd.concat([df, restored_row], ignore_index=True)
                 conn.update(worksheet="Pending", data=updated_df)
@@ -647,12 +669,11 @@ elif st.session_state.page == "Admin":
             st.markdown("#### Actions")
             act_col1, act_col2 = st.columns(2)
             
-            # --- MOVE LOGIC (Pending -> Corrected, then Delete from Pending) ---
             with act_col1:
                 if st.session_state.get('confirm_save') == selection:
                     if st.button("CONFIRM SAVE", type="primary", width="stretch"):
                         try:
-                            # 1. Append the corrected data to 'Corrected' sheet
+                            # 1. Append corrected data to Corrected sheet
                             try:
                                 corrected_df = conn.read(worksheet="Corrected", ttl=0)
                             except:
@@ -669,18 +690,17 @@ elif st.session_state.page == "Admin":
                             updated_corrected = pd.concat([corrected_df, new_row], ignore_index=True)
                             conn.update(worksheet="Corrected", data=updated_corrected)
 
-                            # 2. DELETE the row from 'Pending' sheet to prevent double-ups
+                            # 2. Delete row from Pending sheet
                             updated_pending = df.drop(df.index[selection])
                             conn.update(worksheet="Pending", data=updated_pending)
 
-                            # 3. Update local SCAD file for AI training
-                            with open("ai_training.scad", "a") as f:
-                                f.write(f"\n/* PROMPT: {edit_prompt}\n   LOGIC: {edit_logic}\n*/\n{edit_code}\n")
+                            # 3. Rebuild SCAD from the full Corrected database
+                            sync_scad_from_sheets()
 
                             st.session_state.confirm_save = None
                             st.session_state.admin_index = 0 
                             st.cache_data.clear()
-                            st.success("Moved to Corrected & SCAD updated!")
+                            st.success("Moved to Corrected and SCAD file rebuilt!")
                             st.rerun()
                         except Exception as e:
                             st.error(f"Save Error: {e}")
@@ -694,7 +714,6 @@ elif st.session_state.page == "Admin":
                         st.session_state.confirm_delete = None
                         st.rerun()
 
-            # --- DISCARD LOGIC (Removes from Pending) ---
             with act_col2:
                 if st.session_state.get('confirm_delete') == selection:
                     if st.button("CONFIRM DELETE", type="primary", width="stretch"):
@@ -737,6 +756,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
