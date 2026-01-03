@@ -535,12 +535,12 @@ elif st.session_state.page == "Examples":
     
     # --- NEW: DETAILED CASE STUDIES ---
     def render_example_case(title, prompt, sketch_path=None, stl_path=None):
-        with st.expander(f"Case Study: {title}", expanded=False):
+        with st.expander(f"Example: {title}", expanded=False):
             ex_col1, ex_col2 = st.columns([1, 1])
             with ex_col1:
                 st.markdown(f"**Prompt:**\n*{prompt}*")
                 if sketch_path:
-                    st.image(sketch_path, caption="Original User Sketch", use_container_width=True)
+                    st.image(sketch_path, caption="User Sketch", use_container_width=True)
             with ex_col2:
                 if stl_path:
                     # Uses your existing stl_from_file function
@@ -556,14 +556,26 @@ elif st.session_state.page == "Examples":
     )
 
     render_example_case(
-        title="Custom Mounting Bracket",
-        prompt="Mounting bracket with 4x M5 holes, 50mm spacing, 3mm thickness.",
-        sketch_path="static/bracket_sketch.jpg",
-        stl_path="static/example_shim.stl"
+        title="Simple Enclosure",
+        prompt="200mm x 100mm x 50mm box. Wall thickness 3mm. No lid",
+        stl_path="static/example_enclosure.stl"
+    )
+
+    render_example_case(
+        title="Circular Shim",
+        prompt="40mm tall circular shim, outer diameter 36mm, inner diameter 30mm",
+        stl_path="static/example_shim.stl" # Ensure these files exist in your static folder
+    )
+
+    render_example_case(
+        title="Simple Enclosure",
+        prompt="200mm x 100mm x 50mm box. Wall thickness 3mm. No lid",
+        # sketch_path="static/bracket_sketch.jpg",
+        stl_path="static/example_enclosure.stl"
     )
 
     st.markdown("---")
-    st.markdown("### Production Gallery")
+    st.markdown("### Gallery")
 
     # --- YOUR ORIGINAL GALLERY (UNCHANGED) ---
     g1, g2 = st.columns(2)
@@ -782,6 +794,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
