@@ -71,96 +71,122 @@ BEARING_6000_DATA = [
 ];
 
 // =================================================================
-// SECTION 2: LOGIC (Getter Functions)
+// SECTION 2: LOGIC (Fixed Index-Based Search)
 // =================================================================
+
+// Helper to find the row index for a specific diameter/type
+function _find_row(key, data) = search([key], data)[0];
 
 function iso273_hole(d, fit="medium") = 
+    let(row = _find_row(d, ISO_273_DATA))
     let(col = (fit=="fine" ? 1 : (fit=="coarse" ? 3 : 2)))
-    lookup(d, ISO_273_DATA, col);
+    ISO_273_DATA[row][col];
 
-function iso4762_head_dia(d)    = lookup(d, ISO_4762_DATA, 1);
-function iso4762_head_height(d) = lookup(d, ISO_4762_DATA, 2);
+function iso4762_head_dia(d)    = ISO_4762_DATA[_find_row(d, ISO_4762_DATA)][1];
+function iso4762_head_height(d) = ISO_4762_DATA[_find_row(d, ISO_4762_DATA)][2];
 
-function iso7380_head_dia(d)    = lookup(d, ISO_7380_DATA, 1);
-function iso7380_head_height(d) = lookup(d, ISO_7380_DATA, 2);
+function iso7380_head_dia(d)    = ISO_7380_DATA[_find_row(d, ISO_7380_DATA)][1];
+function iso7380_head_height(d) = ISO_7380_DATA[_find_row(d, ISO_7380_DATA)][2];
 
-function iso4032_nut_width(d)   = lookup(d, ISO_4032_DATA, 1);
-function iso4032_nut_height(d)  = lookup(d, ISO_4032_DATA, 2);
+function iso4032_nut_width(d)   = ISO_4032_DATA[_find_row(d, ISO_4032_DATA)][1];
+function iso4032_nut_height(d)  = ISO_4032_DATA[_find_row(d, ISO_4032_DATA)][2];
 
-function din985_nut_width(d)    = lookup(d, DIN_985_DATA, 1);
-function din985_nut_height(d)   = lookup(d, DIN_985_DATA, 2);
+function din985_nut_width(d)    = DIN_985_DATA[_find_row(d, DIN_985_DATA)][1];
+function din985_nut_height(d)   = DIN_985_DATA[_find_row(d, DIN_985_DATA)][2];
 
-function iso7046_head_dia(d)    = lookup(d, ISO_7046_DATA, 1);
-function iso7046_head_height(d) = lookup(d, ISO_7046_DATA, 2);
+function iso7046_head_dia(d)    = ISO_7046_DATA[_find_row(d, ISO_7046_DATA)][1];
+function iso7046_head_height(d) = ISO_7046_DATA[_find_row(d, ISO_7046_DATA)][2];
 
-function iso7093_fender_dia(d)  = lookup(d, ISO_7093_DATA, 2);
-function iso7093_thickness(d)   = lookup(d, ISO_7093_DATA, 3);
+function iso7093_fender_dia(d)  = ISO_7093_DATA[_find_row(d, ISO_7093_DATA)][2];
+function iso7093_thickness(d)   = ISO_7093_DATA[_find_row(d, ISO_7093_DATA)][3];
 
-function iso262_tap_drill(d)    = lookup(d, ISO_262_TAP_DATA, 2);
+function iso262_tap_drill(d)    = ISO_262_TAP_DATA[_find_row(d, ISO_262_TAP_DATA)][2];
 
-function bearing_od(type)       = lookup(type, BEARING_6000_DATA, 2);
-function bearing_width(type)    = lookup(type, BEARING_6000_DATA, 3);
+function bearing_od(type)       = BEARING_6000_DATA[_find_row(type, BEARING_6000_DATA)][2];
+function bearing_width(type)    = BEARING_6000_DATA[_find_row(type, BEARING_6000_DATA)][3];
 
 // =================================================================
-// SECTION 3: UTILITY MODULES (Physical Implementation)
+// SECTION 3: UTILITY MODULES (Physical Implementation - PRECISION TOP-DOWN)
 // =================================================================
 
+// 1. SIMPLE CLEARANCE HOLE
 module iso_273_clearance(d, h, fit="medium") {
     h_dia = iso273_hole(d, fit);
-    cylinder(d = h_dia, h = h * 3, center = true, $fn = 32);
+    // Entry point: +0.5mm above surface to ensure clean cut
+    // Total height: h + 0.5 to keep the 'tip' exactly at h depth
+    translate([0, 0, 0.5]) 
+        mirror([0,0,1]) cylinder(d = h_dia, h = h + 0.5, center = false, $fn = 64);
 }
 
+// 2. SOCKET HEAD CAP SCREW (ISO 4762)
 module hole_socket_head(d, h_total, fit="medium", extra_depth=0) {
     h_dia = iso273_hole(d, fit);
     dk = iso4762_head_dia(d);
     k = iso4762_head_height(d);
     union() {
-        cylinder(d = h_dia, h = h_total * 3, center = true, $fn = 32);
-        translate([0, 0, -0.01]) cylinder(d = dk, h = k + extra_depth, $fn = 32);
+        // Main Shaft (The hole)
+        translate([0, 0, 0.5]) 
+            mirror([0,0,1]) cylinder(d = h_dia, h = h_total + 0.5, center = false, $fn = 64);
+        // Head Recess
+        translate([0, 0, 0.5]) 
+            mirror([0,0,1]) cylinder(d = dk, h = k + extra_depth + 0.5, $fn = 64);
     }
 }
 
+// 3. BUTTON HEAD SCREW (ISO 7380)
 module hole_button_head(d, h_total, fit="medium", extra_depth=0) {
     h_dia = iso273_hole(d, fit);
     dk = iso7380_head_dia(d);
     k = iso7380_head_height(d);
     union() {
-        cylinder(d = h_dia, h = h_total * 3, center = true, $fn = 32);
-        translate([0, 0, -0.01]) cylinder(d = dk, h = k + extra_depth, $fn = 32);
+        translate([0, 0, 0.5]) 
+            mirror([0,0,1]) cylinder(d = h_dia, h = h_total + 0.5, center = false, $fn = 64);
+        translate([0, 0, 0.5]) 
+            mirror([0,0,1]) cylinder(d = dk, h = k + extra_depth + 0.5, $fn = 64);
     }
 }
 
+// 4. COUNTERSUNK SCREW (ISO 7046)
 module hole_countersunk(d, h_total, fit="medium") {
     h_dia = iso273_hole(d, fit);
     dk = iso7046_head_dia(d);
     k = iso7046_head_height(d);
     union() {
-        cylinder(d = h_dia, h = h_total * 3, center = true, $fn = 32);
-        translate([0, 0, -0.01]) cylinder(d1 = dk, d2 = h_dia, h = k, $fn = 32);
+        translate([0, 0, 0.5]) 
+            mirror([0,0,1]) cylinder(d = h_dia, h = h_total + 0.5, center = false, $fn = 64);
+        translate([0, 0, 0.5]) 
+            mirror([0,0,1]) cylinder(d1 = dk, d2 = h_dia, h = k + 0.5, $fn = 64);
     }
 }
 
+// 5. HEX NUT TRAP
 module hole_nut_trap(d, depth_extra=0, nyloc=false) {
     s = nyloc ? din985_nut_width(d) : iso4032_nut_width(d);
     m = nyloc ? din985_nut_height(d) : iso4032_nut_height(d);
-    rotate([0, 0, 30]) cylinder(d = s / cos(30), h = m + depth_extra, $fn = 6);
+    translate([0,0,0.5])
+        mirror([0,0,1]) rotate([0, 0, 30]) 
+            cylinder(d = s / cos(30), h = m + depth_extra + 0.5, $fn = 6);
 }
 
+// 6. FENDER WASHER RECESS
 module hole_fender_washer(d, depth_extra=0) {
     dw = iso7093_fender_dia(d);
     hw = iso7093_thickness(d);
-    cylinder(d = dw, h = hw + depth_extra, $fn = 64);
+    translate([0,0,0.5])
+        mirror([0,0,1]) cylinder(d = dw, h = hw + depth_extra + 0.5, $fn = 64);
 }
 
+// 7. THREADED TAP DRILL
 module hole_threaded_tap(d, h_total) {
     drill_dia = iso262_tap_drill(d);
-    cylinder(d = drill_dia, h = h_total * 3, center = true, $fn = 32);
+    translate([0, 0, 0.5]) 
+        mirror([0,0,1]) cylinder(d = drill_dia, h = h_total + 0.5, center = false, $fn = 64);
 }
 
-// BEARING HOUSING (ISO 15)
-// clearance_3dp: adds a tiny buffer (default 0.15mm) for 3D printer expansion
+// 8. BEARING HOUSING
 module bearing_housing(type, depth_extra=0, clearance_3dp=0.15) {
     od = bearing_od(type);
     w = bearing_width(type);
-    cylinder(d = od + (clearance_3dp * 2), h = w + depth_extra, $fn = 100);
+    translate([0,0,0.5])
+        mirror([0,0,1]) cylinder(d = od + (clearance_3dp * 2), h = w + depth_extra + 0.5, $fn = 120);
 }
