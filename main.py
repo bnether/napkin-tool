@@ -14,6 +14,7 @@ from streamlit_gsheets import GSheetsConnection
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 from oauth2client.service_account import ServiceAccountCredentials
+from PIL import Image
 import io
 
 # --- PAGE CONFIG ---
@@ -369,7 +370,7 @@ elif st.session_state.page == "Make a Part":
             if img_obj.width > 1000:
                 w_percent = (1000 / float(img_obj.width))
                 h_size = int((float(img_obj.height) * float(w_percent)))
-                img_obj = img_obj.resize((1000, h_size), PIL.Image.Resampling.LANCZOS)
+                img_obj = img_obj.resize((1000, h_size), Image.Resampling.LANCZOS)
             
             # 3. Save to a PHYSICAL temporary file (more reliable than memory streams for Drive)
             temp_path = f"upload_{filename}"
@@ -405,9 +406,12 @@ elif st.session_state.page == "Make a Part":
             code = st.session_state.get('last_code', "").replace("\n", " [NEWLINE] ")
             
             drive_id = ""
-            if st.session_state.get('current_img'):
+            # Ensure we actually have an image object in session_state
+            if "current_img" in st.session_state and st.session_state.current_img is not None:
                 timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
                 fname = f"sketch_{timestamp_str}.jpg"
+                
+                # We pass the object directly
                 drive_id = upload_to_drive(st.session_state.current_img, fname)
 
             new_row = pd.DataFrame([{
@@ -885,6 +889,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
