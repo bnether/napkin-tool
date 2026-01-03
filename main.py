@@ -178,7 +178,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 # --- NAVBAR LOGIC (Using URL Parameters for smooth switching) ---
-pages = ["Home", "Make a Part", "Pricing", "Help", "Gallery", "Contact", "Profile", "Admin"]
+pages = ["Home", "Make a Part", "Pricing", "Help", "Examples", "Contact", "Profile", "Admin"]
 
 params = st.query_params
 if "p" in params:
@@ -529,9 +529,9 @@ elif st.session_state.page == "Help":
         * **AI error:** Although the AI is programmed specifically for engineering component design, there may still be errors with more complicated models. For these scenarios, traditional CAD modelling methods are required. However, we are aiming to continuously improve our system, and welcome any feedback when common or valuable designs are failing to generate.        
         """)
 
-# 5. GALLERY
-elif st.session_state.page == "Gallery":
-    st.markdown("### Gallery")
+# 5. Examples
+elif st.session_state.page == "Examples":
+    st.markdown("### Examples")
     g1, g2 = st.columns(2)
     g1.image("static/print1.jpg", use_container_width=True)
     g2.image("static/production2.jpg", use_container_width=True)
@@ -745,6 +745,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
