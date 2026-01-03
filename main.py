@@ -546,12 +546,13 @@ elif st.session_state.page == "Examples":
             with ex_col1:
                 st.markdown(f"**Prompt:**\n*{prompt}*")
                 if sketch_path:
-                    st.image(sketch_path, caption="User Sketch", use_container_width=True)
+                    st.image(sketch_path, use_container_width=True)
+                    st.markdown("<p style='text-align: center; color: gray; font-size: 0.8rem;'>User Sketch</p>", unsafe_allow_html=True)
             with ex_col2:
                 if stl_path:
                     # Uses your existing stl_from_file function
                     stl_from_file(stl_path, color='#58a6ff')
-                    st.caption("3D Output (Click & Drag to Rotate)")
+                    st.markdown("<p style='text-align: center; color: gray; font-size: 0.8rem;'>3D Output (Click & Drag to Rotate)</p>", unsafe_allow_html=True)
                 else:
                     st.info("3D Preview loading...")
     
@@ -801,6 +802,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
