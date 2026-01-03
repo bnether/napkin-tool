@@ -24,13 +24,19 @@ def sync_scad_from_sheets():
         corrected_df = conn.read(worksheet="Corrected", ttl=0)
         
         if not corrected_df.empty:
-            with open("ai_training.scad", "w") as f: # "w" overwrites the file entirely
+            with open("ai_training.scad", "w") as f:
                 for _, row in corrected_df.iterrows():
                     p = row['Prompt']
                     l = row['Logic']
+                    
+                    # Try to get timestamp from sheet, otherwise use current time
+                    t = row.get('Timestamp', datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                    
                     # Restore newlines for the actual SCAD file
                     c = str(row['Code']).replace(" [NEWLINE] ", "\n")
-                    f.write(f"\n/* PROMPT: {p}\n   LOGIC: {l}\n*/\n{c}\n")
+                    
+                    # Re-inserted the TIMESTAMP block here:
+                    f.write(f"\n/* TIMESTAMP: {t}\n   PROMPT: {p}\n   LOGIC: {l}\n*/\n{c}\n")
             return True
     except Exception as e:
         st.error(f"Sync Error: {e}")
@@ -794,6 +800,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
