@@ -4,3 +4,7 @@ Pillow
 streamlit-stl
 st-gsheets-connection
 pandas
+PyDrive2
+oauth2client
+google-generativeai
+
