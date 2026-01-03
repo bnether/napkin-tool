@@ -356,8 +356,7 @@ if st.session_state.page == "Home":
 elif st.session_state.page == "Make a Part":
     def upload_to_drive(img_obj, filename):
         """Uploads PIL image to Google Drive and returns the file ID."""
-        def upload_to_drive(img_obj, filename):
-        """Uploads PIL image to Google Drive and returns the file ID."""
+        
         try:
             # 1. Setup Auth
             scope = ['https://www.googleapis.com/auth/drive']
@@ -886,6 +885,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
