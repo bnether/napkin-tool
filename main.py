@@ -574,10 +574,10 @@ elif st.session_state.page == "Examples":
     )
 
     render_example_case(
-        title="Simple Enclosure",
-        prompt="200mm x 100mm x 50mm box. Wall thickness 3mm. No lid",
-        # sketch_path="static/bracket_sketch.jpg",
-        stl_path="static/example_enclosure.stl"
+        title="L-Bracket",
+        prompt="L bracket with outer dimensions shown (60mm wide, 60mm high, 100mm long). Thickness of flanges is 10mm. Two M10 thru holes, each centred on their respective flanges.",
+        sketch_path="static/example_Lbracket.jpg",
+        stl_path="static/example_Lbracket.stl"
     )
 
     st.markdown("---")
@@ -800,6 +800,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
