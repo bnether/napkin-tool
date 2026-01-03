@@ -384,6 +384,7 @@ elif st.session_state.page == "Make a Part":
                 'parents': [{'id': FOLDER_ID}],
                 'mimeType': 'image/jpeg'
             })
+            gfile.Upload(param={'supportsAllDrives': True})
             
             # We use a temp file briefly because PyDrive2 prefers file paths for Upload
             temp_name = f"temp_{filename}"
@@ -885,6 +886,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
