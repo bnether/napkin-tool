@@ -363,46 +363,33 @@ elif st.session_state.page == "Make a Part":
             gauth.credentials = creds
             drive = GoogleDrive(gauth)
 
-            if img_obj.width > 1000:
-                w_percent = (1000 / float(img_obj.width))
+            if img_obj.width > 800: # Smaller size to stay under tiny limits
+                w_percent = (800 / float(img_obj.width))
                 h_size = int((float(img_obj.height) * float(w_percent)))
-                img_obj = img_obj.resize((1000, h_size), Image.Resampling.LANCZOS)
+                img_obj = img_obj.resize((800, h_size), Image.Resampling.LANCZOS)
             
-            temp_path = f"upload_{filename}"
-            img_obj.save(temp_path, "JPEG", quality=75)
+            # Use a memory buffer instead of a file to avoid local permission issues
+            buf = io.BytesIO()
+            img_obj.save(buf, format='JPEG', quality=60)
+            buf.seek(0)
 
-            FOLDER_ID = "1aECwGnFdMa96EwpcjJLZROksQ6mqXvvD" # Make sure this is still your ID
+            FOLDER_ID = "1aECwGnFdMa96EwpcjJLZROksQ6mqXvvD" 
             
+            # Create file WITHOUT 'parents' initially to see if it bypasses quota
             gfile = drive.CreateFile({
                 'title': filename,
-                'parents': [{'id': FOLDER_ID}],
-                'mimeType': 'image/jpeg'
+                'mimeType': 'image/jpeg',
+                'parents': [{'id': FOLDER_ID}]
             })
             
-            gfile.SetContentFile(temp_path)
-            
-            # 1. Upload the file
+            # Use the "MediaIoBaseUpload" logic indirectly
+            gfile.content = buf
             gfile.Upload(param={'supportsAllDrives': True})
-
-            # 2. IMMEDIATELY TRANSFER OWNERSHIP
-            # This moves the "storage cost" from the Service Account to YOU
-            try:
-                gfile.InsertPermission({
-                    'type': 'user',
-                    'role': 'owner',
-                    'value': 'ben.netherclift@gmail.com', # <--- CHANGE THIS TO YOUR GMAIL
-                    'transferOwnership': True
-                })
-            except Exception as perm_err:
-                # If ownership transfer fails, we at least try to give you full access
-                st.warning("Ownership transfer skipped, but file may still upload.")
-
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-                
+            
             return gfile['id']
         except Exception as e:
-            st.error(f"Drive Upload Error: {e}")
+            # If it still fails, we have to use a different storage provider
+            st.error(f"Drive Quota Error: {e}")
             return ""
 
     def log_feedback_to_sheets(category):
@@ -894,6 +881,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
