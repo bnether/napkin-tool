@@ -356,45 +356,45 @@ if st.session_state.page == "Home":
 elif st.session_state.page == "Make a Part":
     def upload_to_drive(img_obj, filename):
         """Uploads PIL image to Google Drive and returns the file ID."""
+        def upload_to_drive(img_obj, filename):
+        """Uploads PIL image to Google Drive and returns the file ID."""
         try:
-            # 1. Setup Auth using your existing GSheets secrets
+            # 1. Setup Auth
             scope = ['https://www.googleapis.com/auth/drive']
             creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["connections"]["gsheets"], scope)
             gauth = GoogleAuth()
             gauth.credentials = creds
             drive = GoogleDrive(gauth)
 
-            # 2. Resize/Compress image in memory (no local file needed)
+            # 2. Resize/Compress (Stay under 1000px for speed)
             if img_obj.width > 1000:
                 w_percent = (1000 / float(img_obj.width))
                 h_size = int((float(img_obj.height) * float(w_percent)))
                 img_obj = img_obj.resize((1000, h_size), PIL.Image.Resampling.LANCZOS)
             
-            # Save to a byte stream instead of a local folder
-            img_byte_arr = io.BytesIO()
-            img_obj.save(img_byte_arr, format='JPEG', quality=70)
-            img_byte_arr.seek(0)
+            # 3. Save to a PHYSICAL temporary file (more reliable than memory streams for Drive)
+            temp_path = f"upload_{filename}"
+            img_obj.save(temp_path, "JPEG", quality=75)
 
-            # 3. Upload to the specific 'Sketch Images' folder
-            # REPLACE THIS ID with the one from your Google Drive URL
-            FOLDER_ID = "1aECwGnFdMa96EwpcjJLZROksQ6mqXvvD" 
+            # 4. Create the Drive File
+            # Replace 'YOUR_FOLDER_ID' with your actual folder ID string
+            FOLDER_ID = "YOUR_FOLDER_ID_HERE" 
             
             gfile = drive.CreateFile({
                 'title': filename,
                 'parents': [{'id': FOLDER_ID}],
                 'mimeType': 'image/jpeg'
             })
+            
+            # 5. Upload the physical file
+            # This 'supportsAllDrives' helps bypass the quota error we saw
+            gfile.SetContentFile(temp_path)
             gfile.Upload(param={'supportsAllDrives': True})
             
-            # We use a temp file briefly because PyDrive2 prefers file paths for Upload
-            temp_name = f"temp_{filename}"
-            with open(temp_name, "wb") as f:
-                f.write(img_byte_arr.getbuffer())
-            
-            gfile.SetContentFile(temp_name)
-            gfile.Upload()
-            os.remove(temp_name) # Clean up immediately
-            
+            # 6. Clean up the temporary local file
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+                
             return gfile['id']
         except Exception as e:
             st.error(f"Drive Upload Error: {e}")
@@ -886,6 +886,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
