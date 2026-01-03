@@ -354,12 +354,28 @@ elif st.session_state.page == "Make a Part":
         try:
             existing_data = conn.read(worksheet="Pending", ttl=0) 
             code = st.session_state.get('last_code', "").replace("\n", " [NEWLINE] ")
+            
+            img_filename = ""
+            if st.session_state.get('current_img'):
+                timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+                img_filename = f"sketch_{timestamp_str}.jpg"
+                os.makedirs("static/training_images", exist_ok=True)
+                
+                img = st.session_state.current_img
+                if img.width > 1000:
+                    w_percent = (1000 / float(img.width))
+                    h_size = int((float(img.height) * float(w_percent)))
+                    img = img.resize((1000, h_size), PIL.Image.Resampling.LANCZOS)
+                
+                img.save(f"static/training_images/{img_filename}", "JPEG", quality=70)
+
             new_row = pd.DataFrame([{
                 "Status": category,
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "Prompt": st.session_state.get('last_prompt', ""),
                 "Logic": st.session_state.get('last_logic', ""),
-                "Code": code
+                "Code": code,
+                "Image_File": img_filename
             }])
             updated_df = pd.concat([existing_data, new_row], ignore_index=True)
             conn.update(worksheet="Pending", data=updated_df)
@@ -410,7 +426,6 @@ elif st.session_state.page == "Make a Part":
                             
                             training_context = ""
                             try:
-                                # ONLY use Corrected sheet for training
                                 training_df = conn.read(worksheet="Corrected", ttl=0)
                                 if not training_df.empty:
                                     training_context = "\n--- GOLD STANDARD EXAMPLES ---\n"
@@ -420,7 +435,6 @@ elif st.session_state.page == "Make a Part":
                             except:
                                 training_context = ""
 
-                            # Fixed variable name to match the prompt template
                             type_instruction = "The provided image is a 2D profile." if upload_choice == "Sketch + Description" and sketch_type == "2D (Multiple Views)" else "The provided image is a 3D sketch."
                             
                             prompt = (
@@ -454,7 +468,6 @@ elif st.session_state.page == "Make a Part":
                                 my_env = os.environ.copy()
                                 my_env["OPENSCADPATH"] = os.path.join(os.getcwd(), "libraries")
                                 
-                                # Render and capture errors if they happen
                                 result = subprocess.run([exe, "-o", "part.stl", "part.scad"], env=my_env, capture_output=True, text=True)
                                 
                                 if result.returncode != 0:
@@ -706,6 +719,16 @@ elif st.session_state.page == "Admin":
         
         with col_edit:
             st.markdown("#### Data")
+            
+            # --- IMAGE DISPLAY LOGIC ---
+            image_ref = row.get('Image_File', "")
+            if image_ref and str(image_ref) != "nan" and image_ref != "":
+                img_path = f"static/training_images/{image_ref}"
+                if os.path.exists(img_path):
+                    st.image(img_path, caption="Reference Sketch", use_container_width=True)
+                else:
+                    st.warning(f"Image reference found ({image_ref}), but file is missing.")
+
             edit_prompt = st.text_input("Prompt", row['Prompt'])
             edit_logic = st.text_area("Logic", row['Logic'])
             raw_code = str(row['Code']).replace(" [NEWLINE] ", "\n")
@@ -719,28 +742,26 @@ elif st.session_state.page == "Admin":
                 if st.session_state.get('confirm_save') == selection:
                     if st.button("CONFIRM SAVE", type="primary", width="stretch"):
                         try:
-                            # 1. Append corrected data to Corrected sheet
                             try:
                                 corrected_df = conn.read(worksheet="Corrected", ttl=0)
                             except:
-                                corrected_df = pd.DataFrame(columns=["Status", "Timestamp", "Prompt", "Logic", "Code"])
+                                corrected_df = pd.DataFrame(columns=["Status", "Timestamp", "Prompt", "Logic", "Code", "Image_File"])
 
                             new_row = pd.DataFrame([{
                                 "Status": "CORRECTED",
                                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                                 "Prompt": edit_prompt,
                                 "Logic": edit_logic,
-                                "Code": edit_code.replace("\n", " [NEWLINE] ")
+                                "Code": edit_code.replace("\n", " [NEWLINE] "),
+                                "Image_File": row.get('Image_File', "") # Carry image over
                             }])
                             
                             updated_corrected = pd.concat([corrected_df, new_row], ignore_index=True)
                             conn.update(worksheet="Corrected", data=updated_corrected)
 
-                            # 2. Delete row from Pending sheet
                             updated_pending = df.drop(df.index[selection])
                             conn.update(worksheet="Pending", data=updated_pending)
 
-                            # 3. Rebuild SCAD from the full Corrected database
                             sync_scad_from_sheets()
 
                             st.session_state.confirm_save = None
@@ -763,13 +784,21 @@ elif st.session_state.page == "Admin":
             with act_col2:
                 if st.session_state.get('confirm_delete') == selection:
                     if st.button("CONFIRM DELETE", type="primary", width="stretch"):
-                        st.session_state.last_deleted_row = df.iloc[selection].to_dict()
+                        # --- PHYSICAL FILE DELETION ---
+                        row_to_delete = df.iloc[selection]
+                        img_to_remove = row_to_delete.get('Image_File', "")
+                        if img_to_remove and str(img_to_remove) != "nan":
+                            file_path = f"static/training_images/{img_to_remove}"
+                            if os.path.exists(file_path):
+                                os.remove(file_path)
+
+                        st.session_state.last_deleted_row = row_to_delete.to_dict()
                         updated_df = df.drop(df.index[selection])
                         conn.update(worksheet="Pending", data=updated_df)
                         st.session_state.confirm_delete = None
                         st.session_state.admin_index = 0
                         st.cache_data.clear()
-                        st.warning("Removed from Pending.")
+                        st.warning("Entry and associated image removed.")
                         st.rerun()
                         
                     if st.button("Cancel", key="c_del", width="stretch"):
@@ -802,6 +831,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
