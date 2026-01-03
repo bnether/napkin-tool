@@ -532,15 +532,52 @@ elif st.session_state.page == "Help":
 # 5. Examples
 elif st.session_state.page == "Examples":
     st.markdown("### Examples")
+    
+    # --- NEW: DETAILED CASE STUDIES ---
+    def render_example_case(title, prompt, sketch_path=None, stl_path=None):
+        with st.expander(f"Case Study: {title}", expanded=False):
+            ex_col1, ex_col2 = st.columns([1, 1])
+            with ex_col1:
+                st.markdown(f"**Prompt:**\n*{prompt}*")
+                if sketch_path:
+                    st.image(sketch_path, caption="Original User Sketch", use_container_width=True)
+            with ex_col2:
+                if stl_path:
+                    # Uses your existing stl_from_file function
+                    stl_from_file(stl_path, color='#58a6ff')
+                else:
+                    st.info("3D Preview loading...")
+    
+    # Add your specific examples here
+    render_example_case(
+        title="Circular Shim",
+        prompt="40mm tall circular shim, outer diameter 36mm, inner diameter 30mm",
+        stl_path="static/example_shim.stl" # Ensure these files exist in your static folder
+    )
+
+    render_example_case(
+        title="Custom Mounting Bracket",
+        prompt="Mounting bracket with 4x M5 holes, 50mm spacing, 3mm thickness.",
+        sketch_path="static/bracket_sketch.jpg",
+        stl_path="static/example_shim.stl"
+    )
+
+    st.markdown("---")
+    st.markdown("### Production Gallery")
+
+    # --- YOUR ORIGINAL GALLERY (UNCHANGED) ---
     g1, g2 = st.columns(2)
     g1.image("static/print1.jpg", use_container_width=True)
     g2.image("static/production2.jpg", use_container_width=True)
+    
     g3, g4 = st.columns(2)
     g3.image("static/gallery3.jpg", use_container_width=True)
     g4.image("static/gallery4.jpg", use_container_width=True)
+    
     g5, g6 = st.columns(2)
     g5.image("static/gallery5.jpg", use_container_width=True)
     g6.image("static/gallery6.jpg", use_container_width=True)
+    
 
 # 6. CONTACT
 elif st.session_state.page == "Contact":
@@ -745,6 +782,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
