@@ -539,7 +539,7 @@ elif st.session_state.page == "Help":
 elif st.session_state.page == "Examples":
     st.markdown("### Examples")
     
-    # --- NEW: DETAILED CASE STUDIES ---
+    # --- REAL EXAMPLES ---
     def render_example_case(title, prompt, sketch_path=None, stl_path=None):
         with st.expander(f"Example: {title}", expanded=False):
             ex_col1, ex_col2 = st.columns([1, 1])
@@ -551,6 +551,7 @@ elif st.session_state.page == "Examples":
                 if stl_path:
                     # Uses your existing stl_from_file function
                     stl_from_file(stl_path, color='#58a6ff')
+                    st.caption("3D Output (Click & Drag to Rotate)")
                 else:
                     st.info("3D Preview loading...")
     
@@ -558,7 +559,7 @@ elif st.session_state.page == "Examples":
     render_example_case(
         title="Circular Shim",
         prompt="40mm tall circular shim, outer diameter 36mm, inner diameter 30mm",
-        stl_path="static/example_shim.stl" # Ensure these files exist in your static folder
+        stl_path="static/example_shim.stl" 
     )
 
     render_example_case(
@@ -570,7 +571,7 @@ elif st.session_state.page == "Examples":
     render_example_case(
         title="Mounting Plate",
         prompt="10mm thick plate, 100mm wide and 150mm long. An M6 counterbored hole in each corner, 12mm from each edge.",
-        stl_path="static/example_plate.stl" # Ensure these files exist in your static folder
+        stl_path="static/example_plate.stl" 
     )
 
     render_example_case(
@@ -800,6 +801,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
