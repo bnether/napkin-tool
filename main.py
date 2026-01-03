@@ -356,29 +356,22 @@ if st.session_state.page == "Home":
 # 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
     def upload_to_drive(img_obj, filename):
-        """Uploads PIL image to Google Drive and returns the file ID."""
-        
         try:
-            # 1. Setup Auth
             scope = ['https://www.googleapis.com/auth/drive']
             creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["connections"]["gsheets"], scope)
             gauth = GoogleAuth()
             gauth.credentials = creds
             drive = GoogleDrive(gauth)
 
-            # 2. Resize/Compress (Stay under 1000px for speed)
             if img_obj.width > 1000:
                 w_percent = (1000 / float(img_obj.width))
                 h_size = int((float(img_obj.height) * float(w_percent)))
                 img_obj = img_obj.resize((1000, h_size), Image.Resampling.LANCZOS)
             
-            # 3. Save to a PHYSICAL temporary file (more reliable than memory streams for Drive)
             temp_path = f"upload_{filename}"
             img_obj.save(temp_path, "JPEG", quality=75)
 
-            # 4. Create the Drive File
-            # Replace 'YOUR_FOLDER_ID' with your actual folder ID string
-            FOLDER_ID = "1aECwGnFdMa96EwpcjJLZROksQ6mqXvvD" 
+            FOLDER_ID = "1aECwGnFdMa96EwpcjJLZROksQ6mqXvvD" # Make sure this is still your ID
             
             gfile = drive.CreateFile({
                 'title': filename,
@@ -386,12 +379,24 @@ elif st.session_state.page == "Make a Part":
                 'mimeType': 'image/jpeg'
             })
             
-            # 5. Upload the physical file
-            # This 'supportsAllDrives' helps bypass the quota error we saw
             gfile.SetContentFile(temp_path)
-            gfile.Upload(param={'supportsAllDrives': True})
             
-            # 6. Clean up the temporary local file
+            # 1. Upload the file
+            gfile.Upload(param={'supportsAllDrives': True})
+
+            # 2. IMMEDIATELY TRANSFER OWNERSHIP
+            # This moves the "storage cost" from the Service Account to YOU
+            try:
+                gfile.InsertPermission({
+                    'type': 'user',
+                    'role': 'owner',
+                    'value': 'ben.netherclift@gmail.com', # <--- CHANGE THIS TO YOUR GMAIL
+                    'transferOwnership': True
+                })
+            except Exception as perm_err:
+                # If ownership transfer fails, we at least try to give you full access
+                st.warning("Ownership transfer skipped, but file may still upload.")
+
             if os.path.exists(temp_path):
                 os.remove(temp_path)
                 
@@ -889,6 +894,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
