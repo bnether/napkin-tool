@@ -81,7 +81,7 @@ st.markdown(f"""
     .stApp {{ background-color: #0e1117; color: #ffffff; margin-top: 60px; }}
 
     /* --- MODERN NAVBAR (FIXED TOP) --- */
-    #nav-container {{
+    .nav-wrapper {{
         background-color: #0e1117;
         border-bottom: 1px solid #30363d;
         width: 100vw;
@@ -89,13 +89,15 @@ st.markdown(f"""
         top: 0;
         left: 0;
         z-index: 9999;
-        height: 60px;
         display: flex;
         justify-content: center;
+        align-items: center;
+        height: 60px;
     }}
 
-    /* ONLY TARGET BUTTONS INSIDE THE NAVBAR */
-    #nav-container .stButton > button {{
+    /* TARGET ONLY BUTTONS WITH KEYS STARTING WITH 'nav_' */
+    button[data-testid="baseButton-secondary"][id^="nav_"], 
+    button[data-testid="baseButton-primary"][id^="nav_"] {{
         padding: 18px 25px !important;
         color: #8b949e !important;
         background: transparent !important;
@@ -106,48 +108,37 @@ st.markdown(f"""
         border-radius: 0px !important;
         transition: all 0.3s ease !important;
         height: 60px !important;
-        width: 100% !important;
+        box-shadow: none !important;
     }}
 
-    #nav-container .stButton > button:hover {{
+    /* Hover effect for navbar items */
+    button[id^="nav_"]:hover {{
         color: #58a6ff !important;
         border-bottom: 2px solid #58a6ff !important;
         background: transparent !important;
     }}
 
-    #nav-container .stButton > button[kind="primary"] {{
+    /* Active state (The blue underline) for navbar items */
+    button[data-testid="baseButton-primary"][id^="nav_"] {{
         color: #ffffff !important;
         border-bottom: 2px solid #3b82f6 !important;
         background: transparent !important;
-        box-shadow: none !important;
     }}
 
-    /* Hero Section */
-    .hero-container {{
-        position: relative;
-        width: 100%;
-        height: 550px;
-        background-image: linear-gradient(to bottom, rgba(14, 17, 23, 0) 50%, rgba(14, 17, 23, 1) 100%), url("app/static/home1.jpg");
-        background-size: cover;
-        background-position: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 0px;
+    /* --- SITE-WIDE BUTTON STYLE (Restores your Pricing/Footer buttons) --- */
+    .stButton>button:not([id^="nav_"]) {{
+        border-radius: 10px;
+        height: 3.5em;
+        background-color: #21262d;
+        color: white;
+        border: 1px solid #30363d;
+        font-weight: 600;
     }}
-    .section-content {{ position: relative; z-index: 2; width: 70%; text-align: center; }}
-    .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
-    .highlight {{ color: #58a6ff; }}
-
-    /* KEEP YOUR ORIGINAL BUTTON STYLES FOR THE REST OF THE SITE */
-    .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
-    button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; }}
-
-    /* Footer Styles */
-    .footer-minimal {{
-        background-color: #1e3a8a; border-top: 3px solid #3b82f6;
-        padding: 40px 15px; text-align: center; color: #e2e8f0; margin-top: 4rem;
-        margin-left: -6% !important; margin-right: -6% !important; width: 112% !important;
+    
+    /* Primary buttons elsewhere (like 'Get Professional') */
+    .stButton>button[kind="primary"]:not([id^="nav_"]) {{
+        background-color: #3b82f6 !important;
+        border: none !important;
     }}
 
     header {{ visibility: hidden; }}
@@ -162,15 +153,14 @@ current_user = BETA_USERS.get(st.session_state.get("user_email"))
 if current_user and current_user.get("role") == "Admin":
     pages.append("Admin")
 
-# Create the specific ID container for the navbar
-st.markdown('<div id="nav-container">', unsafe_allow_html=True)
+# Simple wrapper for the background/border
+st.markdown('<div class="nav-wrapper">', unsafe_allow_html=True)
 
-# Create the same number of columns for buttons
 nav_cols = st.columns(len(pages))
 
 for i, p in enumerate(pages):
     is_active = (st.session_state.page == p)
-    # Buttons inside the columns
+    # The 'nav_' prefix in the key matches the CSS selector above
     if nav_cols[i].button(p, key=f"nav_{p}", use_container_width=True, type="primary" if is_active else "secondary"):
         st.session_state.page = p
         st.rerun()
@@ -864,6 +854,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
