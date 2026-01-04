@@ -68,19 +68,23 @@ if not st.session_state.initial_sync_done:
         st.session_state.initial_sync_done = True
 
 
-# --- CUSTOM CSS ---
+# --- FULL CONSOLIDATED CUSTOM CSS ---
 st.markdown(f"""
     <style>
-    /* Global Layout */
+    /* 1. GLOBAL LAYOUT & THEME */
     .block-container {{
         padding-top: 0rem !important;
         padding-bottom: 0rem !important;
         padding-left: 5% !important;
         padding-right: 5% !important;
     }}
-    .stApp {{ background-color: #0e1117; color: #ffffff; margin-top: 60px; }}
+    .stApp {{ 
+        background-color: #0e1117; 
+        color: #ffffff; 
+        margin-top: 60px; 
+    }}
 
-    /* --- MODERN NAVBAR (FIXED TOP) --- */
+    /* 2. MODERN NAVBAR (FIXED TOP) */
     .nav-wrapper {{
         background-color: #0e1117;
         border-bottom: 1px solid #30363d;
@@ -95,15 +99,8 @@ st.markdown(f"""
         height: 60px;
     }}
 
-    /* Target the Column Container for the Nav */
-    [data-testid="column"] {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }}
-
-    /* RE-STYLING BUTTONS TO LOOK LIKE NAV ITEMS */
-    .stButton > button {{
+    /* TARGET ONLY NAVBAR BUTTONS (Keys starting with nav_) */
+    button[id^="nav_"] {{
         padding: 18px 25px !important;
         color: #8b949e !important;
         background: transparent !important;
@@ -115,23 +112,70 @@ st.markdown(f"""
         transition: all 0.3s ease !important;
         height: 60px !important;
         width: 100% !important;
+        box-shadow: none !important;
     }}
 
-    .stButton > button:hover {{
+    button[id^="nav_"]:hover {{
         color: #58a6ff !important;
         border-bottom: 2px solid #58a6ff !important;
         background: transparent !important;
     }}
 
-    /* Active State (Triggered by 'primary' type in Python) */
-    .stButton > button[kind="primary"] {{
+    /* Active State for Navbar (Primary type) */
+    button[data-testid="baseButton-primary"][id^="nav_"] {{
         color: #ffffff !important;
         border-bottom: 2px solid #3b82f6 !important;
         background: transparent !important;
-        box-shadow: none !important;
     }}
 
-    /* Hero Section */
+    /* 3. SITE-WIDE BUTTON STYLE (Restores Pricing, Footer, Tabs) */
+    /* This targets buttons NOT in the navbar */
+    .stButton > button:not([id^="nav_"]) {{
+        border-radius: 10px !important;
+        height: 3.5em !important;
+        background-color: #21262d !important;
+        color: white !important;
+        border: 1px solid #30363d !important;
+        font-weight: 600 !important;
+    }}
+
+    /* Primary buttons elsewhere (e.g., 'Get Professional', 'Generate') */
+    .stButton > button[kind="primary"]:not([id^="nav_"]) {{
+        background-color: #3b82f6 !important;
+        border: none !important;
+    }}
+
+    /* 4. FOOTER STYLING & ICON FIX */
+    .footer-minimal {{
+        background-color: #1e3a8a; 
+        border-top: 3px solid #3b82f6;
+        padding: 40px 15px; 
+        text-align: center; 
+        color: #e2e8f0; 
+        margin-top: 4rem;
+        margin-left: -6% !important; 
+        margin-right: -6% !important; 
+        width: 112% !important;
+    }}
+
+    .footer-icon-box {{
+        width: 35px;
+        height: 35px;
+        margin: 0 10px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        opacity: 0.8;
+    }}
+
+    .footer-icon-box img {{
+        width: 22px; /* Fixed small size */
+        height: 22px;
+        filter: brightness(0) invert(1); /* Forces icons to be WHITE */
+        object-fit: contain;
+    }}
+
+    /* 5. HERO & UI ELEMENTS */
     .hero-container {{
         position: relative;
         width: 100%;
@@ -144,33 +188,18 @@ st.markdown(f"""
         justify-content: center;
         margin-bottom: 0px;
     }}
-    .section-content {{ position: relative; z-index: 2; width: 70%; text-align: center; }}
-    .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
+    .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
     .highlight {{ color: #58a6ff; }}
 
-    /* UI Elements */
     .testimonial-card {{
         background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
         display: flex; align-items: center; justify-content: center; min-height: 180px;
         max-width: 800px; margin: 0 auto;
     }}
-    .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
 
-    /* Pagination Dots */
-    .dot-container {{ text-align: center; margin-top: 15px; }}
-    .dot {{ height: 10px; width: 10px; margin: 0 5px; background-color: #30363d; border-radius: 50%; display: inline-block; }}
     .dot-active {{ background-color: #3b82f6; width: 25px; border-radius: 5px; }}
     
     .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 25px;}}
-    .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
-    .per-month {{ font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }}
-    .currency-sub {{ font-size: 0.85rem; color: #8b949e; margin-top: -10px; margin-bottom: 15px; }}
-
-    .footer-minimal {{
-        background-color: #1e3a8a; border-top: 3px solid #3b82f6;
-        padding: 40px 15px; text-align: center; color: #e2e8f0; margin-top: 4rem;
-        margin-left: -6% !important; margin-right: -6% !important; width: 112% !important;
-    }}
 
     header {{ visibility: hidden; }}
     footer {{ visibility: hidden; }}
@@ -886,5 +915,6 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
