@@ -530,15 +530,14 @@ elif st.session_state.page == "Help":
         Unlike generic AI, this platform is engineered specifically for industrial environments:
         * **Parametric Precision:** Uses a mathematical modelling engine to guarantee exact physical dimensions instead of visual guesses.
         * **Machinist Logic:** Programmed with engineering rules for structural integrity, clearances, and 3D-printability.
-        * **Professional Workflow:** Automatically applies ISO-compliant tolerances and mechanical heuristics.
+        * **Professional Workflow:** Automatically applies ISO-compliant tolerances and mechanical heuristics. 
         """)
     with st.expander("What type of parts can it make?"):
         st.write("""
         * Any component that is simple enough to be described by a small sketch and text prompt.
         * The AI will excel at engineering-specific parts and features; for example, a mounting bracket with an M6 clearance hole. This is because it has been trained on real-world industrial standards such as ISO/DIN tables.
+        * See the example page for design examples and images.
         """)
-    with st.expander("Does it work with resin printers?"):
-        st.write("Yes, the .STL files are compatible with both FDM and SLA (resin) slicers.")
     with st.expander("How do I get the best results?"):
         st.write("""
         * **Be Specific:** Include exact dimensions (e.g., "50mm wide").
@@ -550,6 +549,28 @@ elif st.session_state.page == "Help":
         * **User error:** Firstly, check the accuracy of your drawing and description, ensuring that all features are clearly described. Watch our tutorial to learn how to give more effective prompts.
         * **AI error:** Although the AI is programmed specifically for engineering component design, there may still be errors with more complicated models. For these scenarios, traditional CAD modelling methods are required. However, we are aiming to continuously improve our system, and welcome any feedback when common or valuable designs are failing to generate.        
         """)
+    with st.expander("What engineering standards is the AI trained to"):
+        st.write("""
+        * ISO 273 (Clearance Holes)
+        * ISO 4762 (Socket Head Cap Screws)
+        * ISO 7380 (Button Head Screws)
+        * ISO 4032 (Hex Nuts)
+        * DIN 985 (Nyloc Nuts)
+        * ISO 7046 (Countersunk Screws)
+        * ISO 7093 (Fender Washers)
+        * ISO 262 (Metric Coarse Threads)
+        * ISO 15 (6000 Series Rolling Bearings)
+        * Note: these are examples only, not an extensive list. We are continually training the AI to real-world standards to improve its precision and reliability.
+        """)
+        with st.expander("Does it work with resin printers?"):
+        st.write("Yes, the .STL files are compatible with both FDM and SLA (resin) slicers.")
+        with st.expander("What happens when I log a generated part as correct or incorrect"):
+        st.write("""
+        * When a generated part is logged as either correct or incorrect, it is sent to our team for a manual review, regardless of the outcome. 
+        * We will manually check the image and prompt against the 3D output, also examining the AI's methods and code.
+        * If a part is incorrect, or the 3D modelling process is inefficient, we will manually create the correct solution. This solution is added to a 'vault' of training records that the AI continuously references, allowing it to learn and improve over time.
+        """)
+    
 
 # 5. Examples
 elif st.session_state.page == "Examples":
@@ -832,6 +853,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
