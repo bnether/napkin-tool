@@ -16,6 +16,8 @@ from pydrive2.drive import GoogleDrive
 from oauth2client.service_account import ServiceAccountCredentials
 from PIL import Image
 import io
+import base64
+from io import BytesIO
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Napkin", layout="wide", initial_sidebar_state="collapsed")
@@ -355,72 +357,35 @@ if st.session_state.page == "Home":
 
 # 2. MAKE A PART
 elif st.session_state.page == "Make a Part":
-    def upload_to_drive(img_obj, filename):
-        try:
-            scope = ['https://www.googleapis.com/auth/drive']
-            creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["connections"]["gsheets"], scope)
-            gauth = GoogleAuth()
-            gauth.credentials = creds
-            drive = GoogleDrive(gauth)
-
-            if img_obj.width > 800: # Smaller size to stay under tiny limits
-                w_percent = (800 / float(img_obj.width))
-                h_size = int((float(img_obj.height) * float(w_percent)))
-                img_obj = img_obj.resize((800, h_size), Image.Resampling.LANCZOS)
-            
-            # Use a memory buffer instead of a file to avoid local permission issues
-            buf = io.BytesIO()
-            img_obj.save(buf, format='JPEG', quality=60)
-            buf.seek(0)
-
-            FOLDER_ID = "1aECwGnFdMa96EwpcjJLZROksQ6mqXvvD" 
-            
-            # Create file WITHOUT 'parents' initially to see if it bypasses quota
-            gfile = drive.CreateFile({
-                'title': filename,
-                'mimeType': 'image/jpeg',
-                'parents': [{'id': FOLDER_ID}]
-            })
-            
-            # Use the "MediaIoBaseUpload" logic indirectly
-            gfile.content = buf
-            gfile.Upload(param={'supportsAllDrives': True})
-            
-            return gfile['id']
-        except Exception as e:
-            # If it still fails, we have to use a different storage provider
-            st.error(f"Drive Quota Error: {e}")
-            return ""
-
+    # --- REPLACED DRIVE UPLOAD WITH BASE64 LOGIC ---
     def log_feedback_to_sheets(category):
         try:
-            existing_data = conn.read(worksheet="Pending", ttl=0) 
-            code = st.session_state.get('last_code', "").replace("\n", " [NEWLINE] ")
+            existing_data = conn.read(worksheet="Pending", ttl=0)
             
-            drive_id = ""
-            # Ensure we actually have an image object in session_state
+            img_str = ""
+            # Convert image to string if it exists, otherwise leave blank
             if "current_img" in st.session_state and st.session_state.current_img is not None:
-                timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-                fname = f"sketch_{timestamp_str}.jpg"
-                
-                # We pass the object directly
-                drive_id = upload_to_drive(st.session_state.current_img, fname)
+                buffered = BytesIO()
+                img = st.session_state.current_img.copy()
+                img.thumbnail((400, 400)) 
+                img.save(buffered, format="JPEG", quality=60)
+                img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
             new_row = pd.DataFrame([{
                 "Status": category,
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "Prompt": st.session_state.get('last_prompt', ""),
                 "Logic": st.session_state.get('last_logic', ""),
-                "Code": code,
-                "Image_File": drive_id # Stores the Drive File ID
+                "Code": st.session_state.get('last_code', "").replace("\n", " [NEWLINE] "),
+                "Image_File": img_str 
             }])
+            
             updated_df = pd.concat([existing_data, new_row], ignore_index=True)
             conn.update(worksheet="Pending", data=updated_df)
             st.cache_data.clear()
+            st.success(f"Feedback logged as {category}!")
         except Exception as e:
-            st.error(f"Cloud Logging Error: {e}")
-
-   
+            st.error(f"Error logging to sheets: {e}")
 
     col1, col2 = st.columns([1, 1], gap="large")
     
@@ -535,8 +500,7 @@ elif st.session_state.page == "Make a Part":
             if fb_col2.button("Incorrect", use_container_width=True):
                 log_feedback_to_sheets("FAILED")
                 st.warning("Logged for review")
-            
-                    
+                
 # 3. PRICING
 elif st.session_state.page == "Pricing":
     p1, p2, p3 = st.columns(3)
@@ -759,12 +723,15 @@ elif st.session_state.page == "Admin":
         with col_edit:
             st.markdown("#### Data")
             
-            # --- GOOGLE DRIVE IMAGE DISPLAY ---
-            drive_id = row.get('Image_File', "")
-            if drive_id and str(drive_id) != "nan" and drive_id != "":
-                # Direct thumbnail link for Google Drive IDs
-                display_url = f"https://drive.google.com/thumbnail?id={drive_id}&sz=w1000"
-                st.image(display_url, caption="Reference Sketch (from Drive)", use_container_width=True)
+            # --- BASE64 IMAGE DISPLAY ---
+            # We look at the same column, but treat it as a data string now
+            img_b64 = row.get('Image_File', "")
+            if img_b64 and str(img_b64) != "nan" and img_b64 != "":
+                try:
+                    # Streamlit handles the data URI prefix automatically
+                    st.image(f"data:image/jpeg;base64,{img_b64}", caption="Reference Sketch (Stored in Sheet)", use_container_width=True)
+                except Exception as e:
+                    st.error(f"Could not render image string: {e}")
 
             edit_prompt = st.text_input("Prompt", row['Prompt'])
             edit_logic = st.text_area("Logic", row['Logic'])
@@ -790,7 +757,7 @@ elif st.session_state.page == "Admin":
                                 "Prompt": edit_prompt,
                                 "Logic": edit_logic,
                                 "Code": edit_code.replace("\n", " [NEWLINE] "),
-                                "Image_File": row.get('Image_File', "") # Carry Drive ID over
+                                "Image_File": row.get('Image_File', "") # Carry the Base64 string over
                             }])
                             
                             updated_corrected = pd.concat([corrected_df, new_row], ignore_index=True)
@@ -821,34 +788,18 @@ elif st.session_state.page == "Admin":
             with act_col2:
                 if st.session_state.get('confirm_delete') == selection:
                     if st.button("CONFIRM DELETE", type="primary", width="stretch"):
-                        # --- GOOGLE DRIVE FILE DELETION ---
+                        # --- NO DRIVE DELETION NEEDED ---
+                        # Because the image is just a string in the row, deleting the row deletes the image.
                         row_to_delete = df.iloc[selection]
-                        id_to_remove = row_to_delete.get('Image_File', "")
                         
-                        if id_to_remove and str(id_to_remove) != "nan" and id_to_remove != "":
-                            try:
-                                from pydrive2.auth import GoogleAuth
-                                from pydrive2.drive import GoogleDrive
-                                from oauth2client.service_account import ServiceAccountCredentials
-                                
-                                scope = ['https://www.googleapis.com/auth/drive']
-                                creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["connections"]["gsheets"], scope)
-                                gauth = GoogleAuth()
-                                gauth.credentials = creds
-                                drive = GoogleDrive(gauth)
-                                
-                                file_to_del = drive.CreateFile({'id': id_to_remove})
-                                file_to_del.Delete() # Permanently deletes from Drive
-                            except Exception as e:
-                                st.error(f"Drive Deletion Error: {e}")
-
                         st.session_state.last_deleted_row = row_to_delete.to_dict()
                         updated_df = df.drop(df.index[selection])
                         conn.update(worksheet="Pending", data=updated_df)
+                        
                         st.session_state.confirm_delete = None
                         st.session_state.admin_index = 0
                         st.cache_data.clear()
-                        st.warning("Entry and Drive image removed.")
+                        st.warning("Entry removed from Pending.")
                         st.rerun()
                         
                     if st.button("Cancel", key="c_del", width="stretch"):
@@ -881,6 +832,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
