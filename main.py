@@ -78,7 +78,6 @@ st.markdown(f"""
         padding-left: 5% !important;
         padding-right: 5% !important;
     }}
-    /* Added margin-top to stApp so content doesn't hide behind the fixed navbar */
     .stApp {{ background-color: #0e1117; color: #ffffff; margin-top: 60px; }}
 
     /* --- MODERN NAVBAR (FIXED TOP) --- */
@@ -93,29 +92,46 @@ st.markdown(f"""
         display: flex;
         justify-content: center;
         align-items: center;
+        height: 60px;
     }}
 
-    .nav-item {{
-        padding: 18px 25px;
+    /* Target the Column Container for the Nav */
+    [data-testid="column"] {{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }}
+
+    /* RE-STYLING BUTTONS TO LOOK LIKE NAV ITEMS */
+    .stButton > button {{
+        padding: 18px 25px !important;
         color: #8b949e !important;
-        text-decoration: none !important;
-        font-size: 15px;
-        font-weight: 500;
-        border-bottom: 2px solid transparent;
-        transition: all 0.3s ease;
+        background: transparent !important;
+        border: none !important;
+        font-size: 15px !important;
+        font-weight: 500 !important;
+        border-bottom: 2px solid transparent !important;
+        border-radius: 0px !important;
+        transition: all 0.3s ease !important;
+        height: 60px !important;
+        width: 100% !important;
     }}
 
-    .nav-item:hover {{
+    .stButton > button:hover {{
         color: #58a6ff !important;
-        border-bottom: 2px solid #58a6ff;
+        border-bottom: 2px solid #58a6ff !important;
+        background: transparent !important;
     }}
 
-    .nav-active {{
+    /* Active State (Triggered by 'primary' type in Python) */
+    .stButton > button[kind="primary"] {{
         color: #ffffff !important;
         border-bottom: 2px solid #3b82f6 !important;
+        background: transparent !important;
+        box-shadow: none !important;
     }}
 
-    /* Hero Section with Vertical Gradient Fade (Preserved from Working Script) */
+    /* Hero Section */
     .hero-container {{
         position: relative;
         width: 100%;
@@ -141,80 +157,52 @@ st.markdown(f"""
     .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
 
     /* Pagination Dots */
-    .dot-container {{
-        text-align: center;
-        margin-top: 15px;
-    }}
-    .dot {{
-        height: 10px;
-        width: 10px;
-        margin: 0 5px;
-        background-color: #30363d;
-        border-radius: 50%;
-        display: inline-block;
-    }}
-    .dot-active {{
-        background-color: #3b82f6;
-        width: 25px;
-        border-radius: 5px;
-    }}
+    .dot-container {{ text-align: center; margin-top: 15px; }}
+    .dot {{ height: 10px; width: 10px; margin: 0 5px; background-color: #30363d; border-radius: 50%; display: inline-block; }}
+    .dot-active {{ background-color: #3b82f6; width: 25px; border-radius: 5px; }}
     
     .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 25px;}}
     .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
-    
     .per-month {{ font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }}
     .currency-sub {{ font-size: 0.85rem; color: #8b949e; margin-top: -10px; margin-bottom: 15px; }}
 
-    .stButton>button {{ border-radius: 10px; height: 3.5em; background-color: #21262d; color: white; border: 1px solid #30363d; font-weight: 600; }}
-    button[kind="primary"] {{ background-color: #3b82f6 !important; border: none !important; }}
-
-    /* Footer Styles (Merged logic) */
     .footer-minimal {{
-        background-color: #1e3a8a; 
-        border-top: 3px solid #3b82f6;
-        padding: 40px 15px; 
-        text-align: center; 
-        color: #e2e8f0; 
-        margin-top: 4rem;
-        margin-left: -6% !important;
-        margin-right: -6% !important;
-        width: 112% !important;
+        background-color: #1e3a8a; border-top: 3px solid #3b82f6;
+        padding: 40px 15px; text-align: center; color: #e2e8f0; margin-top: 4rem;
+        margin-left: -6% !important; margin-right: -6% !important; width: 112% !important;
     }}
-
-    .footer-icon-box {{
-        width: 40px; height: 40px; margin: 0 10px;
-        display: inline-flex; align-items: center; justify-content: center;
-    }}
-    .footer-icon-box img {{ width: 24px; filter: brightness(0) invert(1); }}
 
     header {{ visibility: hidden; }}
     footer {{ visibility: hidden; }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- NAVBAR LOGIC (Using Buttons to preserve Session State) ---
+# --- NAVBAR LOGIC (Session-Safe Buttons with CSS Styling) ---
 pages = ["Home", "Make a Part", "Pricing", "Help", "Examples", "Contact", "Profile"]
 
-# Add Admin only if the user is an admin
 current_user = BETA_USERS.get(st.session_state.get("user_email"))
 if current_user and current_user.get("role") == "Admin":
     pages.append("Admin")
 
-# Use columns to create the horizontal navbar effect
+# Start the wrapper div for styling
+st.markdown('<div class="nav-wrapper">', unsafe_allow_html=True)
+
+# Create columns for the buttons
 nav_cols = st.columns(len(pages))
 
 for i, p in enumerate(pages):
-    # Determine if this button is the active page
-    is_active = st.session_state.page == p
+    is_active = (st.session_state.page == p)
     
-    # We use a container to apply the "active" styling via a trick: 
-    # primary buttons for active, secondary for others
-    if nav_cols[i].button(p, use_container_width=True, type="primary" if is_active else "secondary"):
+    # Logic: If active, use 'primary' which triggers our white text + blue underline CSS
+    if nav_cols[i].button(p, key=f"nav_{p}", use_container_width=True, type="primary" if is_active else "secondary"):
         st.session_state.page = p
         st.rerun()
 
+st.markdown('</div>', unsafe_allow_html=True)
+
 # Container for standard page content
 st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
+
 
 
 # --- ADMIN HELPER FUNCTIONS ---
@@ -898,6 +886,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
