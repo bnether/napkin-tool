@@ -19,52 +19,43 @@ import io
 import base64
 from io import BytesIO
 
-
 # --- GLOBAL BETA REGISTRY ---
-# This MUST be outside any if/elif so every page can see it
 BETA_USERS = {
     "ben.netherclift@gmail.com": {"name": "Ben Netherclift", "role": "Admin", "parts": 99},
     "test@engineering.com": {"name": "Joe Smith", "role": "Mechanical Engineer", "parts": 0},
     "colleague@work.com": {"name": "Senior Designer", "role": "Engineer", "parts": 5}
 }
 
-# --- SESSION STATE INIT ---
-# Use .setdefault to ensure these ONLY get set if they don't exist
+# --- MASTER SESSION STATE INIT ---
+# Using setdefault ensures variables are only created if they don't already exist
 st.session_state.setdefault("authenticated", False)
 st.session_state.setdefault("user_email", None)
 st.session_state.setdefault("page", "Home")
+st.session_state.setdefault("testimonial_index", 0)
+st.session_state.setdefault("home_tab", "Why Napkin")
+st.session_state.setdefault("initial_sync_done", False)
 
-# This helper function is great, but ensure it doesn't wipe other states
 def set_page(page_name):
     st.session_state.page = page_name
-    # st.rerun() is often not needed here if this is called in a callback, 
-    # but if you keep it, ensure no code below resets auth.
     st.rerun()
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Napkin", layout="wide", initial_sidebar_state="collapsed")
 
-# Initialize the connection (Place this after st.set_page_config)
+# Initialize the connection
 conn = st.connection("gsheets", type=GSheetsConnection)
 
+# --- FUNCTIONS ---
 def sync_scad_from_sheets():
     try:
-        # Read the master list of corrected data
         corrected_df = conn.read(worksheet="Corrected", ttl=0)
-        
         if not corrected_df.empty:
             with open("ai_training.scad", "w") as f:
                 for _, row in corrected_df.iterrows():
                     p = row['Prompt']
                     l = row['Logic']
-                    
-                    # Try to get timestamp from sheet, otherwise use current time
                     t = row.get('Timestamp', datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                    
-                    # Restore newlines for the actual SCAD file
                     c = str(row['Code']).replace(" [NEWLINE] ", "\n")
-                    
-                    # Re-inserted the TIMESTAMP block here:
                     f.write(f"\n/* TIMESTAMP: {t}\n   PROMPT: {p}\n   LOGIC: {l}\n*/\n{c}\n")
             return True
     except Exception as e:
@@ -72,21 +63,10 @@ def sync_scad_from_sheets():
     return False
 
 # --- AUTO-SYNC ON STARTUP ---
-if 'initial_sync_done' not in st.session_state:
+if not st.session_state.initial_sync_done:
     if sync_scad_from_sheets():
         st.session_state.initial_sync_done = True
 
-# --- STATE MANAGEMENT ---
-if 'page' not in st.session_state:
-    st.session_state.page = "Home"
-if 'testimonial_index' not in st.session_state:
-    st.session_state.testimonial_index = 0
-if 'home_tab' not in st.session_state:
-    st.session_state.home_tab = "Why Napkin"
-
-def set_page(page_name):
-    st.session_state.page = page_name
-    st.rerun()
 
 # --- CUSTOM CSS ---
 st.markdown(f"""
@@ -915,6 +895,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
