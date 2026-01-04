@@ -691,7 +691,6 @@ elif st.session_state.page == "Profile":
         # --- LOGGED IN VIEW (Your original code, now dynamic) ---
         user = BETA_USERS[st.session_state.user_email]
         
-        st.markdown("### User Profile")
         prof_col1, prof_col2 = st.columns([1, 2])
         
         with prof_col1:
@@ -909,6 +908,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
