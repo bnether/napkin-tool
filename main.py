@@ -656,7 +656,8 @@ elif st.session_state.page == "Contact":
 
 # 7. PROFILE PAGE (With integrated Login)
 elif st.session_state.page == "Profile":
-    if not st.session_state.get("authenticated", False):
+    # 1. Check Auth Status
+    if not st.session_state.authenticated:
         # --- LOGIN VIEW ---
         st.markdown("### Access Login")
         st.info("You can view the site as a guest, but you must log in here to generate parts.")
@@ -666,45 +667,43 @@ elif st.session_state.page == "Profile":
             submit = st.form_submit_button("Log In")
             
             if submit:
-                if email_attempt in BETA_USERS:
+                email_clean = email_attempt.lower().strip()
+                if email_clean in BETA_USERS:
                     st.session_state.authenticated = True
-                    st.session_state.user_email = email_attempt
-                    st.success("Access Granted.")
+                    st.session_state.user_email = email_clean
                     st.rerun()
                 else:
                     st.error("No account associated with this email")
     
     else:
-        # --- LOGGED IN VIEW (Your original code, now dynamic) ---
-        user = BETA_USERS[st.session_state.user_email]
+        # --- LOGGED IN VIEW ---
+        user_email = st.session_state.user_email
+        user = BETA_USERS[user_email]
         
         prof_col1, prof_col2 = st.columns([1, 2])
         
         with prof_col1:
-            # The placeholder URL below is a standard grey neutral profile icon
             placeholder_url = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
             
-            st.markdown(f"""
+            # Using Triple Single Quotes f''' to avoid conflicts with user['name']
+            st.markdown(f'''
                 <div style="text-align: center;">
                     <h3 style="margin-bottom: 20px;">User Profile</h3>
-                    <img src="{{placeholder_url}}" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px; height: 150px; object-fit: cover;">
+                    <img src="{placeholder_url}" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px; height: 150px; object-fit: cover;">
                     <h4 style="margin-top: 15px;">{user['name']}</h4>
                     <p style="color: #8b949e;">{user['role']}</p>
                 </div>
-            """, unsafe_allow_html=True)
+            ''', unsafe_allow_html=True)
             
-            # Using columns to center the logout button under the text
-            btn_spacer1, btn_col, btn_spacer2 = st.columns([1, 2, 1])
-            with btn_col:
-                if st.button("Log Out", use_container_width=True):
-                    st.session_state.authenticated = False
-                    st.rerun()
-                
+            if st.button("Log Out", use_container_width=True):
+                st.session_state.authenticated = False
+                st.session_state.user_email = None
+                st.rerun()
 
         with prof_col2:
             st.markdown("#### Account Information")
             st.text_input("Full Name", value=user['name'], disabled=True)
-            st.text_input("Email Address", value=st.session_state.user_email, disabled=True)
+            st.text_input("Email Address", value=user_email, disabled=True)
             
             st.markdown("#### Statistics")
             stat1, stat2, stat3 = st.columns(3)
@@ -895,6 +894,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
