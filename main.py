@@ -24,7 +24,7 @@ from io import BytesIO
 # This MUST be outside any if/elif so every page can see it
 BETA_USERS = {
     "ben.netherclift@gmail.com": {"name": "Ben Netherclift", "role": "Admin", "parts": 99},
-    "boss@engineering-firm.com": {"name": "Engineering Lead", "role": "Senior Engineer", "parts": 0},
+    "test@engineering.com": {"name": "Joe Smith", "role": "Mechanical Engineer", "parts": 0},
     "colleague@work.com": {"name": "Senior Designer", "role": "Engineer", "parts": 5}
 }
 
@@ -675,7 +675,7 @@ elif st.session_state.page == "Profile":
         st.info("You can view the site as a guest, but you must log in here to generate parts.")
         
         with st.form("profile_login"):
-            email_attempt = st.text_input("Enter Work Email", placeholder="john.doe@company.com")
+            email_attempt = st.text_input("Enter Email", placeholder="john.doe@company.com")
             submit = st.form_submit_button("Log In")
             
             if submit:
@@ -695,17 +695,25 @@ elif st.session_state.page == "Profile":
         prof_col1, prof_col2 = st.columns([1, 2])
         
         with prof_col1:
+            # The placeholder URL below is a standard grey neutral profile icon
+            placeholder_url = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+            
             st.markdown(f"""
                 <div style="text-align: center;">
-                    <img src="https://i.pravatar.cc/150?u={st.session_state.user_email}" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px;">
-                    <h4>{user['name']}</h4>
+                    <h3 style="margin-bottom: 20px;">User Profile</h3>
+                    <img src="{{placeholder_url}}" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px; height: 150px; object-fit: cover;">
+                    <h4 style="margin-top: 15px;">{user['name']}</h4>
                     <p style="color: #8b949e;">{user['role']}</p>
                 </div>
             """, unsafe_allow_html=True)
             
-            if st.button("Log Out"):
-                st.session_state.authenticated = False
-                st.rerun()
+            # Using columns to center the logout button under the text
+            btn_spacer1, btn_col, btn_spacer2 = st.columns([1, 2, 1])
+            with btn_col:
+                if st.button("Log Out", use_container_width=True):
+                    st.session_state.authenticated = False
+                    st.rerun()
+                
 
         with prof_col2:
             st.markdown("#### Account Information")
@@ -901,6 +909,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
