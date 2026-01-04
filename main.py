@@ -29,11 +29,18 @@ BETA_USERS = {
 }
 
 # --- SESSION STATE INIT ---
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-if "user_email" not in st.session_state:
-    st.session_state.user_email = None
-    
+# Use .setdefault to ensure these ONLY get set if they don't exist
+st.session_state.setdefault("authenticated", False)
+st.session_state.setdefault("user_email", None)
+st.session_state.setdefault("page", "Home")
+
+# This helper function is great, but ensure it doesn't wipe other states
+def set_page(page_name):
+    st.session_state.page = page_name
+    # st.rerun() is often not needed here if this is called in a callback, 
+    # but if you keep it, ensure no code below resets auth.
+    st.rerun()
+
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Napkin", layout="wide", initial_sidebar_state="collapsed")
 
@@ -908,6 +915,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
