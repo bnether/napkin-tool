@@ -549,7 +549,7 @@ elif st.session_state.page == "Help":
         * **User error:** Firstly, check the accuracy of your drawing and description, ensuring that all features are clearly described. Watch our tutorial to learn how to give more effective prompts.
         * **AI error:** Although the AI is programmed specifically for engineering component design, there may still be errors with more complicated models. For these scenarios, traditional CAD modelling methods are required. However, we are aiming to continuously improve our system, and welcome any feedback when common or valuable designs are failing to generate.        
         """)
-    with st.expander("What engineering standards is the AI trained to"):
+    with st.expander("What engineering standards is the AI trained to?"):
         st.write("""
         * ISO 273 (Clearance Holes)
         * ISO 4762 (Socket Head Cap Screws)
@@ -564,10 +564,10 @@ elif st.session_state.page == "Help":
         """)
     with st.expander("Does it work with resin printers?"):
         st.write("Yes, the .STL files are compatible with both FDM and SLA (resin) slicers.")
-    with st.expander("What happens when I log a generated part as correct or incorrect"):
+    with st.expander("What happens when I log a generated part as correct or incorrect?"):
         st.write("""
         * When a generated part is logged as either correct or incorrect, it is sent to our team for a manual review, regardless of the outcome. 
-        * We will manually check the image and prompt against the 3D output, also examining the AI's methods and code.
+        * We will manually check the text prompt and image against the 3D output, also examining the AI's methods and code.
         * If a part is incorrect, or the 3D modelling process is inefficient, we will manually create the correct solution. This solution is added to a 'vault' of training records that the AI continuously references, allowing it to learn and improve over time.
         """)
     
@@ -853,6 +853,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
