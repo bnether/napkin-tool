@@ -496,10 +496,10 @@ elif st.session_state.page == "Make a Part":
             fb_col1, fb_col2 = st.columns(2)
             if fb_col1.button("Correct", use_container_width=True):
                 log_feedback_to_sheets("VERIFIED")
-                st.success("Verified!")
+                
             if fb_col2.button("Incorrect", use_container_width=True):
                 log_feedback_to_sheets("FAILED")
-                st.warning("Logged for review")
+                
                 
 # 3. PRICING
 elif st.session_state.page == "Pricing":
@@ -832,6 +832,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
