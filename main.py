@@ -19,6 +19,21 @@ import io
 import base64
 from io import BytesIO
 
+
+# --- GLOBAL BETA REGISTRY ---
+# This MUST be outside any if/elif so every page can see it
+BETA_USERS = {
+    "ben.netherclift@gmail.com": {"name": "Ben Netherclift", "role": "Admin", "parts": 99},
+    "boss@engineering-firm.com": {"name": "Engineering Lead", "role": "Senior Engineer", "parts": 0},
+    "colleague@work.com": {"name": "Senior Designer", "role": "Engineer", "parts": 5}
+}
+
+# --- SESSION STATE INIT ---
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "user_email" not in st.session_state:
+    st.session_state.user_email = None
+    
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Napkin", layout="wide", initial_sidebar_state="collapsed")
 
@@ -374,6 +389,7 @@ elif st.session_state.page == "Make a Part":
             new_row = pd.DataFrame([{
                 "Status": category,
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "User_Email": st.session_state.get('user_email', 'Guest'), # Added Email Tracking
                 "Prompt": st.session_state.get('last_prompt', ""),
                 "Logic": st.session_state.get('last_logic', ""),
                 "Code": st.session_state.get('last_code', "").replace("\n", " [NEWLINE] "),
@@ -410,7 +426,11 @@ elif st.session_state.page == "Make a Part":
 
     with col2:
         if generate_btn:
-            if upload_choice == "Sketch + Description" and 'current_img' not in st.session_state:
+            # --- START ADDED AUTHENTICATION CHECK ---
+            if not st.session_state.get("authenticated", False):
+                st.warning("Generation Locked: Please log in on the **Profile** page to use the AI.")
+            # --- END ADDED AUTHENTICATION CHECK ---
+            elif upload_choice == "Sketch + Description" and 'current_img' not in st.session_state:
                 st.error("Please upload a photo first.")
             else:
                 with st.spinner("Generating..."):
@@ -647,29 +667,57 @@ elif st.session_state.page == "Contact":
         st.form_submit_button("Send Message")
 
 
-# 7. NEW PROFILE PAGE
+# 7. PROFILE PAGE (With integrated Login)
 elif st.session_state.page == "Profile":
-    st.markdown("### User Profile")
-    prof_col1, prof_col2 = st.columns([1, 2])
-    with prof_col1:
-        st.markdown("""
-            <div style="text-align: center;">
-                <img src="https://i.pravatar.cc/150?u=napkin" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px;">
-                <h4>John Doe</h4>
-                <p style="color: #8b949e;">Senior Manufacturing Engineer</p>
-            </div>
-        """, unsafe_allow_html=True)
-    with prof_col2:
-        st.markdown("#### Account Information")
-        st.text_input("Full Name", value="John Doe")
-        st.text_input("Email Address", value="john.doe@manufacturing-corp.com")
-        st.markdown("#### Statistics")
-        stat1, stat2, stat3 = st.columns(3)
-        stat1.metric("Parts Generated", "42")
-        stat2.metric("Printers connected", "1")
-        stat3.metric("Plan", "Professional")
-        if st.button("Save Changes"):
-            st.success("Profile Updated!")
+    if not st.session_state.get("authenticated", False):
+        # --- LOGIN VIEW ---
+        st.markdown("### Access Login")
+        st.info("You can view the site as a guest, but you must log in here to generate parts.")
+        
+        with st.form("profile_login"):
+            email_attempt = st.text_input("Enter Work Email", placeholder="john.doe@company.com")
+            submit = st.form_submit_button("Log In")
+            
+            if submit:
+                if email_attempt in BETA_USERS:
+                    st.session_state.authenticated = True
+                    st.session_state.user_email = email_attempt
+                    st.success("Access Granted.")
+                    st.rerun()
+                else:
+                    st.error("No account associated with this email")
+    
+    else:
+        # --- LOGGED IN VIEW (Your original code, now dynamic) ---
+        user = BETA_USERS[st.session_state.user_email]
+        
+        st.markdown("### User Profile")
+        prof_col1, prof_col2 = st.columns([1, 2])
+        
+        with prof_col1:
+            st.markdown(f"""
+                <div style="text-align: center;">
+                    <img src="https://i.pravatar.cc/150?u={st.session_state.user_email}" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px;">
+                    <h4>{user['name']}</h4>
+                    <p style="color: #8b949e;">{user['role']}</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("Log Out"):
+                st.session_state.authenticated = False
+                st.rerun()
+
+        with prof_col2:
+            st.markdown("#### Account Information")
+            st.text_input("Full Name", value=user['name'], disabled=True)
+            st.text_input("Email Address", value=st.session_state.user_email, disabled=True)
+            
+            st.markdown("#### Statistics")
+            stat1, stat2, stat3 = st.columns(3)
+            stat1.metric("Parts Generated", user['parts'])
+            stat2.metric("Printers connected", "1")
+            stat3.metric("Plan", "Professional")
+
 
 # 8. ADMIN VERIFICATION SYSTEM
 elif st.session_state.page == "Admin":
@@ -853,6 +901,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
