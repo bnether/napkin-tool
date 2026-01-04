@@ -95,9 +95,15 @@ st.markdown(f"""
         height: 60px;
     }}
 
-    /* TARGET ONLY BUTTONS WITH KEYS STARTING WITH 'nav_' */
-    button[data-testid="baseButton-secondary"][id^="nav_"], 
-    button[data-testid="baseButton-primary"][id^="nav_"] {{
+    /* Target the Column Container for the Nav */
+    [data-testid="column"] {{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }}
+
+    /* RE-STYLING BUTTONS TO LOOK LIKE NAV ITEMS */
+    .stButton > button {{
         padding: 18px 25px !important;
         color: #8b949e !important;
         background: transparent !important;
@@ -108,37 +114,62 @@ st.markdown(f"""
         border-radius: 0px !important;
         transition: all 0.3s ease !important;
         height: 60px !important;
-        box-shadow: none !important;
+        width: 100% !important;
     }}
 
-    /* Hover effect for navbar items */
-    button[id^="nav_"]:hover {{
+    .stButton > button:hover {{
         color: #58a6ff !important;
         border-bottom: 2px solid #58a6ff !important;
         background: transparent !important;
     }}
 
-    /* Active state (The blue underline) for navbar items */
-    button[data-testid="baseButton-primary"][id^="nav_"] {{
+    /* Active State (Triggered by 'primary' type in Python) */
+    .stButton > button[kind="primary"] {{
         color: #ffffff !important;
         border-bottom: 2px solid #3b82f6 !important;
         background: transparent !important;
+        box-shadow: none !important;
     }}
 
-    /* --- SITE-WIDE BUTTON STYLE (Restores your Pricing/Footer buttons) --- */
-    .stButton>button:not([id^="nav_"]) {{
-        border-radius: 10px;
-        height: 3.5em;
-        background-color: #21262d;
-        color: white;
-        border: 1px solid #30363d;
-        font-weight: 600;
+    /* Hero Section */
+    .hero-container {{
+        position: relative;
+        width: 100%;
+        height: 550px;
+        background-image: linear-gradient(to bottom, rgba(14, 17, 23, 0) 50%, rgba(14, 17, 23, 1) 100%), url("app/static/home1.jpg");
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0px;
     }}
+    .section-content {{ position: relative; z-index: 2; width: 70%; text-align: center; }}
+    .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
+    .highlight {{ color: #58a6ff; }}
+
+    /* UI Elements */
+    .testimonial-card {{
+        background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
+        display: flex; align-items: center; justify-content: center; min-height: 180px;
+        max-width: 800px; margin: 0 auto;
+    }}
+    .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
+
+    /* Pagination Dots */
+    .dot-container {{ text-align: center; margin-top: 15px; }}
+    .dot {{ height: 10px; width: 10px; margin: 0 5px; background-color: #30363d; border-radius: 50%; display: inline-block; }}
+    .dot-active {{ background-color: #3b82f6; width: 25px; border-radius: 5px; }}
     
-    /* Primary buttons elsewhere (like 'Get Professional') */
-    .stButton>button[kind="primary"]:not([id^="nav_"]) {{
-        background-color: #3b82f6 !important;
-        border: none !important;
+    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 25px;}}
+    .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
+    .per-month {{ font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }}
+    .currency-sub {{ font-size: 0.85rem; color: #8b949e; margin-top: -10px; margin-bottom: 15px; }}
+
+    .footer-minimal {{
+        background-color: #1e3a8a; border-top: 3px solid #3b82f6;
+        padding: 40px 15px; text-align: center; color: #e2e8f0; margin-top: 4rem;
+        margin-left: -6% !important; margin-right: -6% !important; width: 112% !important;
     }}
 
     header {{ visibility: hidden; }}
@@ -146,21 +177,23 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-# --- NAVBAR LOGIC ---
+# --- NAVBAR LOGIC (Session-Safe Buttons with CSS Styling) ---
 pages = ["Home", "Make a Part", "Pricing", "Help", "Examples", "Contact", "Profile"]
 
 current_user = BETA_USERS.get(st.session_state.get("user_email"))
 if current_user and current_user.get("role") == "Admin":
     pages.append("Admin")
 
-# Simple wrapper for the background/border
+# Start the wrapper div for styling
 st.markdown('<div class="nav-wrapper">', unsafe_allow_html=True)
 
+# Create columns for the buttons
 nav_cols = st.columns(len(pages))
 
 for i, p in enumerate(pages):
     is_active = (st.session_state.page == p)
-    # The 'nav_' prefix in the key matches the CSS selector above
+    
+    # Logic: If active, use 'primary' which triggers our white text + blue underline CSS
     if nav_cols[i].button(p, key=f"nav_{p}", use_container_width=True, type="primary" if is_active else "secondary"):
         st.session_state.page = p
         st.rerun()
@@ -169,7 +202,6 @@ st.markdown('</div>', unsafe_allow_html=True)
 
 # Container for standard page content
 st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
-
 
 
 
@@ -854,44 +886,5 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
