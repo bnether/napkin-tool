@@ -192,22 +192,26 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-# --- NAVBAR LOGIC (Using URL Parameters for smooth switching) ---
-pages = ["Home", "Make a Part", "Pricing", "Help", "Examples", "Contact", "Profile", "Admin"]
+# --- NAVBAR LOGIC (Using Buttons to preserve Session State) ---
+pages = ["Home", "Make a Part", "Pricing", "Help", "Examples", "Contact", "Profile"]
 
-params = st.query_params
-if "p" in params:
-    if params["p"] != st.session_state.page:
-        st.session_state.page = params["p"]
+# Add Admin only if the user is an admin
+current_user = BETA_USERS.get(st.session_state.get("user_email"))
+if current_user and current_user.get("role") == "Admin":
+    pages.append("Admin")
+
+# Use columns to create the horizontal navbar effect
+nav_cols = st.columns(len(pages))
+
+for i, p in enumerate(pages):
+    # Determine if this button is the active page
+    is_active = st.session_state.page == p
+    
+    # We use a container to apply the "active" styling via a trick: 
+    # primary buttons for active, secondary for others
+    if nav_cols[i].button(p, use_container_width=True, type="primary" if is_active else "secondary"):
+        st.session_state.page = p
         st.rerun()
-
-nav_html = '<div class="nav-wrapper">'
-for p in pages:
-    active_class = "nav-active" if st.session_state.page == p else ""
-    nav_html += f'<a href="/?p={p}" target="_self" class="nav-item {active_class}">{p}</a>'
-nav_html += '</div>'
-
-st.markdown(nav_html, unsafe_allow_html=True)
 
 # Container for standard page content
 st.markdown('<div style="padding: 0 5rem;">', unsafe_allow_html=True)
@@ -894,6 +898,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
