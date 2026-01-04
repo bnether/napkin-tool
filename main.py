@@ -562,9 +562,9 @@ elif st.session_state.page == "Help":
         * ISO 15 (6000 Series Rolling Bearings)
         * Note: these are examples only, not an extensive list. We are continually training the AI to real-world standards to improve its precision and reliability.
         """)
-        with st.expander("Does it work with resin printers?"):
+    with st.expander("Does it work with resin printers?"):
         st.write("Yes, the .STL files are compatible with both FDM and SLA (resin) slicers.")
-        with st.expander("What happens when I log a generated part as correct or incorrect"):
+    with st.expander("What happens when I log a generated part as correct or incorrect"):
         st.write("""
         * When a generated part is logged as either correct or incorrect, it is sent to our team for a manual review, regardless of the outcome. 
         * We will manually check the image and prompt against the 3D output, also examining the AI's methods and code.
@@ -853,6 +853,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
