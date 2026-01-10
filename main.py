@@ -45,7 +45,7 @@ def load_registry():
     df['geedback given'] = pd.to_numeric(df['feedback given'], errors='coerce').fillna(0).astype(int)
     df['printers'] = pd.to_numeric(df['printers'], errors='coerce').fillna(0).astype(int)
     # Inside your load_registry function
-    df['models generated'] = pd.to_numeric(df['models generated'], errors='coerce').fillna(0).astype(int)
+    df['feedback given'] = pd.to_numeric(df['feedback given'], errors='coerce').fillna(0).astype(int)
 
     # 6. Convert to the dictionary format your Profile page expects
     return df.set_index('email').to_dict('index')
@@ -60,13 +60,13 @@ def increment_models_generated(email_to_update):
         
         if mask.any():
             # 1. Force current value to int
-            current_val = pd.to_numeric(df.loc[mask, 'models generated'], errors='coerce').fillna(0).astype(int)
+            current_val = pd.to_numeric(df.loc[mask, 'feedback given'], errors='coerce').fillna(0).astype(int)
             
             # 2. Perform the math
-            df.loc[mask, 'models generated'] = int(current_val + 1)
+            df.loc[mask, 'feedback given'] = int(current_val + 1)
             
             # 3. Final safety check: ensure the whole column is INT before updating
-            df['models generated'] = df['models generated'].astype(int)
+            df['feedback given'] = df['feedback given'].astype(int)
             
             conn.update(spreadsheet=url, data=df)
             st.cache_data.clear()
@@ -982,6 +982,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
