@@ -42,7 +42,7 @@ def load_registry():
     # 5. Clean up numeric columns (Parts and Printers)
     # pd.to_numeric with 'coerce' turns errors into NaN, then fillna(0) makes them 0
     # .astype(int) ensures 0 decimal places (e.g., 5.0 becomes 5)
-    df['geedback given'] = pd.to_numeric(df['Feedback Given'], errors='coerce').fillna(0).astype(int)
+    df['geedback given'] = pd.to_numeric(df['feedback given'], errors='coerce').fillna(0).astype(int)
     df['printers'] = pd.to_numeric(df['printers'], errors='coerce').fillna(0).astype(int)
     
     # 6. Convert to the dictionary format your Profile page expects
@@ -979,6 +979,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
