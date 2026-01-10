@@ -50,7 +50,7 @@ def load_registry():
 
 def increment_models_generated(email_to_update):
     try:
-        url = st.secrets["connections"]["gsheets"]["registry_url"]
+        url = st.secrets["connections"]["gsheets"]["registry"]
         # Read fresh data (no cache) to prevent overwriting other updates
         df = conn.read(spreadsheet=url, ttl=0)
         
@@ -979,6 +979,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
