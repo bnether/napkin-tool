@@ -19,26 +19,27 @@ import io
 import base64
 from io import BytesIO
 
-# Users Spreadsheet
-# 1. Create the connection
+# Registry Spreadsheet
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# 2. Read the data (Cache it for 10 minutes so it's fast)
-@st.cache_data(ttl=600)
-def get_beta_users():
-    # Replace the URL with your actual Google Sheet URL
-    url = "https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit?gid=0#gid=0"
+@st.cache_data(ttl=300)
+def load_registry():
+    # We pull the URL specifically from the secrets file
+    url = st.secrets["connections"]["gsheets"]["registry"]
+    
+    # Read the data
     df = conn.read(spreadsheet=url)
     
-    # Convert DataFrame to the dictionary format you already use
-    # This keeps the rest of your app's logic exactly the same
+    # Standardize and convert to your BETA_USERS dictionary format
+    df.columns = [c.strip().lower() for c in df.columns]
+    df['email'] = df['email'].str.strip().str.lower()
     return df.set_index('email').to_dict('index')
 
-# 3. Load the registry
+# Initialize
 try:
-    BETA_USERS = get_beta_users()
+    BETA_USERS = load_registry()
 except Exception as e:
-    st.error("Could not connect to the User Registry.")
+    st.error(f"Registry Connection Failed: {e}")
     BETA_USERS = {}
 
 
@@ -927,6 +928,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
