@@ -35,10 +35,9 @@ hide_streamlit_style = """
             #stDecoration {display:none;}
             </style>
             """
-st.markdown(hide_streamlit_style, unsafe_content_allowed=True)
 
-# Your app code starts here...
-st.title("Welcome to my Professional App")
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 
 
 # --- GLOBAL BETA REGISTRY ---
@@ -933,6 +932,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
