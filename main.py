@@ -688,7 +688,7 @@ elif st.session_state.page == "Examples":
 
     render_example_case(
         title="Mounting Plate",
-        prompt="10mm thick plate, 100mm wide and 150mm long. An M6 counterbored hole in each corner, 12mm from each edge.",
+        prompt="10mm thick plate, 100mm wide and 150mm long. An M6 counterbored hole in each corner, 12mm from each edge. A 5mm radius in each of the 4 corners. In the centre of the plate, there is a threaded M6 hole to 8mm depth. ",
         stl_path="static/example_plate.stl" 
     )
 
@@ -989,6 +989,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
