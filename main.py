@@ -24,7 +24,7 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 @st.cache_data(ttl=10) # Set low for near-automatic refreshing
 def load_registry():
-    url = st.secrets["connections"]["gsheets"]["registry_url"]
+    url = st.secrets["connections"]["gsheets"]["registry"]
     df = conn.read(spreadsheet=url)
     
     # Clean headers
@@ -939,6 +939,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
