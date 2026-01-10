@@ -19,6 +19,28 @@ import io
 import base64
 from io import BytesIO
 
+# MUST be the first streamlit command in your script
+st.set_page_config(
+    page_title="Your SaaS Name",
+    page_icon="🚀",
+    layout="wide",
+)
+
+# Professional CSS to hide Streamlit branding
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            #stDecoration {display:none;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_content_allowed=True)
+
+# Your app code starts here...
+st.title("Welcome to my Professional App")
+
+
 # --- GLOBAL BETA REGISTRY ---
 BETA_USERS = {
     "ben.netherclift@gmail.com": {"name": "Ben Netherclift", "role": "Admin", "parts": 99},
@@ -911,6 +933,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
