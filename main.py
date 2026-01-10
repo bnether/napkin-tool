@@ -19,33 +19,28 @@ import io
 import base64
 from io import BytesIO
 
-# MUST be the first streamlit command in your script
-st.set_page_config(
-    page_title="Your SaaS Name",
-    page_icon="🚀",
-    layout="wide",
-)
+# Users Spreadsheet
+# 1. Create the connection
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Professional CSS to hide Streamlit branding
-hide_streamlit_style = """
-            <style>
-            #MainMenu {visibility: hidden;}
-            footer {visibility: hidden;}
-            header {visibility: hidden;}
-            #stDecoration {display:none;}
-            </style>
-            """
+# 2. Read the data (Cache it for 10 minutes so it's fast)
+@st.cache_data(ttl=600)
+def get_beta_users():
+    # Replace the URL with your actual Google Sheet URL
+    url = "https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit?gid=0#gid=0"
+    df = conn.read(spreadsheet=url)
+    
+    # Convert DataFrame to the dictionary format you already use
+    # This keeps the rest of your app's logic exactly the same
+    return df.set_index('email').to_dict('index')
 
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+# 3. Load the registry
+try:
+    BETA_USERS = get_beta_users()
+except Exception as e:
+    st.error("Could not connect to the User Registry.")
+    BETA_USERS = {}
 
-
-
-# --- GLOBAL BETA REGISTRY ---
-BETA_USERS = {
-    "ben.netherclift@gmail.com": {"name": "Ben Netherclift", "role": "Admin", "parts": 99},
-    "test@engineering.com": {"name": "Joe Smith", "role": "Mechanical Engineer", "parts": 0},
-    "colleague@work.com": {"name": "Senior Designer", "role": "Engineer", "parts": 5}
-}
 
 # --- MASTER SESSION STATE INIT ---
 # Using setdefault ensures variables are only created if they don't already exist
@@ -932,6 +927,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
