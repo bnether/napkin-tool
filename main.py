@@ -636,6 +636,13 @@ elif st.session_state.page == "Examples":
         stl_path="static/example_Lbracket.stl"
     )
 
+    render_example_case(
+        title="Cover Plate",
+        prompt="Plate with dimensions as shown in mm. Each rounded corner has a radius of 5 mm.",
+        sketch_path="static/example_coverplate.jpg",
+        stl_path="static/example_coverplate.stl"
+    )
+
     st.markdown("---")
     st.markdown("### Gallery")
 
@@ -904,6 +911,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
