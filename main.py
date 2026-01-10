@@ -44,32 +44,35 @@ def load_registry():
     # .astype(int) ensures 0 decimal places (e.g., 5.0 becomes 5)
     df['geedback given'] = pd.to_numeric(df['feedback given'], errors='coerce').fillna(0).astype(int)
     df['printers'] = pd.to_numeric(df['printers'], errors='coerce').fillna(0).astype(int)
-    
+    # Inside your load_registry function
+    df['models generated'] = pd.to_numeric(df['models generated'], errors='coerce').fillna(0).astype(int)
+
     # 6. Convert to the dictionary format your Profile page expects
     return df.set_index('email').to_dict('index')
 
 def increment_models_generated(email_to_update):
     try:
         url = st.secrets["connections"]["gsheets"]["registry"]
-        # Read fresh data (no cache) to prevent overwriting other updates
         df = conn.read(spreadsheet=url, ttl=0)
-        
-        # Clean headers to match our logic
         df.columns = [c.strip().lower() for c in df.columns]
+        
         mask = df['email'].str.strip().str.lower() == email_to_update.lower().strip()
         
         if mask.any():
-            # Increment 'Feedback Given'
-            # Using .loc to ensure we update the specific cell
-            current_val = pd.to_numeric(df.loc[mask, 'feedback given'], errors='coerce').fillna(0).astype(int)
-            df.loc[mask, 'feedback given'] = current_val + 1
+            # 1. Force current value to int
+            current_val = pd.to_numeric(df.loc[mask, 'models generated'], errors='coerce').fillna(0).astype(int)
             
-            # Write back to the Registry spreadsheet
+            # 2. Perform the math
+            df.loc[mask, 'models generated'] = int(current_val + 1)
+            
+            # 3. Final safety check: ensure the whole column is INT before updating
+            df['models generated'] = df['models generated'].astype(int)
+            
             conn.update(spreadsheet=url, data=df)
-            st.cache_data.clear() # Clear cache so Profile page updates instantly
+            st.cache_data.clear()
             return True
     except Exception as e:
-        st.error(f"Failed to update model count: {e}")
+        st.error(f"Internal Increment Error: {e}")
     return False
 
 # Initialize
@@ -979,6 +982,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
