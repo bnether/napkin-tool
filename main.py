@@ -47,7 +47,31 @@ def load_registry():
     
     # 6. Convert to the dictionary format your Profile page expects
     return df.set_index('email').to_dict('index')
-    
+
+def increment_models_generated(email_to_update):
+    try:
+        url = st.secrets["connections"]["gsheets"]["registry_url"]
+        # Read fresh data (no cache) to prevent overwriting other updates
+        df = conn.read(spreadsheet=url, ttl=0)
+        
+        # Clean headers to match our logic
+        df.columns = [c.strip().lower() for c in df.columns]
+        mask = df['email'].str.strip().str.lower() == email_to_update.lower().strip()
+        
+        if mask.any():
+            # Increment 'models generated' (formerly 'parts')
+            # Using .loc to ensure we update the specific cell
+            current_val = pd.to_numeric(df.loc[mask, 'models generated'], errors='coerce').fillna(0).astype(int)
+            df.loc[mask, 'models generated'] = current_val + 1
+            
+            # Write back to the Registry spreadsheet
+            conn.update(spreadsheet=url, data=df)
+            st.cache_data.clear() # Clear cache so Profile page updates instantly
+            return True
+    except Exception as e:
+        st.error(f"Failed to update model count: {e}")
+    return False
+
 # Initialize
 try:
     BETA_USERS = load_registry()
@@ -955,6 +979,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
