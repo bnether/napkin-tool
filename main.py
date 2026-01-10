@@ -22,20 +22,30 @@ from io import BytesIO
 # Registry Spreadsheet
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-@st.cache_data(ttl=10) # Set low for near-automatic refreshing
+@st.cache_data(ttl=10)
 def load_registry():
+    # 1. Pull the URL from the specific secrets path
     url = st.secrets["connections"]["gsheets"]["registry"]
+    
+    # 2. Connect and read the data
     df = conn.read(spreadsheet=url)
     
-    # Clean headers
+    # 3. Standardize column names (lowercase and no spaces)
     df.columns = [c.strip().lower() for c in df.columns]
+    
+    # 4. Cleanup the Email column
+    # Drop rows where email is missing
     df = df.dropna(subset=['email'])
+    # Force to string, strip whitespace, and lowercase for perfect matching
     df['email'] = df['email'].astype(str).str.strip().str.lower()
     
-    # Ensure parts and printers are integers (removes decimal places)
-    df['parts'] = pd.to_numeric(df['parts'], errors='coerce').fillna(0).astype(int)
+    # 5. Clean up numeric columns (Parts and Printers)
+    # pd.to_numeric with 'coerce' turns errors into NaN, then fillna(0) makes them 0
+    # .astype(int) ensures 0 decimal places (e.g., 5.0 becomes 5)
+    df['models generated'] = pd.to_numeric(df['models generated'], errors='coerce').fillna(0).astype(int)
     df['printers'] = pd.to_numeric(df['printers'], errors='coerce').fillna(0).astype(int)
     
+    # 6. Convert to the dictionary format your Profile page expects
     return df.set_index('email').to_dict('index')
     
 # Initialize
@@ -415,6 +425,12 @@ elif st.session_state.page == "Make a Part":
             
             updated_df = pd.concat([existing_data, new_row], ignore_index=True)
             conn.update(worksheet="Pending", data=updated_df)
+            
+            # --- START ADDED: INCREMENT MODELS GENERATED ---
+            if st.session_state.get('authenticated'):
+                increment_models_generated(st.session_state.user_email)
+            # --- END ADDED: INCREMENT MODELS GENERATED ---
+
             st.cache_data.clear()
             st.success(f"Feedback logged as {category}!")
         except Exception as e:
@@ -748,7 +764,7 @@ elif st.session_state.page == "Profile":
             stat1, stat2, stat3 = st.columns(3)
             
             # 1. Parts: Displayed as integer (0 decimal places)
-            stat1.metric("Parts Generated", f"{user['parts']}")
+            stat1.metric("Models Generated", f"{user['models generated']}")
             
             # 2. Printers: Now pulled directly from your new spreadsheet column
             stat2.metric("Printers Connected", f"{user['printers']}")
@@ -939,6 +955,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
