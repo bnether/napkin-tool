@@ -22,19 +22,22 @@ from io import BytesIO
 # Registry Spreadsheet
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=10) # Set low for near-automatic refreshing
 def load_registry():
-    # We pull the URL specifically from the secrets file
-    url = st.secrets["connections"]["gsheets"]["registry"]
-    
-    # Read the data
+    url = st.secrets["connections"]["gsheets"]["registry_url"]
     df = conn.read(spreadsheet=url)
     
-    # Standardize and convert to your BETA_USERS dictionary format
+    # Clean headers
     df.columns = [c.strip().lower() for c in df.columns]
-    df['email'] = df['email'].str.strip().str.lower()
+    df = df.dropna(subset=['email'])
+    df['email'] = df['email'].astype(str).str.strip().str.lower()
+    
+    # Ensure parts and printers are integers (removes decimal places)
+    df['parts'] = pd.to_numeric(df['parts'], errors='coerce').fillna(0).astype(int)
+    df['printers'] = pd.to_numeric(df['printers'], errors='coerce').fillna(0).astype(int)
+    
     return df.set_index('email').to_dict('index')
-
+    
 # Initialize
 try:
     BETA_USERS = load_registry()
@@ -743,9 +746,14 @@ elif st.session_state.page == "Profile":
             
             st.markdown("#### Statistics")
             stat1, stat2, stat3 = st.columns(3)
-            # Pulling 'parts' and 'plan' directly from your spreadsheet columns
-            stat1.metric("Parts Generated", user['parts'])
-            stat2.metric("Printers connected", "1")
+            
+            # 1. Parts: Displayed as integer (0 decimal places)
+            stat1.metric("Parts Generated", f"{user['parts']}")
+            
+            # 2. Printers: Now pulled directly from your new spreadsheet column
+            stat2.metric("Printers Connected", f"{user['printers']}")
+            
+            # 3. Plan: Pulled from spreadsheet
             stat3.metric("Plan", user['plan'])
 
 
@@ -931,6 +939,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
