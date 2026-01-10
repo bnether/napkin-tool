@@ -707,7 +707,7 @@ elif st.session_state.page == "Examples":
     )
 
     render_example_case(
-        title="Soft Vice Jaws",
+        title="Vice Soft Jaws",
         prompt="The sketch has two views with all dimensions in mm. The arc is symmetrical.",
         sketch_path="static/example_softvicejaw.jpg",
         stl_path="static/example_softvicejaw.stl"
@@ -989,6 +989,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
