@@ -22,7 +22,7 @@ from io import BytesIO
 # Registry Spreadsheet
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=30)
 def load_registry():
     # We pull the URL specifically from the secrets file
     url = st.secrets["connections"]["gsheets"]["registry"]
@@ -719,13 +719,14 @@ elif st.session_state.page == "Profile":
         with prof_col1:
             placeholder_url = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
             
-            # Using Triple Single Quotes f''' to avoid conflicts with user['name']
+            # Displaying Name, Role, and Company in the sidebar profile card
             st.markdown(f'''
                 <div style="text-align: center;">
                     <h3 style="margin-bottom: 20px;">User Profile</h3>
                     <img src="{placeholder_url}" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px; height: 150px; object-fit: cover;">
                     <h4 style="margin-top: 15px;">{user['name']}</h4>
-                    <p style="color: #8b949e;">{user['role']}</p>
+                    <p style="color: #8b949e; margin-bottom: 5px;">{user['role']}</p>
+                    <p style="color: #3b82f6; font-weight: bold;">{user['company']}</p>
                 </div>
             ''', unsafe_allow_html=True)
             
@@ -738,12 +739,14 @@ elif st.session_state.page == "Profile":
             st.markdown("#### Account Information")
             st.text_input("Full Name", value=user['name'], disabled=True)
             st.text_input("Email Address", value=user_email, disabled=True)
+            st.text_input("Company", value=user['company'], disabled=True)
             
             st.markdown("#### Statistics")
             stat1, stat2, stat3 = st.columns(3)
+            # Pulling 'parts' and 'plan' directly from your spreadsheet columns
             stat1.metric("Parts Generated", user['parts'])
             stat2.metric("Printers connected", "1")
-            stat3.metric("Plan", "Professional")
+            stat3.metric("Plan", user['plan'])
 
 
 # 8. ADMIN VERIFICATION SYSTEM
@@ -928,6 +931,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
