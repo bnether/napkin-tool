@@ -42,7 +42,7 @@ def load_registry():
     # 5. Clean up numeric columns (Parts and Printers)
     # pd.to_numeric with 'coerce' turns errors into NaN, then fillna(0) makes them 0
     # .astype(int) ensures 0 decimal places (e.g., 5.0 becomes 5)
-    df['models generated'] = pd.to_numeric(df['models generated'], errors='coerce').fillna(0).astype(int)
+    df['feedback given'] = pd.to_numeric(df['feedback given'], errors='coerce').fillna(0).astype(int)
     df['printers'] = pd.to_numeric(df['printers'], errors='coerce').fillna(0).astype(int)
     
     # 6. Convert to the dictionary format your Profile page expects
@@ -59,10 +59,10 @@ def increment_models_generated(email_to_update):
         mask = df['email'].str.strip().str.lower() == email_to_update.lower().strip()
         
         if mask.any():
-            # Increment 'models generated' (formerly 'parts')
+            # Increment 'feedback given' (formerly 'parts')
             # Using .loc to ensure we update the specific cell
-            current_val = pd.to_numeric(df.loc[mask, 'models generated'], errors='coerce').fillna(0).astype(int)
-            df.loc[mask, 'models generated'] = current_val + 1
+            current_val = pd.to_numeric(df.loc[mask, 'feedback given'], errors='coerce').fillna(0).astype(int)
+            df.loc[mask, 'feedback given'] = current_val + 1
             
             # Write back to the Registry spreadsheet
             conn.update(spreadsheet=url, data=df)
@@ -450,10 +450,10 @@ elif st.session_state.page == "Make a Part":
             updated_df = pd.concat([existing_data, new_row], ignore_index=True)
             conn.update(worksheet="Pending", data=updated_df)
             
-            # --- START ADDED: INCREMENT MODELS GENERATED ---
+            # --- START ADDED: INCREMENT feedback given ---
             if st.session_state.get('authenticated'):
                 increment_models_generated(st.session_state.user_email)
-            # --- END ADDED: INCREMENT MODELS GENERATED ---
+            # --- END ADDED: INCREMENT feedback given ---
 
             st.cache_data.clear()
             st.success(f"Feedback logged as {category}!")
@@ -788,7 +788,7 @@ elif st.session_state.page == "Profile":
             stat1, stat2, stat3 = st.columns(3)
             
             # 1. Parts: Displayed as integer (0 decimal places)
-            stat1.metric("Models Generated", f"{user['models generated']}")
+            stat1.metric("feedback given", f"{user['feedback given']}")
             
             # 2. Printers: Now pulled directly from your new spreadsheet column
             stat2.metric("Printers Connected", f"{user['printers']}")
@@ -979,6 +979,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
