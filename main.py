@@ -61,7 +61,7 @@ def increment_models_generated(email_to_update):
         if mask.any():
             # Increment 'feedback given' (formerly 'parts')
             # Using .loc to ensure we update the specific cell
-            current_val = pd.to_numeric(df.loc[mask, 'feedback given'], errors='coerce').fillna(0).astype(int)
+            current_val = pd.to_numeric(df.loc[mask, 'Feedback Given'], errors='coerce').fillna(0).astype(int)
             df.loc[mask, 'feedback given'] = current_val + 1
             
             # Write back to the Registry spreadsheet
@@ -979,6 +979,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
