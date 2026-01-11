@@ -50,6 +50,27 @@ def load_registry():
     # 6. Convert to the dictionary format your Profile page expects
     return df.set_index('email').to_dict('index')
 
+def update_printer_count(email_to_update):
+    try:
+        url = st.secrets["connections"]["gsheets"]["registry_url"]
+        df = conn.read(spreadsheet=url, ttl=0)
+        df.columns = [c.strip().lower() for c in df.columns]
+        
+        mask = df['email'].str.strip().str.lower() == email_to_update.lower().strip()
+        
+        if mask.any():
+            # Get current count, handle errors/empty, add 1
+            current_val = pd.to_numeric(df.loc[mask, 'printers'], errors='coerce').fillna(0).astype(int)
+            df.loc[mask, 'printers'] = int(current_val + 1)
+            
+            # Save back to sheet
+            conn.update(spreadsheet=url, data=df)
+            return True
+    except Exception as e:
+        st.error(f"Error updating printer count: {e}")
+    return False
+    
+
 def increment_models_generated(email_to_update):
     try:
         url = st.secrets["connections"]["gsheets"]["registry"]
@@ -91,6 +112,9 @@ st.session_state.setdefault("page", "Home")
 st.session_state.setdefault("testimonial_index", 0)
 st.session_state.setdefault("home_tab", "Why Napkin")
 st.session_state.setdefault("initial_sync_done", False)
+
+if "show_printer_setup" not in st.session_state:
+    st.session_state.show_printer_setup = False
 
 def set_page(page_name):
     st.session_state.page = page_name
@@ -806,6 +830,51 @@ elif st.session_state.page == "Profile":
             # 3. Plan: Pulled from spreadsheet
             stat3.metric("Plan", user['plan'])
 
+            # --- AT THE BOTTOM OF prof_col2 ---
+            st.markdown("---")
+            if st.button("➕ Connect a Printer", use_container_width=True):
+                st.session_state.show_printer_setup = True
+
+            
+            # --- PRINTER SETUP WINDOW ---
+            if st.session_state.show_printer_setup:
+                st.markdown("### Printer Configuration")
+                with st.form("printer_config_form"):
+                    col_a, col_b = st.columns(2)
+                    
+                    with col_a:
+                        brand = st.selectbox("Printer Brand", ["Bambu Lab", "Creality", "Prusa", "Anycubic"])
+                        # Logic for dynamic model selection
+                        if brand == "Bambu Lab":
+                            model = st.selectbox("Model", ["P1S", "P1P", "X1C", "A1", "A1 Mini"])
+                        elif brand == "Prusa":
+                            model = st.selectbox("Model", ["MK3S+", "MK4", "MINI+", "XL"])
+                        else:
+                            model = st.selectbox("Model", ["Standard/Generic"])
+
+                    with col_b:
+                        material = st.selectbox("Default Material", ["PLA", "PETG", "ABS", "ASA"], index=0)
+                        infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=15)
+                    
+                    supports = st.radio("Supports", ["ON", "OFF"], horizontal=True, index=0)
+                    
+                    submitted = st.form_submit_button("Save & Add Printer")
+                    
+                    if submitted:
+                        # 1. Update the Spreadsheet (Increment +1)
+                        success = update_printer_count(st.session_state.user_email)
+                        
+                        if success:
+                            st.success(f"Connected {brand} {model} successfully!")
+                            st.session_state.show_printer_setup = False
+                            # Clear cache and rerun to update the metric in stat2
+                            st.cache_data.clear()
+                            st.rerun()
+                
+                if st.button("Cancel"):
+                    st.session_state.show_printer_setup = False
+                    st.rerun()
+
 
 # 8. ADMIN VERIFICATION SYSTEM
 elif st.session_state.page == "Admin":
@@ -989,6 +1058,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
