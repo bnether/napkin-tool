@@ -280,15 +280,7 @@ def get_my_fleet():
         return pd.DataFrame()
 
 
-# --- INSIDE VIEW PRINTERS SECTION ---
-fleet_df = get_my_fleet()
-if not fleet_df.empty:
-    # Use the 'printer nickname' for the dropdown
-    selected_nick = st.selectbox("Select Printer", fleet_df['printer nickname'].tolist())
-    
-    # Pull the specific row for that nickname to populate the edit form
-    current_printer = fleet_df[fleet_df['printer nickname'] == selected_nick].iloc[0]
-    # ... (Then map current_printer['material'], etc., to your form widgets)
+
 
 PRINTER_MASTER_LIST = {
     "Bambu Lab": ["X1-Carbon", "X1-E (Enterprise)", "P1S", "P1P", "A1", "A1 Mini"],
@@ -1276,6 +1268,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
