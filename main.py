@@ -835,12 +835,7 @@ elif st.session_state.page == "Profile":
             if st.button("➕ Connect a Printer", use_container_width=True):
                 st.session_state.show_printer_setup = True
 
-            # --- AT THE BOTTOM OF prof_col2 ---
-            st.markdown("---")
-            if st.button("➕ Connect a Printer", use_container_width=True):
-                st.session_state.show_printer_setup = True
-
-            
+                        
             # --- PRINTER SETUP WINDOW ---
             if st.session_state.show_printer_setup:
                 st.markdown("### Printer Configuration")
@@ -1063,6 +1058,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
