@@ -835,39 +835,30 @@ elif st.session_state.page == "Profile":
             if st.button("➕ Connect a Printer", use_container_width=True):
                 st.session_state.show_printer_setup = True
 
+            # --- AT THE BOTTOM OF prof_col2 ---
+            st.markdown("---")
+            if st.button("➕ Connect a Printer", use_container_width=True):
+                st.session_state.show_printer_setup = True
+
+            
             # --- PRINTER SETUP WINDOW ---
             if st.session_state.show_printer_setup:
                 st.markdown("### Printer Configuration")
-                
-                # Custom CSS to force the "Blue" accent on Sliders and Radio buttons
-                st.markdown("""
-                    <style>
-                        /* Change the slider color to blue */
-                        .stSlider [data-baseweb="slider"] div { background-color: #3b82f6 !important; }
-                        /* Change the radio/toggle circle color to blue */
-                        div[data-baseweb="radio"] div[role="radiogroup"] div[aria-checked="true"] > div { 
-                            background-color: #3b82f6 !important; 
-                            border-color: #3b82f6 !important; 
-                        }
-                    </style>
-                """, unsafe_allow_html=True)
-            
                 with st.form("printer_config_form"):
                     col_a, col_b = st.columns(2)
                     
                     with col_a:
                         brand = st.selectbox("Printer Brand", ["Bambu Lab", "Creality", "Prusa", "Anycubic"])
                         material = st.selectbox("Default Material", ["PLA", "PETG", "ABS", "ASA"], index=0)
-            
+                        
                     with col_b:
-                        # MOVED Model selection here (Swapped with Material)
+                        # Logic for dynamic model selection
                         if brand == "Bambu Lab":
                             model = st.selectbox("Model", ["P1S", "P1P", "X1C", "A1", "A1 Mini"])
                         elif brand == "Prusa":
                             model = st.selectbox("Model", ["MK3S+", "MK4", "MINI+", "XL"])
                         else:
                             model = st.selectbox("Model", ["Standard/Generic"])
-                            
                         infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=15)
                     
                     supports = st.radio("Supports", ["ON", "OFF"], horizontal=True, index=0)
@@ -875,10 +866,13 @@ elif st.session_state.page == "Profile":
                     submitted = st.form_submit_button("Save & Add Printer")
                     
                     if submitted:
+                        # 1. Update the Spreadsheet (Increment +1)
                         success = update_printer_count(st.session_state.user_email)
+                        
                         if success:
                             st.success(f"Connected {brand} {model} successfully!")
                             st.session_state.show_printer_setup = False
+                            # Clear cache and rerun to update the metric in stat2
                             st.cache_data.clear()
                             st.rerun()
                 
@@ -1069,6 +1063,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
