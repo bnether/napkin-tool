@@ -853,32 +853,30 @@ elif st.session_state.page == "Profile":
             if st.session_state.show_printer_setup:
                 st.markdown("### Printer Configuration")
                 
-            
-                # 1. We handle the Brand selection OUTSIDE the form or as a standalone to trigger the rerun
-                # but Streamlit selectboxes inside a form will only update after a submit. 
-                # To get "Live" updates, the Brand selection should be outside the form or use a callback.
-                # BEST PRACTICE for dynamic forms: Put the selection outside the form container.
-                
+                # 1. Brand and Model Selection (Outside form for instant reactivity)
+                # We use container_width to ensure they match each other
                 selected_brand = st.selectbox("Printer Brand", list(PRINTER_MASTER_LIST.keys()))
                 
+                available_models = PRINTER_MASTER_LIST.get(selected_brand, ["Standard/Generic"])
+                model = st.selectbox("Model", available_models)
+                
+                # 2. Settings Grey Box (st.form provides the grey outline/border)
                 with st.form("printer_config_form"):
+                    st.markdown("#### Default Settings")
+                    
                     col_a, col_b = st.columns(2)
                     
                     with col_a:
-                        # Show Material in Col A
                         material = st.selectbox("Default Material", ["PLA", "PETG", "ABS", "ASA", "Nylon", "Carbon Fiber Nylon", "TPU"], index=0)
                         
                     with col_b:
-                        # Show the dynamic Model list in Col B (filtered by Brand)
-                        available_models = PRINTER_MASTER_LIST.get(selected_brand)
-                        model = st.selectbox("Model", available_models)
-                        
-                        # Infill slider
                         infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=15)
                     
                     supports = st.radio("Supports", ["ON", "OFF"], horizontal=True, index=0)
                     
-                    submitted = st.form_submit_button("Save & Add Printer")
+                    # Spacer for visual balance
+                    st.write("")
+                    submitted = st.form_submit_button("Save & Add Printer", use_container_width=True)
                     
                     if submitted:
                         # Update the Spreadsheet (Increment +1)
@@ -889,8 +887,9 @@ elif st.session_state.page == "Profile":
                             st.session_state.show_printer_setup = False
                             st.cache_data.clear()
                             st.rerun()
-                
-                if st.button("Cancel"):
+            
+                # Cancel button sits outside the form
+                if st.button("Cancel", use_container_width=True):
                     st.session_state.show_printer_setup = False
                     st.rerun()
 
@@ -1076,6 +1075,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
