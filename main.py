@@ -984,8 +984,9 @@ elif st.session_state.page == "Profile":
             printer_count = len(fleet)
             stat2.metric("Printers Connected", f"{printer_count}")
             stat3.metric("Plan", user['plan'])
+            
 
-           st.markdown("---")
+            st.markdown("---")
         
             # --- UNIFIED PRINTER FLEET MANAGER ---
             st.markdown("### Manage Printers")
@@ -1275,6 +1276,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
