@@ -144,6 +144,7 @@ st.session_state.setdefault("page", "Home")
 st.session_state.setdefault("testimonial_index", 0)
 st.session_state.setdefault("home_tab", "Why Napkin")
 st.session_state.setdefault("initial_sync_done", False)
+st.session_state.setdefault("show_slicing_menu", False)
 
 
 # Initialize session state variables if they don't exist
@@ -733,14 +734,65 @@ elif st.session_state.page == "Make a Part":
                                 st.error("AI failed to return valid code.")
                     except Exception as e: 
                         st.error(f"Error: {e}")
-
+        
+        # --- DOWNLOAD & PRINT SECTION ---
         if 'last_code' in st.session_state and os.path.exists("part.stl"):
             d1, d2 = st.columns(2)
             with open("part.stl", "rb") as file:
                 stl_data = file.read()
                 d1.download_button("Download STL", data=stl_data, file_name="part.stl", use_container_width=True)
-                d2.download_button("Print", data=stl_data, file_name="part.stl", use_container_width=True)
-            
+                
+                # We use a toggle/state to show the print menu instead of a direct download
+                if d2.button("Prepare for Print", use_container_width=True, type="secondary"):
+                    st.session_state.show_slicing_menu = True
+
+            # --- DYNAMIC SLICING MENU ---
+            if st.session_state.get("show_slicing_menu", False):
+                st.markdown("---")
+                st.subheader("Slicing Engine")
+                
+                # Fetch the user's fleet
+                fleet_df = get_my_fleet()
+                
+                if fleet_df.empty:
+                    st.warning("No printers found. Please add a printer in your **Profile** first.")
+                else:
+                    # 1. Printer Selection
+                    printer_options = fleet_df['printer nickname'].tolist()
+                    selected_p = st.selectbox("Select Destination Printer:", printer_options)
+                    
+                    # Pull settings for the selected printer
+                    p_settings = fleet_df[fleet_df['printer nickname'] == selected_p].iloc[0]
+                    
+                    # 2. Display Quick Settings (Read Only for now)
+                    st.caption(f"Profile: {p_settings['material']} | {p_settings['nozzle size']}mm Nozzle | {p_settings['infil']} Infill")
+                    
+                    # 3. Slice Action
+                    if st.button("Generate G-Code (Slice)", type="primary", use_container_width=True):
+                        # --- PLACEHOLDER FOR SLICING LOGIC ---
+                        with st.spinner(f"Slicing for {selected_p}..."):
+                            import time
+                            time.sleep(2) # Simulating Slicing
+                            
+                            # --- CALCULATIONS ---
+                            # Placeholder estimates: 1 hour 15 mins
+                            est_hours = 1
+                            est_mins = 15
+                            finish_time = (datetime.now() + pd.Timedelta(hours=est_hours, minutes=est_mins)).strftime("%I:%M %p")
+                            
+                            st.success("Slicing Complete!")
+                            
+                            # Display Times
+                            t_col1, t_col2 = st.columns(2)
+                            t_col1.metric("Est. Print Time", f"{est_hours}h {est_mins}m")
+                            t_col2.metric("Est. Finish Time", finish_time)
+                            
+                            # 4. Final Actions
+                            f_col1, f_col2 = st.columns(2)
+                            f_col1.download_button("Download G-Code", data="Placeholder GCODE", file_name=f"{selected_p}_part.gcode", use_container_width=True)
+                            if f_col2.button("Send to Printer", use_container_width=True):
+                                st.info("Connection pending...")
+
             st.markdown("---")
             st.write("**Feedback: Is this model correct?**")
             fb_col1, fb_col2 = st.columns(2)
@@ -749,6 +801,8 @@ elif st.session_state.page == "Make a Part":
                 
             if fb_col2.button("Incorrect", use_container_width=True):
                 log_feedback_to_sheets("FAILED")
+
+       
                 
                 
 # 3. PRICING
@@ -1268,6 +1322,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
