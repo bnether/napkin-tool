@@ -232,18 +232,16 @@ def add_to_printers_sheet(brand, model, nickname, material, infill, supports, no
 def delete_printer_from_sheet(nickname):
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
+        REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
         
-        # 1. Read current data
         df = conn.read(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", ttl=0)
+        df.columns = [c.strip().lower() for c in df.columns]
         
-        # 2. Keep everything EXCEPT the printer we want to delete
-        # Filtering by both company and nickname for security
         original_count = len(df)
-        df = df[~((df['companyname'] == st.session_state.user_company) & (df['printer nickname'] == nickname))]
+        # Filtering using 'company' to match your save function
+        df = df[~((df['company'] == st.session_state.user_company) & (df['printer nickname'] == nickname))]
         
         if len(df) < original_count:
-            # 3. Update the sheet
             conn.update(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", data=df)
             return True
         return False
@@ -252,27 +250,33 @@ def delete_printer_from_sheet(nickname):
         return False
 
 def get_my_fleet():
-    # 1. Safety Check: If not logged in, return empty data immediately
     if not st.session_state.get('authenticated', False):
         return pd.DataFrame()
 
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
+        # Verify this URL matches your actual Printer tab location
+        REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
         df = conn.read(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", ttl=0)
 
         if df.empty:
             return pd.DataFrame()
 
-        # 2. Tier Logic with .get() safety
+        # Standardize column names: strip spaces and lowercase everything
+        df.columns = [c.strip().lower() for c in df.columns]
+
         user_tier = st.session_state.get('user_tier', 'Starter')
-        
+        user_email = str(st.session_state.get('user_email', '')).lower().strip()
+        user_company = str(st.session_state.get('user_company', '')).strip()
+
+        # Use 'company' (lowercase) because that's what add_to_printers_sheet uses
         if user_tier == "Enterprise":
-            return df[df['companyname'] == st.session_state.user_company]
+            return df[df['company'] == user_company]
         else:
-            return df[df['email'] == st.session_state.user_email]
+            return df[df['email'] == user_email]
             
     except Exception as e:
+        st.error(f"Fleet Fetch Error: {e}")
         return pd.DataFrame()
 
 
@@ -1289,6 +1293,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
