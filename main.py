@@ -737,25 +737,22 @@ elif st.session_state.page == "Make a Part":
         
         # --- DOWNLOAD & PRINT SECTION ---
         if st.session_state.get('last_code') and os.path.exists("part.stl"):
-            st.markdown("---")
-            st.success("3D Render Ready")
-            
+                    
             # Action Buttons Row
             d1, d2 = st.columns(2)
             with open("part.stl", "rb") as file:
                 stl_data = file.read()
                 
-                # Download STL - Added type="primary" for consistency
+                # Standard Download Button (Matches standard style)
                 d1.download_button(
                     label="Download STL", 
                     data=stl_data, 
                     file_name="part.stl", 
-                    use_container_width=True,
-                    type="primary" 
+                    use_container_width=True
                 )
                 
-                # Prepare for Print - Set to primary to match
-                if d2.button("Prepare for Print", use_container_width=True, type="primary"):
+                # Standard Prepare Button
+                if d2.button("Prepare for Print", use_container_width=True):
                     st.session_state.show_slicing_menu = True
 
             # --- DYNAMIC SLICING MENU ---
@@ -772,7 +769,8 @@ elif st.session_state.page == "Make a Part":
                     
                     st.info(f"**Settings:** {p_settings['material']} | {p_settings['nozzle size']}mm | {p_settings['infil']} Infill")
                     
-                    if st.button("Generate G-Code (Slice)", type="primary", use_container_width=True):
+                    # Using standard button for Slice to avoid the red primary color
+                    if st.button("Generate G-Code (Slice)", use_container_width=True):
                         with st.spinner(f"Slicing for {selected_p}..."):
                             import time
                             time.sleep(1.5) 
@@ -786,22 +784,20 @@ elif st.session_state.page == "Make a Part":
                             m1.metric("Est. Print Time", f"{est_hours}h {est_mins}m")
                             m2.metric("Est. Finish Time", finish_time)
                             
-                            # Final G-Code Download & Send
+                            # Final G-Code Download & Send (Standardized Style)
                             f1, f2 = st.columns(2)
                             f1.download_button(
                                 label="Download G-Code", 
                                 data="Placeholder GCODE", 
                                 file_name=f"{selected_p}_part.gcode", 
-                                use_container_width=True,
-                                type="primary"
+                                use_container_width=True
                             )
-                            f2.button("Send to Printer", use_container_width=True, type="primary")
+                            f2.button("Send to Printer", use_container_width=True)
 
             # --- FEEDBACK SECTION ---
             st.markdown("---")
             st.write("**Feedback: Is this model correct?**")
             fb_col1, fb_col2 = st.columns(2)
-            # Using type="secondary" for feedback to distinguish from main actions
             if fb_col1.button("Correct", use_container_width=True):
                 log_feedback_to_sheets("VERIFIED")
             if fb_col2.button("Incorrect", use_container_width=True):
@@ -1327,6 +1323,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
