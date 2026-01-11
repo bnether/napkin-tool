@@ -145,8 +145,20 @@ st.session_state.setdefault("testimonial_index", 0)
 st.session_state.setdefault("home_tab", "Why Napkin")
 st.session_state.setdefault("initial_sync_done", False)
 
+
+# Initialize session state variables if they don't exist
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "user_email" not in st.session_state:
+    st.session_state.user_email = None
+if "user_company" not in st.session_state:
+    st.session_state.user_company = ""
+if "user_name" not in st.session_state:
+    st.session_state.user_name = ""
 if "show_printer_setup" not in st.session_state:
     st.session_state.show_printer_setup = False
+if "show_printer_manager" not in st.session_state:
+    st.session_state.show_printer_manager = False
 
 def set_page(page_name):
     st.session_state.page = page_name
@@ -910,12 +922,12 @@ elif st.session_state.page == "Profile":
                 email_clean = email_attempt.lower().strip()
                 if email_clean in BETA_USERS:
                     user_data = BETA_USERS[email_clean]
+                    # SECURE THE DATA INTO SESSION STATE
                     st.session_state.authenticated = True
                     st.session_state.user_email = email_clean
-                    # Ensure company and metadata are stored in session state upon login
-                    st.session_state.user_company = user_data['company']
-                    st.session_state.user_tier = user_data['plan']
-                    st.session_state.user_name = user_data['name']
+                    st.session_state.user_company = user_data.get('company', 'General')
+                    st.session_state.user_name = user_data.get('name', 'User')
+                    st.session_state.user_tier = user_data.get('plan', 'Starter')
                     st.rerun()
                 else:
                     st.error("No account associated with this email")
@@ -999,8 +1011,9 @@ elif st.session_state.page == "Profile":
                     supports = st.radio("Enable Supports by Default?", ["ON", "OFF"], horizontal=True, index=0)
                     
                     st.markdown("---")
-                    user_company_label = st.session_state.get('user_company', 'Company')
-                    submitted = st.form_submit_button("Save & Add Printer to " + user_company_label, use_container_width=True)
+                    # SAFETY: Fallback to "Your Fleet" if user_company is missing
+                    target_fleet = st.session_state.get('user_company', 'Your Fleet')
+                    submitted = st.form_submit_button(f"Save & Add Printer to {target_fleet}", use_container_width=True)
                     
                     if submitted:
                         if not nickname:
@@ -1013,7 +1026,7 @@ elif st.session_state.page == "Profile":
                                     nozzle, bed_type, walls
                                 )
                                 if success:
-                                    st.success(f"{nickname} is now online for {user_company_label}!")
+                                    st.success(f"{nickname} is now online!")
                                     st.session_state.show_printer_setup = False
                                     st.cache_data.clear()
                                     st.rerun()
@@ -1265,6 +1278,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
