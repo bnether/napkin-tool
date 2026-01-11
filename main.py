@@ -149,6 +149,19 @@ if not st.session_state.initial_sync_done:
         st.session_state.initial_sync_done = True
 
 
+PRINTER_MASTER_LIST = {
+    "Bambu Lab": ["X1-Carbon", "X1-E (Enterprise)", "P1S", "P1P", "A1", "A1 Mini"],
+    "Prusa Research": ["MK4", "MK3S+", "XL (Multi-Tool)", "MINI+", "SL1S Speed (Resin)"],
+    "UltiMaker": ["S7", "S5", "S3", "Method X", "Method XL", "2+ Connect"],
+    "Markforged": ["Onyx One", "Mark Two", "Onyx Pro", "X7 (Industrial)"],
+    "Formlabs (Resin)": ["Form 4", "Form 3+", "Form 3L", "Form 4B"],
+    "Raise3D": ["Pro3 Series", "Pro2 Series", "E2", "E2CF (Carbon Fiber)"],
+    "Creality (Pro/High Speed)": ["K1 Max", "K1C", "Ender-3 V3 Plus", "Ender-5 S1", "CR-5 Pro V2"],
+    "Anycubic": ["Kobra 2 Max", "Kobra 2 Pro", "Photon Mono M5s"],
+    "Flashforge": ["Guider 3 Ultra", "Creator 4", "Adventurer 5M Pro"],
+    "Other/Custom": ["Standard Marlin 250mm", "Large Format Klipper", "Custom Build"]
+}
+
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
 st.markdown(f"""
     <style>
@@ -839,21 +852,38 @@ elif st.session_state.page == "Profile":
             # --- PRINTER SETUP WINDOW ---
             if st.session_state.show_printer_setup:
                 st.markdown("### Printer Configuration")
+                
+                # Blue accent CSS for sliders and radio buttons
+                st.markdown("""
+                    <style>
+                        .stSlider [data-baseweb="slider"] div { background-color: #3b82f6 !important; }
+                        div[data-baseweb="radio"] div[role="radiogroup"] div[aria-checked="true"] > div { 
+                            background-color: #3b82f6 !important; 
+                            border-color: #3b82f6 !important; 
+                        }
+                    </style>
+                """, unsafe_allow_html=True)
+            
+                # 1. We handle the Brand selection OUTSIDE the form or as a standalone to trigger the rerun
+                # but Streamlit selectboxes inside a form will only update after a submit. 
+                # To get "Live" updates, the Brand selection should be outside the form or use a callback.
+                # BEST PRACTICE for dynamic forms: Put the selection outside the form container.
+                
+                selected_brand = st.selectbox("Printer Brand", list(PRINTER_MASTER_LIST.keys()))
+                
                 with st.form("printer_config_form"):
                     col_a, col_b = st.columns(2)
                     
                     with col_a:
-                        brand = st.selectbox("Printer Brand", ["Bambu Lab", "Creality", "Prusa", "Anycubic"])
-                        material = st.selectbox("Default Material", ["PLA", "PETG", "ABS", "ASA"], index=0)
+                        # Show Material in Col A
+                        material = st.selectbox("Default Material", ["PLA", "PETG", "ABS", "ASA", "Nylon", "Carbon Fiber Nylon", "TPU"], index=0)
                         
                     with col_b:
-                        # Logic for dynamic model selection
-                        if brand == "Bambu Lab":
-                            model = st.selectbox("Model", ["P1S", "P1P", "X1C", "A1", "A1 Mini"])
-                        elif brand == "Prusa":
-                            model = st.selectbox("Model", ["MK3S+", "MK4", "MINI+", "XL"])
-                        else:
-                            model = st.selectbox("Model", ["Standard/Generic"])
+                        # Show the dynamic Model list in Col B (filtered by Brand)
+                        available_models = PRINTER_MASTER_LIST.get(selected_brand)
+                        model = st.selectbox("Model", available_models)
+                        
+                        # Infill slider
                         infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=15)
                     
                     supports = st.radio("Supports", ["ON", "OFF"], horizontal=True, index=0)
@@ -861,20 +891,18 @@ elif st.session_state.page == "Profile":
                     submitted = st.form_submit_button("Save & Add Printer")
                     
                     if submitted:
-                        # 1. Update the Spreadsheet (Increment +1)
+                        # Update the Spreadsheet (Increment +1)
                         success = update_printer_count(st.session_state.user_email)
                         
                         if success:
-                            st.success(f"Connected {brand} {model} successfully!")
+                            st.success(f"Connected {selected_brand} {model} successfully!")
                             st.session_state.show_printer_setup = False
-                            # Clear cache and rerun to update the metric in stat2
                             st.cache_data.clear()
                             st.rerun()
                 
                 if st.button("Cancel"):
                     st.session_state.show_printer_setup = False
                     st.rerun()
-            
 
 # 8. ADMIN VERIFICATION SYSTEM
 elif st.session_state.page == "Admin":
@@ -1058,6 +1086,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
