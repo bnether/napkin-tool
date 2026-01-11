@@ -976,7 +976,9 @@ elif st.session_state.page == "Profile":
             stat1, stat2, stat3 = st.columns(3)
             
             stat1.metric("Feedback Given", f"{user['feedback given']}")
-            stat2.metric("Printers Connected", f"{user['printers']}")
+            fleet = get_my_fleet()
+            printer_count = len(fleet)
+            stat2.metric("Printers Connected", f"{printer_count}")
             stat3.metric("Plan", user['plan'])
 
             st.markdown("---")
@@ -1287,6 +1289,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
