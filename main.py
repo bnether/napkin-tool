@@ -916,11 +916,10 @@ elif st.session_state.page == "Contact":
 
 # 7. --- PROFILE PAGE (With integrated Login) ---
 elif st.session_state.page == "Profile":
-    # 1. Check Auth Status
     if not st.session_state.authenticated:
         # --- LOGIN VIEW ---
         st.markdown("### Access Login")
-        st.info("You can view the site as a guest, but you must log in here to generate parts.")
+        st.info("Log in to manage your fleet and generate parts.")
         
         with st.form("profile_login"):
             email_attempt = st.text_input("Enter Email", placeholder="john.doe@company.com")
@@ -930,7 +929,6 @@ elif st.session_state.page == "Profile":
                 email_clean = email_attempt.lower().strip()
                 if email_clean in BETA_USERS:
                     user_data = BETA_USERS[email_clean]
-                    # SECURE THE DATA INTO SESSION STATE
                     st.session_state.authenticated = True
                     st.session_state.user_email = email_clean
                     st.session_state.user_company = user_data.get('company', 'General')
@@ -949,89 +947,119 @@ elif st.session_state.page == "Profile":
         
         with prof_col1:
             placeholder_url = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
-            
             st.markdown(f'''
                 <div style="text-align: center;">
                     <h3 style="margin-bottom: 20px;">User Profile</h3>
-                    <img src="{placeholder_url}" style="border-radius: 50%; border: 4px solid #3b82f6; width: 150px; height: 150px; object-fit: cover;">
+                    <img src="{placeholder_url}" style="border-radius: 50%; border: 4px solid #3b82f6; width: 120px; height: 120px; object-fit: cover;">
                     <h4 style="margin-top: 15px;">{user['name']}</h4>
-                    <p style="color: #8b949e; margin-bottom: 5px;">{user['role']}</p>
                     <p style="color: #3b82f6; font-weight: bold;">{user['company']}</p>
                 </div>
             ''', unsafe_allow_html=True)
             
             if st.button("Log Out", use_container_width=True):
                 st.session_state.authenticated = False
-                st.session_state.user_email = None
                 st.rerun()
 
         with prof_col2:
             st.markdown("#### Account Information")
-            st.text_input("Full Name", value=user['name'], disabled=True)
-            st.text_input("Email Address", value=user_email, disabled=True)
-            st.text_input("Company", value=user['company'], disabled=True)
+            st.text_input("Email", value=user_email, disabled=True)
             
+            # --- STATISTICS ---
             st.markdown("#### Statistics")
             stat1, stat2, stat3 = st.columns(3)
             
-            stat1.metric("Feedback Given", f"{user['feedback given']}")
-            fleet = get_my_fleet()
-            printer_count = len(fleet)
-            stat2.metric("Printers Connected", f"{printer_count}")
-            stat3.metric("Plan", user['plan'])
+            # Fetch Fleet Data
+            fleet_df = get_my_fleet() # This uses the 5-second cache
             
+            stat1.metric("Feedback", f"{user.get('feedback given', 0)}")
+            stat2.metric("Printers", len(fleet_df))
+            stat3.metric("Plan", user.get('plan', 'Starter'))
 
             st.markdown("---")
-        
-            # --- PRINTER MANAGEMENT ---
+            
+            # --- UNIFIED FLEET MANAGER ---
             st.markdown("### Manage Printers")
             
-            # 1. Fetch data with the 5-second cache guard
-            fleet_df = get_my_fleet()
+            # Prepare options list
+            printer_list = []
+            if not fleet_df.empty:
+                printer_list = fleet_df['printer nickname'].tolist()
             
-            # 2. Setup Options
-            printer_list = fleet_df['printer nickname'].tolist() if not fleet_df.empty else []
             options = printer_list + ["+ Add New Printer"]
             
-            # Use an index key to prevent the widget from resetting unexpectedly
-            selection = st.selectbox("Select a printer to manage or add a new one:", options, key="fleet_selector")
-            
+            # The "Trigger" that keeps the window visible
+            selection = st.selectbox("Select a printer to edit or add a new one:", options)
+
+            # --- BRANCH A: ADD NEW ---
             if selection == "+ Add New Printer":
-                # ... [Keep your Add New Printer code here] ...
-                # (Just ensure the form submit button clears cache: st.cache_data.clear())
-                pass
-            
-            else:
-                # EDIT / DELETE MODE
-                p_row = fleet_df[fleet_df['printer nickname'] == selection]
-                if not p_row.empty:
-                    p_data = p_row.iloc[0]
+                st.info("Registering a new machine to your fleet.")
+                
+                brand = st.selectbox("Printer Brand", list(PRINTER_MASTER_LIST.keys()))
+                model = st.selectbox("Model", PRINTER_MASTER_LIST.get(brand, ["Generic"]))
+                
+                with st.form("add_new_printer_form"):
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        nick = st.text_input("Nickname", placeholder="e.g. Workshop_1")
+                        mat = st.selectbox("Material", ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"])
+                    with col_b:
+                        noz = st.selectbox("Nozzle (mm)", [0.2, 0.4, 0.6, 0.8], index=1)
+                        bed = st.selectbox("Bed", ["Textured PEI", "Smooth PEI", "Glass"])
+
+                    inf = st.select_slider("Infill %", options=[5, 10, 15, 20, 40, 60, 80, 100], value=15)
+                    supp = st.radio("Supports?", ["ON", "OFF"], horizontal=True)
                     
-                    with st.form("printer_edit_form"):
-                        # UI components (Material, Nozzle, etc)
-                        # ... [Keep your existing UI code] ...
+                    if st.form_submit_button("Save Printer", use_container_width=True):
+                        if not nick:
+                            st.error("Nickname is required.")
+                        else:
+                            if add_to_printers_sheet(brand, model, nick, mat, inf, supp, noz, bed, 3):
+                                st.success("Printer Added!")
+                                st.cache_data.clear() # Clears the 5-sec cache
+                                st.rerun()
+
+            # --- BRANCH B: EDIT / DELETE ---
+            elif not fleet_df.empty:
+                # Find the data for the selected nickname
+                p_data = fleet_df[fleet_df['printer nickname'] == selection].iloc[0]
+                
+                with st.form("edit_existing_form"):
+                    st.caption(f"Hardware: {p_data['brand']} {p_data['model']}")
+                    
+                    col_c, col_d = st.columns(2)
+                    with col_c:
+                        # Find the index of the existing material to set as default
+                        m_options = ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"]
+                        m_idx = m_options.index(p_data['material']) if p_data['material'] in m_options else 0
+                        new_mat = st.selectbox("Material", m_options, index=m_idx)
                         
-                        col_btn1, col_btn2 = st.columns(2)
-                        with col_btn1:
-                            update_btn = st.form_submit_button("Save Changes", use_container_width=True)
-                        with col_btn2:
-                            delete_btn = st.form_submit_button("Delete Printer", use_container_width=True)
-            
-                        if update_btn:
-                            # Add a small delay check if you want to be extra safe
-                            if update_printer_in_sheet(selection, new_material, new_infill, new_supports, new_nozzle, new_bed, new_walls):
-                                st.success("Changes saved!")
-                                st.cache_data.clear()
-                                st.rerun()
-            
-                        if delete_btn:
-                            if delete_printer_from_sheet(selection):
-                                st.warning("Printer removed from fleet.")
-                                st.cache_data.clear()
-                                # We wait half a second before rerunning to let Google's API cool down
-                                import time
-                                time.sleep(0.5)
-                                st.rerun()
+                        # Infill
+                        try:
+                            curr_inf = int(str(p_data['infil']).replace('%', ''))
+                        except: curr_inf = 15
+                        new_inf = st.select_slider("Infill %", options=[5, 10, 15, 20, 40, 60, 80, 100], value=curr_inf)
+                    
+                    with col_d:
+                        new_noz = st.selectbox("Nozzle (mm)", [0.2, 0.4, 0.6, 0.8], value=float(p_data['nozzle size']))
+                        new_supp = st.radio("Supports", ["ON", "OFF"], index=0 if p_data['supports'] == "ON" else 1)
+
+                    st.markdown("---")
+                    btn_save, btn_del = st.columns(2)
+                    
+                    if btn_save.form_submit_button("Update Settings"):
+                        if update_printer_in_sheet(selection, new_mat, new_inf, new_supp, new_noz, p_data['bed type'], p_data['wall count']):
+                            st.success("Updated!")
+                            st.cache_data.clear()
+                            st.rerun()
+                    
+                    if btn_del.form_submit_button("Delete"):
+                        if delete_printer_from_sheet(selection):
+                            st.warning("Deleted.")
+                            st.cache_data.clear()
+                            import time
+                            time.sleep(0.5) # API cooldown
+                            st.rerun()
+
 
 # 8. ADMIN VERIFICATION SYSTEM
 elif st.session_state.page == "Admin":
@@ -1215,6 +1243,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
