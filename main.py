@@ -1024,7 +1024,7 @@ elif st.session_state.page == "Profile":
                     st.markdown("---")
                     # SAFETY: Fallback to "Your Fleet" if user_company is missing
                     target_fleet = st.session_state.get('user_company', 'Your Fleet')
-                    submitted = st.form_submit_button(f"Save & Add Printer to {target_fleet}", use_container_width=True)
+                    submitted = st.form_submit_button(f"Save & Add Printer", use_container_width=True)
                     
                     if submitted:
                         if not nickname:
@@ -1085,7 +1085,7 @@ elif st.session_state.page == "Profile":
                         
                         st.markdown("---")
                         update_btn = st.form_submit_button("Update Settings", use_container_width=True)
-                        delete_btn = st.form_submit_button("🗑️ Delete Printer from Fleet", use_container_width=True)
+                        delete_btn = st.form_submit_button("Delete Printer", use_container_width=True)
                         
                         if update_btn:
                             with st.spinner("Updating..."):
@@ -1289,6 +1289,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
