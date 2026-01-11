@@ -737,13 +737,13 @@ elif st.session_state.page == "Make a Part":
         
         # --- DOWNLOAD & PRINT SECTION ---
         if st.session_state.get('last_code') and os.path.exists("part.stl"):
-                    
+                        
             # Action Buttons Row
             d1, d2 = st.columns(2)
             with open("part.stl", "rb") as file:
                 stl_data = file.read()
                 
-                # Standard Download Button (Matches standard style)
+                # 1. Download STL (Standard/Secondary Style)
                 d1.download_button(
                     label="Download STL", 
                     data=stl_data, 
@@ -751,7 +751,8 @@ elif st.session_state.page == "Make a Part":
                     use_container_width=True
                 )
                 
-                # Standard Prepare Button
+                # 2. Prepare for Print (Standard/Secondary Style to match)
+                # Note: No type="primary" here
                 if d2.button("Prepare for Print", use_container_width=True):
                     st.session_state.show_slicing_menu = True
 
@@ -769,7 +770,7 @@ elif st.session_state.page == "Make a Part":
                     
                     st.info(f"**Settings:** {p_settings['material']} | {p_settings['nozzle size']}mm | {p_settings['infil']} Infill")
                     
-                    # Using standard button for Slice to avoid the red primary color
+                    # 3. Generate G-Code (Standard Style)
                     if st.button("Generate G-Code (Slice)", use_container_width=True):
                         with st.spinner(f"Slicing for {selected_p}..."):
                             import time
@@ -777,21 +778,24 @@ elif st.session_state.page == "Make a Part":
                             
                             # Calculations
                             est_hours, est_mins = 1, 15
-                            finish_time = (datetime.now() + pd.Timedelta(hours=est_hours, minutes=est_mins)).strftime("%I:%M %p")
+                            now = datetime.now()
+                            finish_time = (now + pd.Timedelta(hours=est_hours, minutes=est_mins)).strftime("%I:%M %p")
                             
                             # Metrics Display
                             m1, m2 = st.columns(2)
                             m1.metric("Est. Print Time", f"{est_hours}h {est_mins}m")
                             m2.metric("Est. Finish Time", finish_time)
                             
-                            # Final G-Code Download & Send (Standardized Style)
+                            # Final G-Code Row
                             f1, f2 = st.columns(2)
+                            # 4. Download G-Code (Standard Style)
                             f1.download_button(
                                 label="Download G-Code", 
                                 data="Placeholder GCODE", 
                                 file_name=f"{selected_p}_part.gcode", 
                                 use_container_width=True
                             )
+                            # 5. Send to Printer (Standard Style)
                             f2.button("Send to Printer", use_container_width=True)
 
             # --- FEEDBACK SECTION ---
@@ -1323,6 +1327,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
