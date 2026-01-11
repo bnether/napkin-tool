@@ -159,6 +159,8 @@ if "show_printer_setup" not in st.session_state:
     st.session_state.show_printer_setup = False
 if "show_printer_manager" not in st.session_state:
     st.session_state.show_printer_manager = False
+if "user_tier" not in st.session_state:
+    st.session_state.user_tier = "Starter"  # Default value
 
 def set_page(page_name):
     st.session_state.page = page_name
@@ -230,7 +232,7 @@ def add_to_printers_sheet(brand, model, nickname, material, infill, supports, no
 def delete_printer_from_sheet(nickname):
     try:
         conn = st.connection("gsheets", type=GSheetsConnection)
-        REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/YOUR_REGISTRY_ID_HERE/edit"
+        REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
         
         # 1. Read current data
         df = conn.read(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", ttl=0)
@@ -250,22 +252,29 @@ def delete_printer_from_sheet(nickname):
         return False
 
 def get_my_fleet():
-    REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
-    conn = st.connection("gsheets", type=GSheetsConnection)
-    
-    # Force a fresh read of the Printers tab
-    df = conn.read(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", ttl=0)
-    
-    if df.empty:
+    # 1. Safety Check: If not logged in, return empty data immediately
+    if not st.session_state.get('authenticated', False):
         return pd.DataFrame()
 
-    # TIER LOGIC
-    if st.session_state.user_tier == "Enterprise":
-        # Enterprise sees all printers registered under the same company
-        return df[df['companyname'] == st.session_state.user_company]
-    else:
-        # Starter/Pro see only the one printer registered to their email
-        return df[df['email'] == st.session_state.user_email]
+    try:
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
+        df = conn.read(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", ttl=0)
+
+        if df.empty:
+            return pd.DataFrame()
+
+        # 2. Tier Logic with .get() safety
+        user_tier = st.session_state.get('user_tier', 'Starter')
+        
+        if user_tier == "Enterprise":
+            return df[df['companyname'] == st.session_state.user_company]
+        else:
+            return df[df['email'] == st.session_state.user_email]
+            
+    except Exception as e:
+        return pd.DataFrame()
+
 
 # --- INSIDE VIEW PRINTERS SECTION ---
 fleet_df = get_my_fleet()
@@ -1278,6 +1287,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
