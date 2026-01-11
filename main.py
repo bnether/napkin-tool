@@ -229,55 +229,50 @@ def add_to_printers_sheet(brand, model, nickname, material, infill, supports, no
         st.error(f"Error: {e}")
         return False
 
+
+@st.cache_data(ttl=5) # Cache for 5 seconds to prevent rapid-fire API hits
+def get_my_fleet():
+    if not st.session_state.get('authenticated', False):
+        return pd.DataFrame()
+    try:
+        # Use the cached connection
+        REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
+        df = conn.read(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers") # Removed ttl=0
+        
+        if df.empty: return pd.DataFrame()
+
+        df.columns = [c.strip().lower() for c in df.columns]
+        user_tier = st.session_state.get('user_tier', 'Starter')
+        
+        if user_tier == "Enterprise":
+            return df[df['company'] == st.session_state.user_company]
+        else:
+            return df[df['email'] == st.session_state.user_email]
+    except Exception as e:
+        return pd.DataFrame()
+
 def delete_printer_from_sheet(nickname):
     try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
         REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
-        
+        # Force a single read here to get the most recent data before deleting
         df = conn.read(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", ttl=0)
         df.columns = [c.strip().lower() for c in df.columns]
         
         original_count = len(df)
-        # Filtering using 'company' to match your save function
+        # Filter logic
         df = df[~((df['company'] == st.session_state.user_company) & (df['printer nickname'] == nickname))]
         
         if len(df) < original_count:
             conn.update(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", data=df)
+            st.cache_data.clear() # Clear cache so the UI sees the change
             return True
         return False
     except Exception as e:
-        st.error(f"Deletion failed: {e}")
-        return False
-
-def get_my_fleet():
-    if not st.session_state.get('authenticated', False):
-        return pd.DataFrame()
-
-    try:
-        conn = st.connection("gsheets", type=GSheetsConnection)
-        # Verify this URL matches your actual Printer tab location
-        REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
-        df = conn.read(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", ttl=0)
-
-        if df.empty:
-            return pd.DataFrame()
-
-        # Standardize column names: strip spaces and lowercase everything
-        df.columns = [c.strip().lower() for c in df.columns]
-
-        user_tier = st.session_state.get('user_tier', 'Starter')
-        user_email = str(st.session_state.get('user_email', '')).lower().strip()
-        user_company = str(st.session_state.get('user_company', '')).strip()
-
-        # Use 'company' (lowercase) because that's what add_to_printers_sheet uses
-        if user_tier == "Enterprise":
-            return df[df['company'] == user_company]
+        if "429" in str(e):
+            st.error("Google is busy (Rate Limit). Please wait 10 seconds and try again.")
         else:
-            return df[df['email'] == user_email]
-            
-    except Exception as e:
-        st.error(f"Fleet Fetch Error: {e}")
-        return pd.DataFrame()
+            st.error(f"Deletion failed: {e}")
+        return False
 
 
 # --- INSIDE VIEW PRINTERS SECTION ---
@@ -988,111 +983,55 @@ elif st.session_state.page == "Profile":
 
             st.markdown("---")
         
-            # --- UNIFIED PRINTER FLEET MANAGER ---
+            # --- PRINTER MANAGEMENT ---
             st.markdown("### Manage Printers")
             
-            # 1. Fetch data once
+            # 1. Fetch data with the 5-second cache guard
             fleet_df = get_my_fleet()
             
-            # 2. Create Dropdown Options
-            printer_list = []
-            if not fleet_df.empty:
-                printer_list = fleet_df['printer nickname'].tolist()
-            
-            # Add the "Add New" option to the end of the list
+            # 2. Setup Options
+            printer_list = fleet_df['printer nickname'].tolist() if not fleet_df.empty else []
             options = printer_list + ["+ Add New Printer"]
             
-            # 3. Selection Logic
-            selection = st.selectbox("Select a printer to manage or add a new one:", options)
-
-            # --- FORM LOGIC ---
+            # Use an index key to prevent the widget from resetting unexpectedly
+            selection = st.selectbox("Select a printer to manage or add a new one:", options, key="fleet_selector")
+            
             if selection == "+ Add New Printer":
-                st.info("Configuring a new printer for your fleet.")
-                
-                # Brand/Model selectors outside the form for dynamic filtering
-                selected_brand = st.selectbox("Printer Brand", list(PRINTER_MASTER_LIST.keys()))
-                available_models = PRINTER_MASTER_LIST.get(selected_brand, ["Standard/Generic"])
-                model = st.selectbox("Model", available_models)
-
-                with st.form("printer_add_form"):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        nickname = st.text_input("Printer Nickname", placeholder="e.g. Lab Bench 1")
-                        material = st.selectbox("Default Material", ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"])
-                    with col2:
-                        nozzle = st.selectbox("Nozzle Size (mm)", [0.25, 0.4, 0.6, 0.8], index=1)
-                        bed_type = st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"])
-
-                    infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=15)
-                    walls = st.number_input("Wall Count", min_value=1, max_value=10, value=3)
-                    supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True)
-
-                    submitted = st.form_submit_button("Add to Fleet", use_container_width=True)
-                    if submitted:
-                        if not nickname:
-                            st.error("Please provide a nickname.")
-                        else:
-                            with st.spinner("Saving..."):
-                                if add_to_printers_sheet(selected_brand, model, nickname, material, infill, supports, nozzle, bed_type, walls):
-                                    st.success(f"{nickname} added!")
-                                    st.cache_data.clear()
-                                    st.rerun()
-
+                # ... [Keep your Add New Printer code here] ...
+                # (Just ensure the form submit button clears cache: st.cache_data.clear())
+                pass
+            
             else:
-                # --- EDIT/DELETE EXISTING PRINTER ---
-                p_data = fleet_df[fleet_df['printer nickname'] == selection].iloc[0]
-                
-                with st.form("printer_edit_form"):
-                    st.caption(f"Hardware: {p_data['brand']} {p_data['model']}")
+                # EDIT / DELETE MODE
+                p_row = fleet_df[fleet_df['printer nickname'] == selection]
+                if not p_row.empty:
+                    p_data = p_row.iloc[0]
                     
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        # Material selection (find index for default value)
-                        m_list = ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"]
-                        current_m = p_data['material'] if p_data['material'] in m_list else "PLA"
-                        new_material = st.selectbox("Material", m_list, index=m_list.index(current_m))
+                    with st.form("printer_edit_form"):
+                        # UI components (Material, Nozzle, etc)
+                        # ... [Keep your existing UI code] ...
                         
-                        # Nozzle selection
-                        n_list = [0.25, 0.4, 0.6, 0.8]
-                        try:
-                            current_n = float(p_data['nozzle size'])
-                            n_idx = n_list.index(current_n)
-                        except: n_idx = 1
-                        new_nozzle = st.selectbox("Nozzle (mm)", n_list, index=n_idx)
-
-                    with col2:
-                        b_list = ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"]
-                        current_b = p_data['bed type'] if p_data['bed type'] in b_list else "Textured PEI"
-                        new_bed = st.selectbox("Bed Type", b_list, index=b_list.index(current_b))
-                        
-                        new_walls = st.number_input("Wall Count", min_value=1, max_value=10, value=int(p_data.get('wall count', 3)))
-
-                    # Infill math
-                    try:
-                        current_infill = int(str(p_data['infil']).replace('%', ''))
-                    except: current_infill = 15
-                    new_infill = st.select_slider("Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=current_infill)
-                    
-                    new_supports = st.radio("Supports", ["ON", "OFF"], horizontal=True, index=0 if p_data['supports'] == "ON" else 1)
-                    
-                    st.markdown("---")
-                    col_btn1, col_btn2 = st.columns(2)
-                    with col_btn1:
-                        update_btn = st.form_submit_button("Save Changes", use_container_width=True)
-                    with col_btn2:
-                        delete_btn = st.form_submit_button("Delete Printer", use_container_width=True)
-
-                    if update_btn:
-                        if update_printer_in_sheet(selection, new_material, new_infill, new_supports, new_nozzle, new_bed, new_walls):
-                            st.success("Updated!")
-                            st.cache_data.clear()
-                            st.rerun()
-
-                    if delete_btn:
-                        if delete_printer_from_sheet(selection):
-                            st.warning("Deleted.")
-                            st.cache_data.clear()
-                            st.rerun()
+                        col_btn1, col_btn2 = st.columns(2)
+                        with col_btn1:
+                            update_btn = st.form_submit_button("Save Changes", use_container_width=True)
+                        with col_btn2:
+                            delete_btn = st.form_submit_button("Delete Printer", use_container_width=True)
+            
+                        if update_btn:
+                            # Add a small delay check if you want to be extra safe
+                            if update_printer_in_sheet(selection, new_material, new_infill, new_supports, new_nozzle, new_bed, new_walls):
+                                st.success("Changes saved!")
+                                st.cache_data.clear()
+                                st.rerun()
+            
+                        if delete_btn:
+                            if delete_printer_from_sheet(selection):
+                                st.warning("Printer removed from fleet.")
+                                st.cache_data.clear()
+                                # We wait half a second before rerunning to let Google's API cool down
+                                import time
+                                time.sleep(0.5)
+                                st.rerun()
 
 # 8. ADMIN VERIFICATION SYSTEM
 elif st.session_state.page == "Admin":
@@ -1276,6 +1215,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
