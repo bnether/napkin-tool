@@ -296,6 +296,48 @@ PRINTER_MASTER_LIST = {
     "Other/Custom": ["Standard Marlin 250mm", "Large Format Klipper", "Custom Build"]
 }
 
+def run_slicing_workflow(stl_path, gcode_path, config_path="config.ini"):
+    # Path to the PrusaSlicer console app in your project folder
+    exe = "./PrusaSlicer-console.exe" 
+    
+    if not os.path.exists(exe):
+        return False, "Slicer executable not found in project directory."
+
+    # The Command Line Recipe
+    command = [
+        exe,
+        "--export-gcode",
+        "--orient",      # Auto-rotate for best surface
+        "--center",      # Move to middle of MK2S bed
+        "--repair",      # Fix AI mesh gaps
+        "--load", config_path,
+        stl_path,
+        "--output", gcode_path
+    ]
+    
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        
+        # Extract stats from the end of the G-code file
+        stats = {"time": "Unknown", "cost": "0.00"}
+        if os.path.exists(gcode_path):
+            with open(gcode_path, 'r') as f:
+                content = f.read()
+                # PrusaSlicer metadata extraction
+                time_match = re.search(r"estimated printing time.*= (.*)", content)
+                filament_match = re.search(r"filament used \[g\].*= (.*)", content)
+                
+                if time_match: stats["time"] = time_match.group(1)
+                if filament_match:
+                    grams = float(filament_match.group(1))
+                    # Math: (27.99 / 1000g) * grams used
+                    stats["cost"] = f"{(27.99 / 1000) * grams:.2f}"
+        
+        return True, stats
+    except subprocess.CalledProcessError as e:
+        return False, e.stderr
+        
+
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
 st.markdown(f"""
     <style>
@@ -614,7 +656,7 @@ elif st.session_state.page == "Make a Part":
             new_row = pd.DataFrame([{
                 "Status": category,
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "User_Email": st.session_state.get('user_email', 'Guest'), # Added Email Tracking
+                "User_Email": st.session_state.get('user_email', 'Guest'), 
                 "Prompt": st.session_state.get('last_prompt', ""),
                 "Logic": st.session_state.get('last_logic', ""),
                 "Code": st.session_state.get('last_code', "").replace("\n", " [NEWLINE] "),
@@ -624,15 +666,38 @@ elif st.session_state.page == "Make a Part":
             updated_df = pd.concat([existing_data, new_row], ignore_index=True)
             conn.update(worksheet="Pending", data=updated_df)
             
-            # --- START ADDED: INCREMENT Feedback Given ---
             if st.session_state.get('authenticated'):
                 increment_models_generated(st.session_state.user_email)
-            # --- END ADDED: INCREMENT Feedback Given ---
 
             st.cache_data.clear()
             st.success(f"Feedback logged as {category}!")
         except Exception as e:
             st.error(f"Error logging to sheets: {e}")
+
+    # --- ADDED: SLICING WORKFLOW FUNCTION ---
+    def run_slicing_workflow(stl_path, gcode_path, config_path="config.ini"):
+        exe = "./PrusaSlicer-console.exe" 
+        if not os.path.exists(exe):
+            return False, "Slicer executable not found."
+        
+        # Hardcoded Recipe: Auto-orient, Center, and Repair
+        command = [exe, "--export-gcode", "--orient", "--center", "--repair", "--load", config_path, stl_path, "--output", gcode_path]
+        
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, check=True)
+            stats = {"time": "Unknown", "cost": "0.00"}
+            if os.path.exists(gcode_path):
+                with open(gcode_path, 'r') as f:
+                    content = f.read()
+                    time_match = re.search(r"estimated printing time.*= (.*)", content)
+                    filament_match = re.search(r"filament used \[g\].*= (.*)", content)
+                    if time_match: stats["time"] = time_match.group(1)
+                    if filament_match:
+                        grams = float(filament_match.group(1))
+                        stats["cost"] = f"{(27.99 / 1000) * grams:.2f}"
+            return True, stats
+        except Exception as e:
+            return False, str(e)
 
     col1, col2 = st.columns([1, 1], gap="large")
     
@@ -657,10 +722,8 @@ elif st.session_state.page == "Make a Part":
 
     with col2:
         if generate_btn:
-            # --- START ADDED AUTHENTICATION CHECK ---
             if not st.session_state.get("authenticated", False):
                 st.warning("Generation Locked: Please log in on the **Profile** page to use the AI.")
-            # --- END ADDED AUTHENTICATION CHECK ---
             elif upload_choice == "Sketch + Description" and 'current_img' not in st.session_state:
                 st.error("Please upload a photo first.")
             else:
@@ -671,7 +734,6 @@ elif st.session_state.page == "Make a Part":
                             st.error("Engine Error: OpenSCAD not found on server.")
                         else:
                             client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
-                            
                             library_context = ""
                             if os.path.exists("libraries"):
                                 for fn in os.listdir("libraries"):
@@ -696,14 +758,13 @@ elif st.session_state.page == "Make a Part":
                                 f"Act as a Senior Mechanical Engineer specializing in OpenSCAD. {type_instruction}\n\n"
                                 f"OBJECTIVE: Create valid OpenSCAD code for: '{user_context}'.\n\n"
                                 f"ISO STANDARDS & MODULES:\n{library_context}\n"
-                                "IMPORTANT: Use the modules from the library above for standardized parts (screws, threads, holes) rather than primitive cylinders.\n\n"
-                                f"SYNTAX EXAMPLES (Follow this style but adapt logic to the new part):\n{training_context}\n\n"
+                                "IMPORTANT: Use the modules from the library above for standardized parts rather than primitive cylinders.\n\n"
+                                f"SYNTAX EXAMPLES:\n{training_context}\n\n"
                                 "CRITICAL RULES:\n"
-                                "1. For holes/subtractions, you MUST use: difference() { base_shape(); holes(); }\n"
-                                "2. All dimensions are in mm unless otherwise stated. Use $fn=50;\n"
-                                "3. Ensure all variables are defined before use.\n"
-                                "4. Return ONLY the logic and the code block.\n\n"
-                                "Format:\n[DECODED LOGIC]: (Briefly explain the geometry)\n[RESULT_CODE]: ```openscad\n[code]\n```"
+                                "1. Use difference() { base_shape(); holes(); } for subtractions.\n"
+                                "2. Units in mm. Use $fn=50;\n"
+                                "3. Return ONLY logic and code block.\n\n"
+                                "Format:\n[DECODED LOGIC]: (Briefly explain)\n[RESULT_CODE]: ```openscad\n[code]\n```"
                             )
                             
                             inputs = [prompt, st.session_state.current_img] if upload_choice == "Sketch + Description" else [prompt]
@@ -716,18 +777,14 @@ elif st.session_state.page == "Make a Part":
                                 st.session_state.last_code = scad_match.group(1).strip()
                                 st.session_state.last_logic = logic_match.group(1).strip() if logic_match else "Standard generation"
                                 st.session_state.last_prompt = user_context
-                                
-                                with open("part.scad", "w") as f: 
-                                    f.write(st.session_state.last_code)
+                                with open("part.scad", "w") as f: f.write(st.session_state.last_code)
                                 
                                 my_env = os.environ.copy()
                                 my_env["OPENSCADPATH"] = os.path.join(os.getcwd(), "libraries")
-                                
                                 result = subprocess.run([exe, "-o", "part.stl", "part.scad"], env=my_env, capture_output=True, text=True)
                                 
                                 if result.returncode != 0:
                                     st.error("Render Failed")
-                                    st.text_area("OpenSCAD Error Log", result.stderr, height=150)
                                 else:
                                     stl_from_file("part.stl", color='#58a6ff')
                             else:
@@ -737,29 +794,17 @@ elif st.session_state.page == "Make a Part":
         
         # --- DOWNLOAD & PRINT SECTION ---
         if st.session_state.get('last_code') and os.path.exists("part.stl"):
-                        
-            # Action Buttons Row
+            st.markdown("---")
             d1, d2 = st.columns(2)
             with open("part.stl", "rb") as file:
                 stl_data = file.read()
-                
-                # 1. Download STL (Standard/Secondary Style)
-                d1.download_button(
-                    label="Download STL", 
-                    data=stl_data, 
-                    file_name="part.stl", 
-                    use_container_width=True
-                )
-                
-                # 2. Prepare for Print (Standard/Secondary Style to match)
-                # Note: No type="primary" here
+                d1.download_button(label="Download STL", data=stl_data, file_name="part.stl", use_container_width=True)
                 if d2.button("Prepare for Print", use_container_width=True):
                     st.session_state.show_slicing_menu = True
 
             # --- DYNAMIC SLICING MENU ---
             if st.session_state.get("show_slicing_menu", False):
                 st.markdown("### Slicing Engine")
-                
                 fleet_df = get_my_fleet()
                 
                 if fleet_df.empty:
@@ -767,36 +812,26 @@ elif st.session_state.page == "Make a Part":
                 else:
                     selected_p = st.selectbox("Select Destination Printer:", fleet_df['printer nickname'].tolist())
                     p_settings = fleet_df[fleet_df['printer nickname'] == selected_p].iloc[0]
-                    
                     st.info(f"**Settings:** {p_settings['material']} | {p_settings['nozzle size']}mm | {p_settings['infil']} Infill")
                     
-                    # 3. Generate G-Code (Standard Style)
                     if st.button("Generate G-Code (Slice)", use_container_width=True):
                         with st.spinner(f"Slicing for {selected_p}..."):
-                            import time
-                            time.sleep(1.5) 
-                            
-                            # Calculations
-                            est_hours, est_mins = 1, 15
-                            now = datetime.now()
-                            finish_time = (now + pd.Timedelta(hours=est_hours, minutes=est_mins)).strftime("%I:%M %p")
-                            
-                            # Metrics Display
-                            m1, m2 = st.columns(2)
-                            m1.metric("Est. Print Time", f"{est_hours}h {est_mins}m")
-                            m2.metric("Est. Finish Time", finish_time)
-                            
-                            # Final G-Code Row
-                            f1, f2 = st.columns(2)
-                            # 4. Download G-Code (Standard Style)
-                            f1.download_button(
-                                label="Download G-Code", 
-                                data="Placeholder GCODE", 
-                                file_name=f"{selected_p}_part.gcode", 
-                                use_container_width=True
-                            )
-                            # 5. Send to Printer (Standard Style)
-                            f2.button("Send to Printer", use_container_width=True)
+                            success, result = run_slicing_workflow("part.stl", "part.gcode")
+                            if success:
+                                st.success("Slicing Complete!")
+                                m1, m2, m3 = st.columns(3)
+                                m1.metric("Est. Time", result["time"])
+                                finish_dt = datetime.now() + pd.Timedelta(minutes=30) 
+                                m2.metric("Finish Time", finish_dt.strftime("%I:%M %p"))
+                                m3.metric("Est. Cost", f"${result['cost']}")
+                                
+                                f1, f2 = st.columns(2)
+                                with open("part.gcode", "rb") as g_file:
+                                    f1.download_button("Download G-Code", data=g_file, file_name="part.gcode", use_container_width=True)
+                                if f2.button("Send to Printer", use_container_width=True):
+                                    st.info("Sending to Printer API...")
+                            else:
+                                st.error(f"Slicing failed: {result}")
 
             # --- FEEDBACK SECTION ---
             st.markdown("---")
@@ -806,7 +841,6 @@ elif st.session_state.page == "Make a Part":
                 log_feedback_to_sheets("VERIFIED")
             if fb_col2.button("Incorrect", use_container_width=True):
                 log_feedback_to_sheets("FAILED")
-
        
                 
                 
@@ -1327,6 +1361,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
