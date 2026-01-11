@@ -52,7 +52,7 @@ def load_registry():
 
 def update_printer_count(email_to_update):
     try:
-        url = st.secrets["connections"]["gsheets"]["registry_url"]
+        url = st.secrets["connections"]["gsheets"]["registry"]
         df = conn.read(spreadsheet=url, ttl=0)
         df.columns = [c.strip().lower() for c in df.columns]
         
@@ -1075,6 +1075,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
