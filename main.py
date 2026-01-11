@@ -151,19 +151,13 @@ if not st.session_state.initial_sync_done:
         
 def add_to_printers_sheet(brand, model, nickname, material, infill, supports, nozzle, bed, walls):
     try:
-        # 1. Establish connection to the 'Printers' worksheet
         conn = st.connection("gsheets", type=GSheetsConnection)
         
-        # 2. Get current user info from session state
-        email = st.session_state.user_email
-        company = st.session_state.user_company # Ensure this is stored during login
-        
-        # 3. Create the row matching your exact header order:
-        # company, name, email, brand, model, printer nickname, material, infil, supports, nozzle size, bed type, wall count
+        # 1. Create the new row DataFrame with your exact column names
         new_row = pd.DataFrame([{
-            "company": company,
-            "name": st.session_state.get('user_name', 'User'), # Optional: user's name
-            "email": email,
+            "company": st.session_state.user_company,
+            "name": st.session_state.user_name,
+            "email": st.session_state.user_email,
             "brand": brand,
             "model": model,
             "printer nickname": nickname,
@@ -175,25 +169,37 @@ def add_to_printers_sheet(brand, model, nickname, material, infill, supports, no
             "wall count": walls
         }])
         
-        # 4. Read existing data and append
-        existing_data = conn.read(worksheet="Printers")
-        updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+        # 2. Read from the Registry Doc, Printers tab
+        # IMPORTANT: Replace YOUR_REGISTRY_URL with your actual URL
+        REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
         
-        # 5. Write back to the specific "Printers" tab
-        conn.update(worksheet="Printers", data=updated_df)
+        existing_data = conn.read(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", ttl=0)
+        
+        # 3. Append and update
+        updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+        conn.update(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", data=updated_df)
+        
         return True
     except Exception as e:
-        st.error(f"Error saving printer: {e}")
+        st.error(f"Error: {e}")
         return False
 
 def get_my_fleet():
+    REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
     conn = st.connection("gsheets", type=GSheetsConnection)
-    df = conn.read(worksheet="Printers")
     
-    # Logic: Enterprise sees by company, others see by email
+    # Force a fresh read of the Printers tab
+    df = conn.read(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", ttl=0)
+    
+    if df.empty:
+        return pd.DataFrame()
+
+    # TIER LOGIC
     if st.session_state.user_tier == "Enterprise":
-        return df[df['company'] == st.session_state.user_company]
+        # Enterprise sees all printers registered under the same company
+        return df[df['companyname'] == st.session_state.user_company]
     else:
+        # Starter/Pro see only the one printer registered to their email
         return df[df['email'] == st.session_state.user_email]
 
 # --- INSIDE VIEW PRINTERS SECTION ---
@@ -1149,6 +1155,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
