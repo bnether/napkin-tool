@@ -215,6 +215,28 @@ def add_to_printers_sheet(brand, model, nickname, material, infill, supports, no
         st.error(f"Error: {e}")
         return False
 
+def delete_printer_from_sheet(nickname):
+    try:
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/YOUR_REGISTRY_ID_HERE/edit"
+        
+        # 1. Read current data
+        df = conn.read(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", ttl=0)
+        
+        # 2. Keep everything EXCEPT the printer we want to delete
+        # Filtering by both company and nickname for security
+        original_count = len(df)
+        df = df[~((df['companyname'] == st.session_state.user_company) & (df['printer nickname'] == nickname))]
+        
+        if len(df) < original_count:
+            # 3. Update the sheet
+            conn.update(spreadsheet=REGISTRY_DOC_URL, worksheet="Printers", data=df)
+            return True
+        return False
+    except Exception as e:
+        st.error(f"Deletion failed: {e}")
+        return False
+
 def get_my_fleet():
     REGISTRY_DOC_URL = "https://docs.google.com/spreadsheets/d/1ah2kXgEWyKqJktl9sapasqXQdShdgw0yB5qDR-9qX3A/edit"
     conn = st.connection("gsheets", type=GSheetsConnection)
@@ -872,7 +894,7 @@ elif st.session_state.page == "Contact":
         st.form_submit_button("Send Message")
 
 
-# --- PROFILE PAGE (With integrated Login) ---
+# 7. --- PROFILE PAGE (With integrated Login) ---
 elif st.session_state.page == "Profile":
     # 1. Check Auth Status
     if not st.session_state.authenticated:
@@ -887,8 +909,13 @@ elif st.session_state.page == "Profile":
             if submit:
                 email_clean = email_attempt.lower().strip()
                 if email_clean in BETA_USERS:
+                    user_data = BETA_USERS[email_clean]
                     st.session_state.authenticated = True
                     st.session_state.user_email = email_clean
+                    # Ensure company and metadata are stored in session state upon login
+                    st.session_state.user_company = user_data['company']
+                    st.session_state.user_tier = user_data['plan']
+                    st.session_state.user_name = user_data['name']
                     st.rerun()
                 else:
                     st.error("No account associated with this email")
@@ -972,7 +999,8 @@ elif st.session_state.page == "Profile":
                     supports = st.radio("Enable Supports by Default?", ["ON", "OFF"], horizontal=True, index=0)
                     
                     st.markdown("---")
-                    submitted = st.form_submit_button("Save & Add Printer to " + st.session_state.user_company, use_container_width=True)
+                    user_company_label = st.session_state.get('user_company', 'Company')
+                    submitted = st.form_submit_button("Save & Add Printer to " + user_company_label, use_container_width=True)
                     
                     if submitted:
                         if not nickname:
@@ -985,7 +1013,7 @@ elif st.session_state.page == "Profile":
                                     nozzle, bed_type, walls
                                 )
                                 if success:
-                                    st.success(f"{nickname} is now online for {st.session_state.user_company}!")
+                                    st.success(f"{nickname} is now online for {user_company_label}!")
                                     st.session_state.show_printer_setup = False
                                     st.cache_data.clear()
                                     st.rerun()
@@ -994,7 +1022,7 @@ elif st.session_state.page == "Profile":
                     st.session_state.show_printer_setup = False
                     st.rerun()
 
-            # --- PRINTER MANAGER (EDIT) WINDOW ---
+            # --- PRINTER MANAGER (EDIT/DELETE) WINDOW ---
             if st.session_state.get('show_printer_manager'):
                 st.markdown("### Manage Existing Printers")
                 fleet_df = get_my_fleet()
@@ -1031,24 +1059,25 @@ elif st.session_state.page == "Profile":
                         new_infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=current_infill_val)
                         new_supports = st.radio("Supports", ["ON", "OFF"], horizontal=True, index=0 if p_data['supports'] == "ON" else 1)
                         
-                        if st.form_submit_button("Update Settings", use_container_width=True):
-                                                                                    
-                            with st.spinner("Updating printer settings..."):
-                                success = update_printer_in_sheet(
-                                    selected_nick, 
-                                    new_material, 
-                                    new_infill, 
-                                    new_supports, 
-                                    new_nozzle, 
-                                    new_bed, 
-                                    new_walls
-                                )
-                            
-                            if success:
-                                st.success(f"Updated {selected_nick} successfully!")
-                                st.session_state.show_printer_manager = False
-                                st.cache_data.clear()
-                                st.rerun()
+                        st.markdown("---")
+                        update_btn = st.form_submit_button("Update Settings", use_container_width=True)
+                        delete_btn = st.form_submit_button("🗑️ Delete Printer from Fleet", use_container_width=True)
+                        
+                        if update_btn:
+                            with st.spinner("Updating..."):
+                                if update_printer_in_sheet(selected_nick, new_material, new_infill, new_supports, new_nozzle, new_bed, new_walls):
+                                    st.success(f"Updated {selected_nick}!")
+                                    st.session_state.show_printer_manager = False
+                                    st.cache_data.clear()
+                                    st.rerun()
+
+                        if delete_btn:
+                            with st.spinner("Deleting..."):
+                                if delete_printer_from_sheet(selected_nick):
+                                    st.warning(f"Removed {selected_nick} from fleet.")
+                                    st.session_state.show_printer_manager = False
+                                    st.cache_data.clear()
+                                    st.rerun()
 
                 if st.button("Close Manager", use_container_width=True):
                     st.session_state.show_printer_manager = False
@@ -1236,6 +1265,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
