@@ -853,16 +853,6 @@ elif st.session_state.page == "Profile":
             if st.session_state.show_printer_setup:
                 st.markdown("### Printer Configuration")
                 
-                # Blue accent CSS for sliders and radio buttons
-                st.markdown("""
-                    <style>
-                        .stSlider [data-baseweb="slider"] div { background-color: #3b82f6 !important; }
-                        div[data-baseweb="radio"] div[role="radiogroup"] div[aria-checked="true"] > div { 
-                            background-color: #3b82f6 !important; 
-                            border-color: #3b82f6 !important; 
-                        }
-                    </style>
-                """, unsafe_allow_html=True)
             
                 # 1. We handle the Brand selection OUTSIDE the form or as a standalone to trigger the rerun
                 # but Streamlit selectboxes inside a form will only update after a submit. 
@@ -1086,6 +1076,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
