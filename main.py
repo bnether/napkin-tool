@@ -104,6 +104,7 @@ except Exception as e:
     BETA_USERS = {}
 
 
+
 # --- MASTER SESSION STATE INIT ---
 # Using setdefault ensures variables are only created if they don't already exist
 st.session_state.setdefault("authenticated", False)
@@ -147,7 +148,63 @@ def sync_scad_from_sheets():
 if not st.session_state.initial_sync_done:
     if sync_scad_from_sheets():
         st.session_state.initial_sync_done = True
+        
+def add_to_printers_sheet(brand, model, nickname, material, infill, supports, nozzle, bed, walls):
+    try:
+        # 1. Establish connection to the 'Printers' worksheet
+        conn = st.connection("gsheets", type=GSheetsConnection)
+        
+        # 2. Get current user info from session state
+        email = st.session_state.user_email
+        company = st.session_state.user_company # Ensure this is stored during login
+        
+        # 3. Create the row matching your exact header order:
+        # company, name, email, brand, model, printer nickname, material, infil, supports, nozzle size, bed type, wall count
+        new_row = pd.DataFrame([{
+            "company": company,
+            "name": st.session_state.get('user_name', 'User'), # Optional: user's name
+            "email": email,
+            "brand": brand,
+            "model": model,
+            "printer nickname": nickname,
+            "material": material,
+            "infil": f"{infill}%",
+            "supports": supports,
+            "nozzle size": nozzle,
+            "bed type": bed,
+            "wall count": walls
+        }])
+        
+        # 4. Read existing data and append
+        existing_data = conn.read(worksheet="Printers")
+        updated_df = pd.concat([existing_data, new_row], ignore_index=True)
+        
+        # 5. Write back to the specific "Printers" tab
+        conn.update(worksheet="Printers", data=updated_df)
+        return True
+    except Exception as e:
+        st.error(f"Error saving printer: {e}")
+        return False
 
+def get_my_fleet():
+    conn = st.connection("gsheets", type=GSheetsConnection)
+    df = conn.read(worksheet="Printers")
+    
+    # Logic: Enterprise sees by company, others see by email
+    if st.session_state.user_tier == "Enterprise":
+        return df[df['company'] == st.session_state.user_company]
+    else:
+        return df[df['email'] == st.session_state.user_email]
+
+# --- INSIDE VIEW PRINTERS SECTION ---
+fleet_df = get_my_fleet()
+if not fleet_df.empty:
+    # Use the 'printer nickname' for the dropdown
+    selected_nick = st.selectbox("Select Printer", fleet_df['printer nickname'].tolist())
+    
+    # Pull the specific row for that nickname to populate the edit form
+    current_printer = fleet_df[fleet_df['printer nickname'] == selected_nick].iloc[0]
+    # ... (Then map current_printer['material'], etc., to your form widgets)
 
 PRINTER_MASTER_LIST = {
     "Bambu Lab": ["X1-Carbon", "X1-E (Enterprise)", "P1S", "P1P", "A1", "A1 Mini"],
@@ -851,44 +908,61 @@ elif st.session_state.page == "Profile":
                         
             # --- PRINTER SETUP WINDOW ---
             if st.session_state.show_printer_setup:
-                st.markdown("### Printer Configuration")
+                st.markdown("### Connect a New Printer")
                 
-                # 1. Brand and Model Selection (Outside form for instant reactivity)
-                # We use container_width to ensure they match each other
+                # 1. Hardware Identification (Outside form for live model updates)
                 selected_brand = st.selectbox("Printer Brand", list(PRINTER_MASTER_LIST.keys()))
-                
                 available_models = PRINTER_MASTER_LIST.get(selected_brand, ["Standard/Generic"])
                 model = st.selectbox("Model", available_models)
                 
-                # 2. Settings Grey Box (st.form provides the grey outline/border)
+                # 2. Detailed Configuration (Grey Box)
                 with st.form("printer_config_form"):
-                    st.markdown("#### Default Settings")
+                    st.markdown("#### Default Print Recipe")
                     
-                    col_a, col_b = st.columns(2)
-                    
-                    with col_a:
-                        material = st.selectbox("Default Material", ["PLA", "PETG", "ABS", "ASA", "Nylon", "Carbon Fiber Nylon", "TPU"], index=0)
-                        
-                    with col_b:
+                    # Row 1: Nickname and Material
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        nickname = st.text_input("Printer Nickname", placeholder="e.g. Lab Bench 1 / Prototype Room")
+                        material = st.selectbox("Default Material", ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"], index=0)
+                    with col2:
+                        nozzle = st.selectbox("Nozzle Size (mm)", [0.25, 0.4, 0.6, 0.8], index=1) # 0.4 default
+                        bed_type = st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"], index=0)
+            
+                    # Row 2: Infill and Wall Count
+                    col3, col4 = st.columns(2)
+                    with col3:
                         infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=15)
+                    with col4:
+                        walls = st.number_input("Wall Count (Perimeters)", min_value=1, max_value=10, value=3)
+            
+                    # Row 3: Supports
+                    supports = st.radio("Enable Supports by Default?", ["ON", "OFF"], horizontal=True, index=0)
                     
-                    supports = st.radio("Supports", ["ON", "OFF"], horizontal=True, index=0)
-                    
-                    # Spacer for visual balance
-                    st.write("")
-                    submitted = st.form_submit_button("Save & Add Printer", use_container_width=True)
+                    st.markdown("---")
+                    submitted = st.form_submit_button("Save & Add Printer to " + st.session_state.user_company, use_container_width=True)
                     
                     if submitted:
-                        # Update the Spreadsheet (Increment +1)
-                        success = update_printer_count(st.session_state.user_email)
-                        
-                        if success:
-                            st.success(f"Connected {selected_brand} {model} successfully!")
-                            st.session_state.show_printer_setup = False
-                            st.cache_data.clear()
-                            st.rerun()
+                        # Check if nickname is filled
+                        if not nickname:
+                            st.error("Please provide a nickname to identify this printer.")
+                        else:
+                            if submitted:
+                                if not nickname:
+                                    st.error("Please provide a nickname to identify this printer.")
+                                else:
+                                    with st.spinner("Connecting printer to your fleet..."):
+                                        success = add_to_printers_sheet(
+                                            selected_brand, model, nickname, 
+                                            material, infill, supports, 
+                                            nozzle, bed_type, walls
+                                        )
+                                    
+                                    if success:
+                                        st.success(f"{nickname} is now online for {st.session_state.user_company}!")
+                                        st.session_state.show_printer_setup = False
+                                        st.cache_data.clear()
+                                        st.rerun()
             
-                # Cancel button sits outside the form
                 if st.button("Cancel", use_container_width=True):
                     st.session_state.show_printer_setup = False
                     st.rerun()
@@ -1075,6 +1149,7 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
