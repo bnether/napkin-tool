@@ -300,28 +300,15 @@ PRINTER_MASTER_LIST = {
 def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     exe = "./OrcaSlicer"
     
-    # 1. Permission check for Cloud
     if os.path.exists(exe):
-        os.chmod(exe, 0o755)
+        # This line gives the file "Execution" permissions (the 'x' in rwx)
+        st_mode = os.stat(exe).st_mode
+        os.chmod(exe, st_mode | stat.S_IEXEC)
     else:
-        return False, "Slicer engine not found at {exe}."
+        return False, "Slicer engine not found."
 
-    # 2. Path to the .3mf "Recipe"
-    # This turns "Prusa MK2S" into "Prusa_MK2S.3mf"
-    recipe_filename = f"{printer_nickname.replace(' ', '_')}.3mf"
-    config_path = os.path.join("recipes", recipe_filename)
-
-    if not os.path.exists(config_path):
-        return False, f"Recipe not found: {config_path}"
-
-    # 3. The Command
-    command = [
-        exe,
-        "--slice",
-        "--load-config", config_path,
-        "--output", gcode_path,
-        stl_path
-    ]
+    # Now the command should work
+    command = [exe, "--slice", "--load-config", f"recipes/{printer_nickname.replace(' ', '_')}.3mf", "--output", gcode_path, stl_path]
     
     try:
         # Run it!
