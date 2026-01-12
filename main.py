@@ -304,7 +304,7 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     if os.path.exists(exe):
         os.chmod(exe, 0o755)
     else:
-        return False, "Slicer engine not found."
+        return False, "Slicer engine not found at {exe}."
 
     # 2. Path to the .3mf "Recipe"
     # This turns "Prusa MK2S" into "Prusa_MK2S.3mf"
@@ -679,7 +679,7 @@ elif st.session_state.page == "Make a Part":
 
     # --- ADDED: SLICING WORKFLOW FUNCTION ---
     def run_slicing_workflow(stl_path, gcode_path, config_path="config.ini"):
-        exe = "./PrusaSlicer-console.exe" 
+        exe = "./OrcaSlicer" 
         if not os.path.exists(exe):
             return False, "Slicer executable not found."
         
