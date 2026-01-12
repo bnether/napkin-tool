@@ -689,31 +689,7 @@ elif st.session_state.page == "Make a Part":
         except Exception as e:
             st.error(f"Error logging to sheets: {e}")
 
-    # --- ADDED: SLICING WORKFLOW FUNCTION ---
-    def run_slicing_workflow(stl_path, gcode_path, config_path="config.ini"):
-        exe = "./OrcaSlicer" 
-        if not os.path.exists(exe):
-            return False, "Slicer executable not found."
-        
-        # Hardcoded Recipe: Auto-orient, Center, and Repair
-        command = [exe, "--export-gcode", "--orient", "--center", "--repair", "--load", config_path, stl_path, "--output", gcode_path]
-        
-        try:
-            result = subprocess.run(command, capture_output=True, text=True, check=True)
-            stats = {"time": "Unknown", "cost": "0.00"}
-            if os.path.exists(gcode_path):
-                with open(gcode_path, 'r') as f:
-                    content = f.read()
-                    time_match = re.search(r"estimated printing time.*= (.*)", content)
-                    filament_match = re.search(r"filament used \[g\].*= (.*)", content)
-                    if time_match: stats["time"] = time_match.group(1)
-                    if filament_match:
-                        grams = float(filament_match.group(1))
-                        stats["cost"] = f"{(27.99 / 1000) * grams:.2f}"
-            return True, stats
-        except Exception as e:
-            return False, str(e)
-
+    
     col1, col2 = st.columns([1, 1], gap="large")
     
     with col1:
@@ -827,26 +803,21 @@ elif st.session_state.page == "Make a Part":
                 else:
                     selected_p = st.selectbox("Select Destination Printer:", fleet_df['printer nickname'].tolist())
                     p_settings = fleet_df[fleet_df['printer nickname'] == selected_p].iloc[0]
-                    st.info(f"**Settings:** {p_settings['material']} | {p_settings['nozzle size']}mm | {p_settings['infil']} Infill")
+                    st.info(f"**Settings:** {p_settings['material']} | {p_settings['nozzle size']}mm")
                     
                     if st.button("Generate G-Code (Slice)", use_container_width=True):
                         with st.spinner(f"Slicing for {selected_p}..."):
-                            # PASS THE NICKNAME TO THE FUNCTION
+                            # This now calls the NEW version you defined at the top of the script
                             success, result = run_slicing_workflow("part.stl", "part.gcode", selected_p)
                             
                             if success:
                                 st.success("Slicing Complete!")
                                 m1, m2, m3 = st.columns(3)
                                 m1.metric("Est. Time", result["time"])
-                                finish_dt = datetime.now() + pd.Timedelta(minutes=30) 
-                                m2.metric("Finish Time", finish_dt.strftime("%I:%M %p"))
                                 m3.metric("Est. Cost", f"${result['cost']}")
                                 
-                                f1, f2 = st.columns(2)
                                 with open("part.gcode", "rb") as g_file:
-                                    f1.download_button("Download G-Code", data=g_file, file_name="part.gcode", use_container_width=True)
-                                if f2.button("Send to Printer", use_container_width=True):
-                                    st.info("Sending to Printer API...")
+                                    st.download_button("Download G-Code", data=g_file, file_name="part.gcode", use_container_width=True)
                             else:
                                 st.error(f"Slicing failed: {result}")
 
