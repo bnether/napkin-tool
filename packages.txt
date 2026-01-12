@@ -2,9 +2,11 @@ openscad
 libgtk-3-0
 libglu1-mesa
 libdbus-1-3
-freeglut3
+freeglut3-dev
 libwebkit2gtk-4.0-37
 libjavascriptcoregtk-4.0-18
 libgstreamer1.0-0
 libnss3
 libatk1.0-0
+libsecret-1-0
+libtbb12
