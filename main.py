@@ -316,10 +316,11 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     if not os.path.exists(config_path):
         return False, f"Recipe file not found: {config_path}"
     
-    # 3. OrcaSlicer Command (Corrected Syntax)
-    # We removed --export-gcode, --orient, --center, etc.
+    
+    # 3. OrcaSlicer Command (Modified for Cloud Servers)
     command = [
         exe,
+        "--appimage-extract-and-run",  # THIS IS THE CRITICAL FIX
         "--slice",
         "--load-config", config_path,
         "--output", gcode_path,

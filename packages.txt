@@ -11,3 +11,4 @@ libatk1.0-0
 libsecret-1-0
 libtbb12
 libfuse2
+libgomp1
