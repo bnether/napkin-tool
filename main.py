@@ -296,47 +296,50 @@ PRINTER_MASTER_LIST = {
     "Other/Custom": ["Standard Marlin 250mm", "Large Format Klipper", "Custom Build"]
 }
 
-def run_slicing_workflow(stl_path, gcode_path, config_path="config.ini"):
-    # Path to the PrusaSlicer console app in your project folder
-    exe = "./PrusaSlicer-console.exe" 
-    
-    if not os.path.exists(exe):
-        return False, "Slicer executable not found in project directory."
 
-    # The Command Line Recipe
+def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
+    exe = "./OrcaSlicer"
+    
+    # 1. Permission check for Cloud
+    if os.path.exists(exe):
+        os.chmod(exe, 0o755)
+    else:
+        return False, "Slicer engine not found."
+
+    # 2. Path to the .3mf "Recipe"
+    # This turns "Prusa MK2S" into "Prusa_MK2S.3mf"
+    recipe_filename = f"{printer_nickname.replace(' ', '_')}.3mf"
+    config_path = os.path.join("recipes", recipe_filename)
+
+    if not os.path.exists(config_path):
+        return False, f"Recipe not found: {config_path}"
+
+    # 3. The Command
     command = [
         exe,
-        "--export-gcode",
-        "--orient",      # Auto-rotate for best surface
-        "--center",      # Move to middle of MK2S bed
-        "--repair",      # Fix AI mesh gaps
-        "--load", config_path,
-        stl_path,
-        "--output", gcode_path
+        "--slice",
+        "--load-config", config_path,
+        "--output", gcode_path,
+        stl_path
     ]
     
     try:
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        # Run it!
+        subprocess.run(command, capture_output=True, text=True, check=True)
         
-        # Extract stats from the end of the G-code file
+        # Logic to extract time/cost remains the same as before
         stats = {"time": "Unknown", "cost": "0.00"}
         if os.path.exists(gcode_path):
             with open(gcode_path, 'r') as f:
                 content = f.read()
-                # PrusaSlicer metadata extraction
-                time_match = re.search(r"estimated printing time.*= (.*)", content)
-                filament_match = re.search(r"filament used \[g\].*= (.*)", content)
-                
+                # OrcaSlicer-specific time search
+                time_match = re.search(r"total estimated time: (.*)", content)
                 if time_match: stats["time"] = time_match.group(1)
-                if filament_match:
-                    grams = float(filament_match.group(1))
-                    # Math: (27.99 / 1000g) * grams used
-                    stats["cost"] = f"{(27.99 / 1000) * grams:.2f}"
         
         return True, stats
-    except subprocess.CalledProcessError as e:
-        return False, e.stderr
-        
+    except Exception as e:
+        return False, str(e)
+    
 
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
 st.markdown(f"""
@@ -816,7 +819,9 @@ elif st.session_state.page == "Make a Part":
                     
                     if st.button("Generate G-Code (Slice)", use_container_width=True):
                         with st.spinner(f"Slicing for {selected_p}..."):
-                            success, result = run_slicing_workflow("part.stl", "part.gcode")
+                            # PASS THE NICKNAME TO THE FUNCTION
+                            success, result = run_slicing_workflow("part.stl", "part.gcode", selected_p)
+                            
                             if success:
                                 st.success("Slicing Complete!")
                                 m1, m2, m3 = st.columns(3)
