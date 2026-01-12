@@ -298,58 +298,58 @@ PRINTER_MASTER_LIST = {
 
 
 # --- UPDATED: ORCA SLICER WORKFLOW ---
-    def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
-        exe = "./OrcaSlicer" 
-        
-        # 1. Verification & Permissions
-        if not os.path.exists(exe):
-            return False, "Slicer engine not found in root folder."
-        
-        # Ensure the server has permission to run the file
-        os.chmod(exe, 0o755)
+def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
+    exe = "./OrcaSlicer" 
+    
+    # 1. Verification & Permissions
+    if not os.path.exists(exe):
+        return False, "Slicer engine not found in root folder."
+    
+    # Ensure the server has permission to run the file
+    os.chmod(exe, 0o755)
 
-        # 2. Map the Printer Nickname to the .3mf Recipe
-        # This assumes your folder 'recipes' has files like 'Prusa_MK2S.3mf'
-        recipe_filename = f"{printer_nickname.replace(' ', '_')}.3mf"
-        config_path = os.path.join("recipes", recipe_filename)
+    # 2. Map the Printer Nickname to the .3mf Recipe
+    # This assumes your folder 'recipes' has files like 'Prusa_MK2S.3mf'
+    recipe_filename = f"{printer_nickname.replace(' ', '_')}.3mf"
+    config_path = os.path.join("recipes", recipe_filename)
 
-        if not os.path.exists(config_path):
-            return False, f"Recipe file not found: {config_path}"
+    if not os.path.exists(config_path):
+        return False, f"Recipe file not found: {config_path}"
+    
+    # 3. OrcaSlicer Command (The new grammar)
+    command = [
+        exe,
+        "--slice",              # Trigger the engine
+        "--load-config", config_path,
+        "--output", gcode_path,
+        stl_path
+    ]
+    
+    try:
+        # Run the slicer
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
         
-        # 3. OrcaSlicer Command (The new grammar)
-        command = [
-            exe,
-            "--slice",              # Trigger the engine
-            "--load-config", config_path,
-            "--output", gcode_path,
-            stl_path
-        ]
+        stats = {"time": "Unknown", "cost": "0.00"}
         
-        try:
-            # Run the slicer
-            result = subprocess.run(command, capture_output=True, text=True, check=True)
-            
-            stats = {"time": "Unknown", "cost": "0.00"}
-            
-            # 4. Extract Stats from the bottom of the G-code
-            if os.path.exists(gcode_path):
-                with open(gcode_path, 'r') as f:
-                    content = f.read()
-                    # OrcaSlicer usually formats time as 'total estimated time: 1h 20m'
-                    time_match = re.search(r"total estimated time: (.*)", content)
-                    filament_match = re.search(r"filament used \[g\] = (.*)", content)
-                    
-                    if time_match: stats["time"] = time_match.group(1)
-                    if filament_match:
-                        grams = float(filament_match.group(1))
-                        stats["cost"] = f"{(27.99 / 1000) * grams:.2f}"
-            
-            return True, stats
-        except subprocess.CalledProcessError as e:
-            # This captures what the slicer actually says went wrong
-            return False, f"Slicer Error: {e.stderr}"
-        except Exception as e:
-            return False, str(e)
+        # 4. Extract Stats from the bottom of the G-code
+        if os.path.exists(gcode_path):
+            with open(gcode_path, 'r') as f:
+                content = f.read()
+                # OrcaSlicer usually formats time as 'total estimated time: 1h 20m'
+                time_match = re.search(r"total estimated time: (.*)", content)
+                filament_match = re.search(r"filament used \[g\] = (.*)", content)
+                
+                if time_match: stats["time"] = time_match.group(1)
+                if filament_match:
+                    grams = float(filament_match.group(1))
+                    stats["cost"] = f"{(27.99 / 1000) * grams:.2f}"
+        
+        return True, stats
+    except subprocess.CalledProcessError as e:
+        # This captures what the slicer actually says went wrong
+        return False, f"Slicer Error: {e.stderr}"
+    except Exception as e:
+        return False, str(e)
     
 
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
