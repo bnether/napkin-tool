@@ -303,39 +303,40 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     
     # 1. Verification & Permissions
     if not os.path.exists(exe):
-        return False, "Slicer engine not found in root folder."
+        return False, f"Slicer engine not found at {exe}"
     
-    # Ensure the server has permission to run the file
+    # Force execution permissions every time just in case
     os.chmod(exe, 0o755)
 
     # 2. Map the Printer Nickname to the .3mf Recipe
-    # This assumes your folder 'recipes' has files like 'Prusa_MK2S.3mf'
+    # This converts "My Printer" -> "recipes/My_Printer.3mf"
     recipe_filename = f"{printer_nickname.replace(' ', '_')}.3mf"
     config_path = os.path.join("recipes", recipe_filename)
 
     if not os.path.exists(config_path):
         return False, f"Recipe file not found: {config_path}"
     
-    # 3. OrcaSlicer Command (The new grammar)
+    # 3. OrcaSlicer Command (Corrected Syntax)
+    # We removed --export-gcode, --orient, --center, etc.
     command = [
         exe,
-        "--slice",              # Trigger the engine
+        "--slice",
         "--load-config", config_path,
         "--output", gcode_path,
         stl_path
     ]
     
     try:
-        # Run the slicer
+        # Run the slicer - we use 'env' to help it find libraries
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         
         stats = {"time": "Unknown", "cost": "0.00"}
         
-        # 4. Extract Stats from the bottom of the G-code
+        # 4. Extract Stats from G-code
         if os.path.exists(gcode_path):
             with open(gcode_path, 'r') as f:
                 content = f.read()
-                # OrcaSlicer usually formats time as 'total estimated time: 1h 20m'
+                # OrcaSlicer specific patterns
                 time_match = re.search(r"total estimated time: (.*)", content)
                 filament_match = re.search(r"filament used \[g\] = (.*)", content)
                 
@@ -346,7 +347,7 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
         
         return True, stats
     except subprocess.CalledProcessError as e:
-        # This captures what the slicer actually says went wrong
+        # This is huge for debugging - it tells us the EXACT library missing
         return False, f"Slicer Error: {e.stderr}"
     except Exception as e:
         return False, str(e)
