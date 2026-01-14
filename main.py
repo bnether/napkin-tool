@@ -297,19 +297,31 @@ PRINTER_MASTER_LIST = {
 }
 
 
+from datetime import datetime, timedelta
+import os
+import subprocess
+import re
+
 def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
+    """
+    Slices the STL and returns print duration and the estimated time of day it will finish.
+    """
+    # 1. Setup Paths
     exe = os.path.abspath("./Slicer")
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
     
+    # Map nickname to the .ini config file
     recipe_filename = f"{printer_nickname.replace(' ', '_')}.ini"
     config_path = os.path.abspath(os.path.join("recipes", recipe_filename))
 
     if not os.path.exists(exe):
         return False, "Slicer binary missing."
 
+    # Ensure execution permissions
     os.chmod(exe, 0o755)
 
+    # 2. Execution
     command = [
         exe, "--appimage-extract-and-run",
         "--slice", "--load", config_path,
@@ -322,41 +334,50 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     try:
         subprocess.run(command, capture_output=True, text=True, check=True, env=env, timeout=180)
         
+        # Default values
         stats = {"time": "Unknown", "finish_time": "Unknown"}
         
         if os.path.exists(gcode_abs):
             with open(gcode_abs, 'r') as f:
+                # Read end of file for PrusaSlicer metadata
                 f.seek(0, os.SEEK_END)
                 f.seek(max(0, f.tell() - 30000))
                 content = f.read()
                 
+                # Look for duration string (e.g., "1h 20m 30s" or "45m 10s")
                 t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
                 
                 if t_match:
                     duration_str = t_match.group(1).strip()
                     stats["time"] = duration_str
                     
-                    # --- CALCULATE FINISH TIME ---
+                    # 3. Time Math
                     try:
-                        # Extract hours, minutes, and seconds using regex
-                        hours = re.search(r'(\d+)h', duration_str)
-                        minutes = re.search(r'(\d+)m', duration_str)
-                        seconds = re.search(r'(\d+)s', duration_str)
+                        # Extract numbers using regex
+                        h_match = re.search(r'(\d+)h', duration_str)
+                        m_match = re.search(r'(\d+)m', duration_str)
+                        s_match = re.search(r'(\d+)s', duration_str)
                         
-                        h = int(hours.group(1)) if hours else 0
-                        m = int(minutes.group(1)) if minutes else 0
-                        s = int(seconds.group(1)) if seconds else 0
+                        hours = int(h_match.group(1)) if h_match else 0
+                        minutes = int(m_match.group(1)) if m_match else 0
+                        seconds = int(s_match.group(1)) if s_match else 0
                         
-                        total_delta = timedelta(hours=h, minutes=m, seconds=s)
-                        finish_dt = datetime.now() + total_delta
+                        # Calculate finish time
+                        total_duration = timedelta(hours=hours, minutes=minutes, seconds=seconds)
+                        
+                        # Note: This uses Server Time. 
+                        # To offset for your timezone (e.g., -5), use: 
+                        # (datetime.now() + timedelta(hours=-5))
+                        now = datetime.now() 
+                        finish_dt = now + total_duration
                         
                         # Format as "3:45 PM"
                         stats["finish_time"] = finish_dt.strftime("%I:%M %p")
-                    except:
-                        stats["finish_time"] = "Error calculating"
+                    except Exception:
+                        stats["finish_time"] = "Calc Error"
             
             return True, stats
-        return False, "G-code not generated."
+        return False, "G-code generation failed."
 
     except Exception as e:
         return False, f"System Error: {str(e)}"
@@ -822,6 +843,12 @@ elif st.session_state.page == "Make a Part":
                             
                             if success:
                                 st.success("Slicing Complete!")
+
+                                # 2. DISPLAY LOGIC GOES HERE (AFTER THE FUNCTION)
+                                col1, col2, col3 = st.columns(3)
+                                col1.metric("Est. Time", result['time'])
+                                col3.metric("Est. Finish", result['finish_time'])
+
                                 m1, m2, m3 = st.columns(3)
                                 m1.metric("Est. Time", result["time"])
                                 m3.metric("Est. Cost", f"${result['cost']}")
