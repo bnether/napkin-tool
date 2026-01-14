@@ -321,7 +321,7 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     command = [
         exe,
         "--appimage-extract-and-run",  # THIS IS THE CRITICAL FIX
-        "--slice",
+        "--slice", "0",
         "--load-config", config_path,
         "--output", gcode_path,
         stl_path
