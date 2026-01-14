@@ -314,13 +314,12 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     # Force permissions
     os.chmod(exe, 0o755)
 
-    # 2. THE STABLE PRUSA COMMAND
-    # PrusaSlicer uses these flags consistently across all versions
+    # THE CORRECT PRUSA COMMAND FOR 3MF RECIPES
     command = [
         exe,
         "--appimage-extract-and-run",
         "--slice", 
-        "--load", config_path,
+        "--config", config_path,  # Use --config for .3mf files
         "--output", gcode_abs,
         stl_abs
     ]
