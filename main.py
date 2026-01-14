@@ -316,23 +316,26 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     # Force permissions
     os.chmod(exe, 0o755)
 
-    # 2. THE CORRECT ORCA CLI COMMAND
-    # In OrcaSlicer/BambuStudio CLI:
-    # --project is the flag for the 3MF file
-    # --export-gcode is the trigger (no values needed)
-    # --outfile specifies the name
+    # 2. THE POSITIONAL CLI COMMAND
+    # In this specific engine build, the syntax is:
+    # [exe] --appimage-extract-and-run --slice --gui false --config [3mf] --output [gcode] [stl]
     command = [
         exe,
         "--appimage-extract-and-run",
-        "--project", config_path,
-        "--export-gcode",
-        "--outfile", gcode_abs,
+        "--slice", 
+        "--gui", "false",
+        "--config", config_path,
+        "--output", gcode_abs,
         stl_abs
     ]
     
-    # Prevent GUI crashes
+    # Critical for headless servers
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
+    env["XDG_RUNTIME_DIR"] = "/tmp/runtime-streamlit"
+    
+    if not os.path.exists(env["XDG_RUNTIME_DIR"]):
+        os.makedirs(env["XDG_RUNTIME_DIR"], exist_ok=True)
 
     try:
         result = subprocess.run(
@@ -341,19 +344,16 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
             text=True, 
             check=True, 
             env=env,
-            timeout=90 
+            timeout=120 
         )
         
         # 3. STATS PARSING
         stats = {"time": "Unknown", "cost": "0.00"}
         if os.path.exists(gcode_path):
             with open(gcode_path, 'r') as f:
-                # Read the end of the file for metadata
-                f.seek(0, os.SEEK_END)
-                f.seek(max(0, f.tell() - 10000))
                 content = f.read()
                 
-                # Regex for OrcaSlicer format
+                # Regex patterns for OrcaSlicer G-code comments
                 t_match = re.search(r"total estimated time:?\s*(.*)", content, re.IGNORECASE)
                 f_match = re.search(r"filament used \[g\]:?\s*([\d\.]+)", content, re.IGNORECASE)
                 
@@ -363,10 +363,11 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
                     stats["cost"] = f"{(27.99 / 1000) * grams:.2f}"
             
             return True, stats
-        return False, "Slicer ran but G-code file was not created."
+        return False, f"Slicer finished but no G-code at {gcode_path}"
 
     except subprocess.CalledProcessError as e:
-        return False, f"Slicer Console Error: {e.stderr if e.stderr else e.stdout}"
+        # If this fails, the error message will finally show us the exact flag it hated
+        return False, f"Slicer Error: {e.stderr if e.stderr else e.stdout}"
     except Exception as e:
         return False, f"System Error: {str(e)}"
     
