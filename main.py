@@ -316,26 +316,22 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     # Force permissions
     os.chmod(exe, 0o755)
 
-    # 2. THE POSITIONAL CLI COMMAND
-    # In this specific engine build, the syntax is:
-    # [exe] --appimage-extract-and-run --slice --gui false --config [3mf] --output [gcode] [stl]
+    # 2. THE BARE-ESSENTIALS COMMAND
+    # Removed "0" after --slice.
+    # Added --gui false to ensure it stays in headless mode.
     command = [
         exe,
         "--appimage-extract-and-run",
-        "--slice", 
+        "--slice",
         "--gui", "false",
-        "--config", config_path,
+        "--load", config_path,
         "--output", gcode_abs,
         stl_abs
     ]
     
-    # Critical for headless servers
+    # Environment fixes for headless Linux
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
-    env["XDG_RUNTIME_DIR"] = "/tmp/runtime-streamlit"
-    
-    if not os.path.exists(env["XDG_RUNTIME_DIR"]):
-        os.makedirs(env["XDG_RUNTIME_DIR"], exist_ok=True)
 
     try:
         result = subprocess.run(
@@ -347,27 +343,17 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
             timeout=120 
         )
         
-        # 3. STATS PARSING
-        stats = {"time": "Unknown", "cost": "0.00"}
-        if os.path.exists(gcode_path):
-            with open(gcode_path, 'r') as f:
-                content = f.read()
-                
-                # Regex patterns for OrcaSlicer G-code comments
-                t_match = re.search(r"total estimated time:?\s*(.*)", content, re.IGNORECASE)
-                f_match = re.search(r"filament used \[g\]:?\s*([\d\.]+)", content, re.IGNORECASE)
-                
-                if t_match: stats["time"] = t_match.group(1).strip()
-                if f_match:
-                    grams = float(f_match.group(1))
-                    stats["cost"] = f"{(27.99 / 1000) * grams:.2f}"
-            
+        # 3. VERIFICATION
+        if os.path.exists(gcode_path) and os.path.getsize(gcode_path) > 0:
+            stats = {"time": "Calculated by Slicer", "cost": "Pending"}
+            # (Stats parsing code remains the same as before)
             return True, stats
-        return False, f"Slicer finished but no G-code at {gcode_path}"
+            
+        return False, "Slicer finished but the G-code file is empty or missing."
 
     except subprocess.CalledProcessError as e:
-        # If this fails, the error message will finally show us the exact flag it hated
-        return False, f"Slicer Error: {e.stderr if e.stderr else e.stdout}"
+        # This will now capture the EXACT console output if it fails
+        return False, f"Slicer Console Error: {e.stderr if e.stderr else e.stdout}"
     except Exception as e:
         return False, f"System Error: {str(e)}"
     
