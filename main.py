@@ -308,13 +308,12 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
 
     os.chmod(exe, 0o755)
 
-    # THE BAMBU-CORE SYNTAX
-    # We use -load (single dash) or --load (double) 
-    # and --export-gcode as the primary action.
+    # THE CORE ENGINE SYNTAX
+    # - No --gui (The engine assumes headless if it's called via CLI)
+    # - No --slice (We use the explicit action flag)
     command = [
         exe,
         "--appimage-extract-and-run",
-        "--gui", "false",
         "--load", config_path,
         "--export-gcode", 
         "--output", gcode_abs,
