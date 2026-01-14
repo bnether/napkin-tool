@@ -315,9 +315,10 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     command = [
         exe,
         "--appimage-extract-and-run",
-        "--project", config_path,
-        "--export-gcode",
-        "--outfile", gcode_abs,
+        "console",                 # Key: Forces CLI mode
+        "--slice", 
+        "--config", config_path,
+        "--output", gcode_abs,
         stl_abs
     ]
     
