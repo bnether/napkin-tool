@@ -845,10 +845,6 @@ elif st.session_state.page == "Make a Part":
                                 st.success("Slicing Complete!")
 
                                 # 2. DISPLAY LOGIC GOES HERE (AFTER THE FUNCTION)
-                                col1, col2, col3 = st.columns(3)
-                                col1.metric("Est. Time", result['time'])
-                                col3.metric("Est. Finish", result['finish_time'])
-
                                 m1, m2, m3 = st.columns(3)
                                 m1.metric("Est. Time", result["time"])
                                 m3.metric("Est. Finish", result['finish_time'])
