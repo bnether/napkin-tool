@@ -309,16 +309,17 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     os.chmod(exe, 0o755)
 
     # THE BAMBU-CORE PROJECT SYNTAX
-    # --project: The 3MF containing your settings
-    # --export-gcode: The action
-    # --outfile: The destination (Note: some versions use --output, but --outfile is the Bambu standard)
+    # 3. THE BARE-METAL COMMAND
+    # -s: Trigger Slicing
+    # -c: Path to config/3mf
+    # -o: Output path
+    # Last item: Input STL
     command = [
         exe,
         "--appimage-extract-and-run",
-        "console",                 # Key: Forces CLI mode
-        "--slice", 
-        "--config", config_path,
-        "--output", gcode_abs,
+        "-s", 
+        "-c", config_path,
+        "-o", gcode_abs,
         stl_abs
     ]
     
