@@ -297,17 +297,34 @@ PRINTER_MASTER_LIST = {
 }
 
 
+import os
+import subprocess
+import re
+
 def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
+    """
+    Slices an STL using the PrusaSlicer/Slicer binary and extracts print statistics.
+    """
+    # 1. Setup Absolute Paths
     exe = os.path.abspath("./Slicer")
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
     
-    # Ensure this matches the file type you are using (.ini or .3mf)
+    # Map nickname to the .ini config file (Ensure you have exported this from your slicer)
     recipe_filename = f"{printer_nickname.replace(' ', '_')}.ini"
     config_path = os.path.abspath(os.path.join("recipes", recipe_filename))
 
+    # Basic safety checks
+    if not os.path.exists(exe):
+        return False, "Slicer binary missing. Ensure 'Slicer' is in the root folder."
+    if not os.path.exists(config_path):
+        return False, f"Recipe missing: {recipe_filename}. Check your 'recipes' folder."
+
+    # Force execution permissions for the Linux environment
     os.chmod(exe, 0o755)
 
+    # 2. The Slicing Command
+    # We use --load for .ini files and --output for the destination
     command = [
         exe,
         "--appimage-extract-and-run",
@@ -317,37 +334,56 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
         stl_abs
     ]
     
+    # Environment variable to prevent crashes on headless (no monitor) servers
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
 
     try:
-        subprocess.run(command, capture_output=True, text=True, check=True, env=env, timeout=120)
+        # Execute slicing
+        process = subprocess.run(
+            command, 
+            capture_output=True, 
+            text=True, 
+            check=True, 
+            env=env,
+            timeout=180 
+        )
         
-        # --- NEW DATA EXTRACTION LOGIC ---
-        # --- UPDATED DATA EXTRACTION LOGIC ---
+        # 3. Data Extraction (The Metadata Parser)
         stats = {"time": "Unknown", "cost": "0.00"}
+        
         if os.path.exists(gcode_abs):
             with open(gcode_abs, 'r') as f:
-                # Move to the end of the file where the summary lives
+                # Seek to the end of the file where slicers write summaries
                 f.seek(0, os.SEEK_END)
-                end_pos = f.tell()
-                f.seek(max(0, end_pos - 20000)) # Read last 20k chars
+                file_size = f.tell()
+                f.seek(max(0, file_size - 30000)) # Read last 30KB
                 content = f.read()
                 
-                # PrusaSlicer uses these specific labels:
-                # ; estimated printing time (normal mode) = 2h 5m 10s
-                # ; filament used [g] = 12.5
-                t_match = re.search(r"estimated printing time.*=\s*(.*)", content)
-                f_match = re.search(r"filament used \[g\]\s*=\s*([\d\.]+)", content)
+                # Regex patterns for PrusaSlicer/OrcaSlicer metadata
+                # Pattern for time (e.g., 1h 20m 30s)
+                t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
+                # Pattern for filament weight (e.g., 15.50)
+                f_match = re.search(r"filament used \[g\]\s*=\s*([\d\.]+)", content, re.IGNORECASE)
                 
                 if t_match:
                     stats["time"] = t_match.group(1).strip()
+                
                 if f_match:
                     grams = float(f_match.group(1))
-                    # Assuming $28.00 per 1kg spool
-                    stats["cost"] = f"{(28.00 / 1000) * grams:.2f}"
+                    # Math: ($28.00 / 1000g) * grams used
+                    cost_val = (28.00 / 1000) * grams
+                    stats["cost"] = f"{cost_val:.2f}"
             
             return True, stats
+        
+        return False, "Slicer reported success, but G-code file was not found."
+
+    except subprocess.CalledProcessError as e:
+        error_msg = e.stderr if e.stderr else e.stdout
+        return False, f"Slicer Console Error: {error_msg}"
+    except Exception as e:
+        return False, f"System Error: {str(e)}"
     
     
 
