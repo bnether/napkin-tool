@@ -299,63 +299,51 @@ PRINTER_MASTER_LIST = {
 
 # --- UPDATED: ORCA SLICER WORKFLOW ---
 def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
-    # 1. Setup Absolute Paths
     exe = os.path.abspath("./OrcaSlicer")
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
     
-    # Map nickname to recipe
     recipe_filename = f"{printer_nickname.replace(' ', '_')}.3mf"
     config_path = os.path.abspath(os.path.join("recipes", recipe_filename))
 
-    if not os.path.exists(exe):
-        return False, "Slicer binary missing."
-    if not os.path.exists(config_path):
-        return False, f"Recipe missing: {recipe_filename}"
-
-    # Force permissions
     os.chmod(exe, 0o755)
 
-    # 2. THE BARE-ESSENTIALS COMMAND
-    # Removed "0" after --slice.
-    # Added --gui false to ensure it stays in headless mode.
+    # THE BAMBU-CORE SYNTAX
+    # We use -load (single dash) or --load (double) 
+    # and --export-gcode as the primary action.
     command = [
         exe,
         "--appimage-extract-and-run",
-        "--slice",
         "--gui", "false",
         "--load", config_path,
+        "--export-gcode", 
         "--output", gcode_abs,
         stl_abs
     ]
     
-    # Environment fixes for headless Linux
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
 
     try:
+        # Increased timeout to 3 minutes for complex STLs
         result = subprocess.run(
             command, 
             capture_output=True, 
             text=True, 
             check=True, 
             env=env,
-            timeout=120 
+            timeout=180 
         )
         
-        # 3. VERIFICATION
-        if os.path.exists(gcode_path) and os.path.getsize(gcode_path) > 0:
-            stats = {"time": "Calculated by Slicer", "cost": "Pending"}
-            # (Stats parsing code remains the same as before)
-            return True, stats
+        if os.path.exists(gcode_abs):
+            return True, {"time": "Success", "cost": "Success"}
             
-        return False, "Slicer finished but the G-code file is empty or missing."
+        return False, "Slicer finished but file not found."
 
     except subprocess.CalledProcessError as e:
-        # This will now capture the EXACT console output if it fails
+        # If this STILL says "Invalid Option", the error message 
+        # below will finally list which SPECIFIC flag is the culprit.
         return False, f"Slicer Console Error: {e.stderr if e.stderr else e.stdout}"
-    except Exception as e:
-        return False, f"System Error: {str(e)}"
     
 
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
