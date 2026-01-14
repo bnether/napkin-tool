@@ -299,58 +299,77 @@ PRINTER_MASTER_LIST = {
 
 # --- UPDATED: ORCA SLICER WORKFLOW ---
 def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
-    exe = "./OrcaSlicer" 
+    # 1. Setup Paths
+    exe = os.path.abspath("./OrcaSlicer")
+    stl_abs = os.path.abspath(stl_path)
+    gcode_abs = os.path.abspath(gcode_path)
     
-    # 1. Verification & Permissions
+    # Map nickname to recipe
+    recipe_filename = f"{printer_nickname.replace(' ', '_')}.3mf"
+    config_path = os.path.abspath(os.path.join("recipes", recipe_filename))
+
     if not os.path.exists(exe):
-        return False, f"Slicer engine not found at {exe}"
-    
-    # Force execution permissions every time just in case
+        return False, "Slicer binary missing."
+    if not os.path.exists(config_path):
+        return False, f"Recipe missing: {recipe_filename}"
+
+    # Force permissions
     os.chmod(exe, 0o755)
 
-    # 2. Map the Printer Nickname to the .3mf Recipe
-    # This converts "My Printer" -> "recipes/My_Printer.3mf"
-    recipe_filename = f"{printer_nickname.replace(' ', '_')}.3mf"
-    config_path = os.path.join("recipes", recipe_filename)
-
-    if not os.path.exists(config_path):
-        return False, f"Recipe file not found: {config_path}"
-    
-    
+    # 2. THE COMMAND
+    # This specific order is required by the v2.1.0/Bambu engine:
+    # [Binary] [AppImage-flags] --slice [PlateIndex] --load [Config] --output [Target] [Input]
     command = [
         exe,
         "--appimage-extract-and-run",
-        "--export-gcode", 
+        "--slice", "0",
         "--load", config_path,
-        "--output", gcode_path,
-        stl_path
+        "--output", gcode_abs,
+        stl_abs
     ]
     
+    # Extra environment variable to prevent GUI-related crashes on headless servers
+    env = os.environ.copy()
+    env["QT_QPA_PLATFORM"] = "offscreen"
+
     try:
-        # Run the slicer - we use 'env' to help it find libraries
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        # We use a timeout to prevent the app from hanging if the slicer stalls
+        result = subprocess.run(
+            command, 
+            capture_output=True, 
+            text=True, 
+            check=True, 
+            env=env,
+            timeout=60 
+        )
         
+        # 3. STATS PARSING
         stats = {"time": "Unknown", "cost": "0.00"}
-        
-        # 4. Extract Stats from G-code
         if os.path.exists(gcode_path):
             with open(gcode_path, 'r') as f:
+                # Read last 2000 characters of file where stats usually live
+                f.seek(0, os.SEEK_END)
+                end_size = min(f.tell(), 5000)
+                f.seek(f.tell() - end_size)
                 content = f.read()
-                # OrcaSlicer specific patterns
-                time_match = re.search(r"total estimated time: (.*)", content)
-                filament_match = re.search(r"filament used \[g\] = (.*)", content)
                 
-                if time_match: stats["time"] = time_match.group(1)
-                if filament_match:
-                    grams = float(filament_match.group(1))
+                # Broad search patterns to catch Orca, Bambu, or Prusa styles
+                t_match = re.search(r"total estimated time:?\s*(.*)", content, re.IGNORECASE)
+                f_match = re.search(r"filament used \[g\]:?\s*([\d\.]+)", content, re.IGNORECASE)
+                
+                if t_match: stats["time"] = t_match.group(1).strip()
+                if f_match:
+                    grams = float(f_match.group(1))
                     stats["cost"] = f"{(27.99 / 1000) * grams:.2f}"
-        
-        return True, stats
+            
+            return True, stats
+        return False, "G-code file was not generated."
+
     except subprocess.CalledProcessError as e:
-        # This is huge for debugging - it tells us the EXACT library missing
-        return False, f"Slicer Error: {e.stderr}"
+        # Return the full error from the engine so we can see if it's a 3D geometry issue
+        return False, f"Slicer Console Error: {e.stderr if e.stderr else e.stdout}"
     except Exception as e:
-        return False, str(e)
+        return False, f"System Error: {str(e)}"
     
 
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
