@@ -297,29 +297,31 @@ PRINTER_MASTER_LIST = {
 }
 
 
-# --- UPDATED: ORCA SLICER WORKFLOW ---
 def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
-    exe = os.path.abspath("./OrcaSlicer")
+    # 1. Setup Absolute Paths
+    exe = os.path.abspath("./Slicer") # Matches the renamed file
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
     
+    # Map nickname to config
+    # Note: PrusaSlicer prefers .ini files, but can read settings from .3mf
     recipe_filename = f"{printer_nickname.replace(' ', '_')}.3mf"
     config_path = os.path.abspath(os.path.join("recipes", recipe_filename))
 
+    if not os.path.exists(exe):
+        return False, "Slicer binary missing."
+
+    # Force permissions
     os.chmod(exe, 0o755)
 
-    # THE BAMBU-CORE PROJECT SYNTAX
-    # 3. THE BARE-METAL COMMAND
-    # -s: Trigger Slicing
-    # -c: Path to config/3mf
-    # -o: Output path
-    # Last item: Input STL
+    # 2. THE STABLE PRUSA COMMAND
+    # PrusaSlicer uses these flags consistently across all versions
     command = [
         exe,
         "--appimage-extract-and-run",
-        "-s", 
-        "-c", config_path,
-        "-o", gcode_abs,
+        "--slice", 
+        "--load", config_path,
+        "--output", gcode_abs,
         stl_abs
     ]
     
@@ -327,25 +329,15 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     env["QT_QPA_PLATFORM"] = "offscreen"
 
     try:
-        # Increased timeout to 3 minutes for complex STLs
-        result = subprocess.run(
-            command, 
-            capture_output=True, 
-            text=True, 
-            check=True, 
-            env=env,
-            timeout=180 
-        )
+        subprocess.run(command, capture_output=True, text=True, check=True, env=env, timeout=120)
         
         if os.path.exists(gcode_abs):
             return True, {"time": "Success", "cost": "Success"}
-            
-        return False, "Slicer finished but file not found."
+        return False, "Slicer ran but no G-code was generated."
 
     except subprocess.CalledProcessError as e:
-        # If this STILL says "Invalid Option", the error message 
-        # below will finally list which SPECIFIC flag is the culprit.
-        return False, f"Slicer Console Error: {e.stderr if e.stderr else e.stdout}"
+        return False, f"PrusaSlicer Error: {e.stderr if e.stderr else e.stdout}"
+    
     
 
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
