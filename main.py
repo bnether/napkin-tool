@@ -851,7 +851,7 @@ elif st.session_state.page == "Make a Part":
 
                                 m1, m2, m3 = st.columns(3)
                                 m1.metric("Est. Time", result["time"])
-                                m3.metric("Est. Cost", f"${result['cost']}")
+                                m3.metric("Est. Finish", result['finish_time'])
                                 
                                 with open("part.gcode", "rb") as g_file:
                                     st.download_button("Download G-Code", data=g_file, file_name="part.gcode", use_container_width=True)
