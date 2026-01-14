@@ -298,29 +298,21 @@ PRINTER_MASTER_LIST = {
 
 
 def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
-    # 1. Setup Absolute Paths
-    exe = os.path.abspath("./Slicer") # Matches the renamed file
+    exe = os.path.abspath("./Slicer")
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
     
-    # Map nickname to config
-    # Note: PrusaSlicer prefers .ini files, but can read settings from .3mf
-    recipe_filename = f"{printer_nickname.replace(' ', '_')}.3mf"
+    # Ensure this matches the file type you are using (.ini or .3mf)
+    recipe_filename = f"{printer_nickname.replace(' ', '_')}.ini"
     config_path = os.path.abspath(os.path.join("recipes", recipe_filename))
 
-    if not os.path.exists(exe):
-        return False, "Slicer binary missing."
-
-    # Force permissions
     os.chmod(exe, 0o755)
 
-    # THE UNIVERSAL SLICER COMMAND
-    # This works with PrusaSlicer and an .ini file.
     command = [
         exe,
         "--appimage-extract-and-run",
         "--slice", 
-        "--load", config_path.replace(".3mf", ".ini"), # Points to your new .ini file
+        "--load", config_path,
         "--output", gcode_abs,
         stl_abs
     ]
@@ -331,12 +323,31 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     try:
         subprocess.run(command, capture_output=True, text=True, check=True, env=env, timeout=120)
         
+        # --- NEW DATA EXTRACTION LOGIC ---
+        stats = {"time": "Unknown", "cost": "0.00"}
         if os.path.exists(gcode_abs):
-            return True, {"time": "Success", "cost": "Success"}
-        return False, "Slicer ran but no G-code was generated."
+            with open(gcode_abs, 'r') as f:
+                # Read the last 10,000 characters (where PrusaSlicer puts stats)
+                f.seek(0, os.SEEK_END)
+                f.seek(max(0, f.tell() - 10000))
+                content = f.read()
+                
+                # Regex to find: "; estimated printing time (normal mode) = 1h 20m 30s"
+                t_match = re.search(r"estimated printing time.*=\s*(.*)", content)
+                # Regex to find: "; filament used [g] = 15.5"
+                f_match = re.search(r"filament used \[g\]\s*=\s*([\d\.]+)", content)
+                
+                if t_match:
+                    stats["time"] = t_match.group(1).strip()
+                if f_match:
+                    grams = float(f_match.group(1))
+                    stats["cost"] = f"{(27.99 / 1000) * grams:.2f}" # Adjust 27.99 to your spool price
+            
+            return True, stats
+        return False, "Slicer finished but file not found."
 
     except subprocess.CalledProcessError as e:
-        return False, f"PrusaSlicer Error: {e.stderr if e.stderr else e.stdout}"
+        return False, f"Slicer Error: {e.stderr if e.stderr else e.stdout}"
     
     
 
