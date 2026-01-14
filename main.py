@@ -8,7 +8,7 @@ import re
 import os
 import shutil
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 from streamlit_gsheets import GSheetsConnection
 from pydrive2.auth import GoogleAuth
@@ -297,91 +297,67 @@ PRINTER_MASTER_LIST = {
 }
 
 
-import os
-import subprocess
-import re
-
 def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
-    """
-    Slices an STL using the PrusaSlicer/Slicer binary and extracts print statistics.
-    """
-    # 1. Setup Absolute Paths
     exe = os.path.abspath("./Slicer")
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
     
-    # Map nickname to the .ini config file (Ensure you have exported this from your slicer)
     recipe_filename = f"{printer_nickname.replace(' ', '_')}.ini"
     config_path = os.path.abspath(os.path.join("recipes", recipe_filename))
 
-    # Basic safety checks
     if not os.path.exists(exe):
-        return False, "Slicer binary missing. Ensure 'Slicer' is in the root folder."
-    if not os.path.exists(config_path):
-        return False, f"Recipe missing: {recipe_filename}. Check your 'recipes' folder."
+        return False, "Slicer binary missing."
 
-    # Force execution permissions for the Linux environment
     os.chmod(exe, 0o755)
 
-    # 2. The Slicing Command
-    # We use --load for .ini files and --output for the destination
     command = [
-        exe,
-        "--appimage-extract-and-run",
-        "--slice", 
-        "--load", config_path,
-        "--output", gcode_abs,
-        stl_abs
+        exe, "--appimage-extract-and-run",
+        "--slice", "--load", config_path,
+        "--output", gcode_abs, stl_abs
     ]
     
-    # Environment variable to prevent crashes on headless (no monitor) servers
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
 
     try:
-        # Execute slicing
-        process = subprocess.run(
-            command, 
-            capture_output=True, 
-            text=True, 
-            check=True, 
-            env=env,
-            timeout=180 
-        )
+        subprocess.run(command, capture_output=True, text=True, check=True, env=env, timeout=180)
         
-        # 3. Data Extraction (The Metadata Parser)
-        stats = {"time": "Unknown", "cost": "0.00"}
+        stats = {"time": "Unknown", "finish_time": "Unknown"}
         
         if os.path.exists(gcode_abs):
             with open(gcode_abs, 'r') as f:
-                # Seek to the end of the file where slicers write summaries
                 f.seek(0, os.SEEK_END)
-                file_size = f.tell()
-                f.seek(max(0, file_size - 30000)) # Read last 30KB
+                f.seek(max(0, f.tell() - 30000))
                 content = f.read()
                 
-                # Regex patterns for PrusaSlicer/OrcaSlicer metadata
-                # Pattern for time (e.g., 1h 20m 30s)
                 t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
-                # Pattern for filament weight (e.g., 15.50)
-                f_match = re.search(r"filament used \[g\]\s*=\s*([\d\.]+)", content, re.IGNORECASE)
                 
                 if t_match:
-                    stats["time"] = t_match.group(1).strip()
-                
-                if f_match:
-                    grams = float(f_match.group(1))
-                    # Math: ($28.00 / 1000g) * grams used
-                    cost_val = (28.00 / 1000) * grams
-                    stats["cost"] = f"{cost_val:.2f}"
+                    duration_str = t_match.group(1).strip()
+                    stats["time"] = duration_str
+                    
+                    # --- CALCULATE FINISH TIME ---
+                    try:
+                        # Extract hours, minutes, and seconds using regex
+                        hours = re.search(r'(\d+)h', duration_str)
+                        minutes = re.search(r'(\d+)m', duration_str)
+                        seconds = re.search(r'(\d+)s', duration_str)
+                        
+                        h = int(hours.group(1)) if hours else 0
+                        m = int(minutes.group(1)) if minutes else 0
+                        s = int(seconds.group(1)) if seconds else 0
+                        
+                        total_delta = timedelta(hours=h, minutes=m, seconds=s)
+                        finish_dt = datetime.now() + total_delta
+                        
+                        # Format as "3:45 PM"
+                        stats["finish_time"] = finish_dt.strftime("%I:%M %p")
+                    except:
+                        stats["finish_time"] = "Error calculating"
             
             return True, stats
-        
-        return False, "Slicer reported success, but G-code file was not found."
+        return False, "G-code not generated."
 
-    except subprocess.CalledProcessError as e:
-        error_msg = e.stderr if e.stderr else e.stdout
-        return False, f"Slicer Console Error: {error_msg}"
     except Exception as e:
         return False, f"System Error: {str(e)}"
     
