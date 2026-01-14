@@ -297,23 +297,18 @@ PRINTER_MASTER_LIST = {
 }
 
 
-from datetime import datetime, timedelta
-import os
-import subprocess
-import re
 
-def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
-    """
-    Slices the STL and returns print duration and the estimated time of day it will finish.
-    """
+def run_slicing_workflow(stl_path, gcode_path, hardware_name): # Renamed placeholder
     # 1. Setup Paths
     exe = os.path.abspath("./Slicer")
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
     
-    # Map nickname to the .ini config file
-    recipe_filename = f"{printer_nickname.replace(' ', '_')}.ini"
+    # Use the name EXACTLY as passed (with spaces and dashes)
+    recipe_filename = f"{hardware_name}.ini"
     config_path = os.path.abspath(os.path.join("recipes", recipe_filename))
+    if not os.path.exists(config_path):
+        return False, f"Missing recipe file: {recipe_filename}. Please upload it to the recipes folder."
 
     if not os.path.exists(exe):
         return False, "Slicer binary missing."
@@ -838,8 +833,10 @@ elif st.session_state.page == "Make a Part":
                     
                     if st.button("Generate G-Code (Slice)", use_container_width=True):
                         with st.spinner(f"Slicing for {selected_p}..."):
-                            # This now calls the NEW version you defined at the top of the script
-                            success, result = run_slicing_workflow("part.stl", "part.gcode", selected_p)
+                            # Adjust 'brand' and 'model' keys to match your fleet_df column names
+                            hardware_name = f"{p_settings['brand']} {p_settings['model']}"
+                            # --- PASS hardware_name INSTEAD OF selected_p ---
+                            success, result = run_slicing_workflow("part.stl", "part.gcode", hardware_name)
                             
                             if success:
                                 st.success("Slicing Complete!")
