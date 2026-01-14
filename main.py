@@ -299,7 +299,7 @@ PRINTER_MASTER_LIST = {
 
 # --- UPDATED: ORCA SLICER WORKFLOW ---
 def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
-    # 1. Setup Paths
+    # 1. Setup Absolute Paths
     exe = os.path.abspath("./OrcaSlicer")
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
@@ -316,44 +316,44 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     # Force permissions
     os.chmod(exe, 0o755)
 
-    # 2. THE COMMAND
-    # This specific order is required by the v2.1.0/Bambu engine:
-    # [Binary] [AppImage-flags] --slice [PlateIndex] --load [Config] --output [Target] [Input]
+    # 2. THE CORRECT ORCA CLI COMMAND
+    # In OrcaSlicer/BambuStudio CLI:
+    # --project is the flag for the 3MF file
+    # --export-gcode is the trigger (no values needed)
+    # --outfile specifies the name
     command = [
         exe,
         "--appimage-extract-and-run",
-        "--slice", "0",
-        "--load", config_path,
-        "--output", gcode_abs,
+        "--project", config_path,
+        "--export-gcode",
+        "--outfile", gcode_abs,
         stl_abs
     ]
     
-    # Extra environment variable to prevent GUI-related crashes on headless servers
+    # Prevent GUI crashes
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
 
     try:
-        # We use a timeout to prevent the app from hanging if the slicer stalls
         result = subprocess.run(
             command, 
             capture_output=True, 
             text=True, 
             check=True, 
             env=env,
-            timeout=60 
+            timeout=90 
         )
         
         # 3. STATS PARSING
         stats = {"time": "Unknown", "cost": "0.00"}
         if os.path.exists(gcode_path):
             with open(gcode_path, 'r') as f:
-                # Read last 2000 characters of file where stats usually live
+                # Read the end of the file for metadata
                 f.seek(0, os.SEEK_END)
-                end_size = min(f.tell(), 5000)
-                f.seek(f.tell() - end_size)
+                f.seek(max(0, f.tell() - 10000))
                 content = f.read()
                 
-                # Broad search patterns to catch Orca, Bambu, or Prusa styles
+                # Regex for OrcaSlicer format
                 t_match = re.search(r"total estimated time:?\s*(.*)", content, re.IGNORECASE)
                 f_match = re.search(r"filament used \[g\]:?\s*([\d\.]+)", content, re.IGNORECASE)
                 
@@ -363,10 +363,9 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
                     stats["cost"] = f"{(27.99 / 1000) * grams:.2f}"
             
             return True, stats
-        return False, "G-code file was not generated."
+        return False, "Slicer ran but G-code file was not created."
 
     except subprocess.CalledProcessError as e:
-        # Return the full error from the engine so we can see if it's a 3D geometry issue
         return False, f"Slicer Console Error: {e.stderr if e.stderr else e.stdout}"
     except Exception as e:
         return False, f"System Error: {str(e)}"
