@@ -314,12 +314,13 @@ def run_slicing_workflow(stl_path, gcode_path, printer_nickname):
     # Force permissions
     os.chmod(exe, 0o755)
 
-    # THE CORRECT PRUSA COMMAND FOR 3MF RECIPES
+    # THE UNIVERSAL SLICER COMMAND
+    # This works with PrusaSlicer and an .ini file.
     command = [
         exe,
         "--appimage-extract-and-run",
         "--slice", 
-        "--config", config_path,  # Use --config for .3mf files
+        "--load", config_path.replace(".3mf", ".ini"), # Points to your new .ini file
         "--output", gcode_abs,
         stl_abs
     ]
