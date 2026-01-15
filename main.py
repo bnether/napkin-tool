@@ -310,14 +310,14 @@ PRINTER_MASTER_LIST = {
 
 
 
-def run_slicing_workflow(stl_path, gcode_path, printer_data, user_overrides):
+def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides):
     # 1. Setup Paths
     exe = os.path.abspath("./Slicer")
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
     
-    # Identify the base recipe file (The Static Part)
-    recipe_filename = f"{printer_data['brand']} {printer_data['model']} {printer_data['material']} {printer_data['nozzle']}mm.ini"
+    # Identify the base recipe file (Using the string passed from the UI)
+    recipe_filename = f"{full_config_name}.ini"
     config_path = os.path.abspath(os.path.join("recipes", recipe_filename))
     
     if not os.path.exists(config_path):
