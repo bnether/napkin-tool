@@ -815,9 +815,8 @@ elif st.session_state.page == "Make a Part":
                     p_settings = fleet_df[fleet_df['printer nickname'] == selected_p].iloc[0]
                     
                     # --- SIMPLE CLEAN INFO BOX ---
-                    # Only shows: Nickname (Brand Model) | Material
-                    printer_identity = f"{selected_p} ({p_settings['brand']} {p_settings['model']})"
-                    st.info(f"**Printer:** {printer_identity}  \n**Material:** {p_settings['material']}")
+                    printer_display = f"{p_settings['brand']} {p_settings['model']} ({p_settings['material']})"
+                    st.info(f"**{printer_display}**")
                     
                     if st.button("Generate G-Code (Slice)", use_container_width=True):
                         with st.spinner(f"Slicing for {selected_p}..."):
