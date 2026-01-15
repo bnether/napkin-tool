@@ -316,7 +316,6 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
     
-    # Identify the base recipe file (Using the string passed from the UI)
     recipe_filename = f"{full_config_name}.ini"
     config_path = os.path.abspath(os.path.join("recipes", recipe_filename))
     
@@ -327,8 +326,7 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
 
     os.chmod(exe, 0o755)
 
-    # 2. Build the Command (Integrating Dynamic Variables)
-    # We use the list format for subprocess.run (safer than a joined string)
+    # 2. Build the Command
     command = [
         exe, "--appimage-extract-and-run",
         "--slice", 
@@ -338,11 +336,10 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         "--perimeters", str(user_overrides['walls'])
     ]
     
-    # Support Material Toggle
     if user_overrides['supports'] == "ON":
         command.append("--support-material")
     else:
-        command.append("--no-support-material") # Force off if user chose OFF
+        command.append("--no-support-material")
 
     command.append(stl_abs)
     
@@ -351,12 +348,47 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     env["QT_QPA_PLATFORM"] = "offscreen"
 
     try:
+        # --- FIX: INITIALIZE STATS HERE ---
+        stats = {"time": "Unknown", "finish_time": "Unknown"}
+
         # Run the process
         subprocess.run(command, capture_output=True, text=True, check=True, env=env, timeout=180)
         
-        # ... (Your Metadata Extraction logic for time/finish_time goes here) ...
+        # --- FIX: METADATA EXTRACTION ---
+        if os.path.exists(gcode_abs):
+            with open(gcode_abs, 'r') as f:
+                # Read end of file for PrusaSlicer metadata (usually in the last 30kb)
+                f.seek(0, os.SEEK_END)
+                f.seek(max(0, f.tell() - 30000))
+                content = f.read()
+                
+                # Look for duration string (e.g., "estimated printing time = 1h 20m")
+                t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
+                
+                if t_match:
+                    duration_str = t_match.group(1).strip()
+                    stats["time"] = duration_str
+                    
+                    # Time Math for Finish Time
+                    try:
+                        h_match = re.search(r'(\d+)h', duration_str)
+                        m_match = re.search(r'(\d+)m', duration_str)
+                        s_match = re.search(r'(\d+)s', duration_str)
+                        
+                        hours = int(h_match.group(1)) if h_match else 0
+                        minutes = int(m_match.group(1)) if m_match else 0
+                        seconds = int(s_match.group(1)) if s_match else 0
+                        
+                        total_duration = timedelta(hours=hours, minutes=minutes, seconds=seconds)
+                        finish_dt = datetime.now() + total_duration
+                        stats["finish_time"] = finish_dt.strftime("%I:%M %p")
+                    except:
+                        stats["finish_time"] = "Calc Error"
+
+            return True, stats
         
-        return True, stats # stats contains your time math
+        return False, "G-code file not generated."
+
     except subprocess.CalledProcessError as e:
         return False, f"Slicer Error: {e.stderr}"
     except Exception as e:
