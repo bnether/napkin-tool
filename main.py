@@ -814,26 +814,22 @@ elif st.session_state.page == "Make a Part":
                     selected_p = st.selectbox("Select Destination Printer:", fleet_df['printer nickname'].tolist())
                     p_settings = fleet_df[fleet_df['printer nickname'] == selected_p].iloc[0]
                     
-                    # Display the dynamic settings the user is about to use
-                    st.info(f"**Material:** {p_settings['material']} | **Infill:** {p_settings['infil']} | **Walls:** {p_settings['wall count']}")
+                    # --- SIMPLE CLEAN INFO BOX ---
+                    # Only shows: Nickname (Brand Model) | Material
+                    printer_identity = f"{selected_p} ({p_settings['brand']} {p_settings['model']})"
+                    st.info(f"**Printer:** {printer_identity}  \n**Material:** {p_settings['material']}")
                     
-                    # --- WITHIN THE SLICING ENGINE MENU IN "MAKE A PART" ---
                     if st.button("Generate G-Code (Slice)", use_container_width=True):
                         with st.spinner(f"Slicing for {selected_p}..."):
-                            
-                            # 1. This matches the filename logic we established
-                            # Format: "Brand Model Material Nozzlemm"
+                            # Ensure we match the file naming convention exactly
                             hardware_name = f"{p_settings['brand']} {p_settings['model']} {p_settings['material']} {p_settings['nozzle size']}mm"
                             
-                            # 2. This is the missing piece! 
-                            # It pulls the dynamic choices you saved in the Profile page.
                             overrides = {
                                 "infill": str(p_settings['infil']).replace('%', ''),
-                                "walls": p_settings.get('wall count', 3),
+                                "walls": int(p_settings.get('wall count', 3)),
                                 "supports": p_settings['supports']
                             }
                             
-                            # 3. Add 'overrides' as the 4th argument here
                             success, result = run_slicing_workflow("part.stl", "part.gcode", hardware_name, overrides)
                             
                             if success:
