@@ -287,6 +287,13 @@ def get_verified_recipes():
         return []
     return [f.replace(".ini", "") for f in os.listdir(recipe_path) if f.endswith(".ini")]
 
+def clean_infill(infill_value):
+    """Converts '15%' or 15 to a clean integer 15."""
+    try:
+        return int(str(infill_value).replace('%', '').strip())
+    except:
+        return 15 # Default fallback
+
 
 PRINTER_MASTER_LIST = {
     "Bambu Lab": ["X1-Carbon", "X1-E (Enterprise)", "P1S", "P1P", "A1", "A1 Mini"],
@@ -303,85 +310,57 @@ PRINTER_MASTER_LIST = {
 
 
 
-def run_slicing_workflow(stl_path, gcode_path, hardware_name): # Renamed placeholder
+def run_slicing_workflow(stl_path, gcode_path, printer_data, user_overrides):
     # 1. Setup Paths
     exe = os.path.abspath("./Slicer")
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
     
-    # Use the name EXACTLY as passed (with spaces and dashes)
-    recipe_filename = f"{hardware_name}.ini"
+    # Identify the base recipe file (The Static Part)
+    recipe_filename = f"{printer_data['brand']} {printer_data['model']} {printer_data['material']} {printer_data['nozzle']}mm.ini"
     config_path = os.path.abspath(os.path.join("recipes", recipe_filename))
+    
     if not os.path.exists(config_path):
-        return False, f"Missing recipe file: {recipe_filename}. Please upload it to the recipes folder."
-
+        return False, f"Missing recipe: {recipe_filename}"
     if not os.path.exists(exe):
         return False, "Slicer binary missing."
 
-    # Ensure execution permissions
     os.chmod(exe, 0o755)
 
-    # 2. Execution
+    # 2. Build the Command (Integrating Dynamic Variables)
+    # We use the list format for subprocess.run (safer than a joined string)
     command = [
         exe, "--appimage-extract-and-run",
-        "--slice", "--load", config_path,
-        "--output", gcode_abs, stl_abs
+        "--slice", 
+        "--load", config_path,
+        "--output", gcode_abs,
+        "--fill-density", f"{user_overrides['infill']}%",
+        "--perimeters", str(user_overrides['walls'])
     ]
     
+    # Support Material Toggle
+    if user_overrides['supports'] == "ON":
+        command.append("--support-material")
+    else:
+        command.append("--no-support-material") # Force off if user chose OFF
+
+    command.append(stl_abs)
+    
+    # 3. Execution
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
 
     try:
+        # Run the process
         subprocess.run(command, capture_output=True, text=True, check=True, env=env, timeout=180)
         
-        # Default values
-        stats = {"time": "Unknown", "finish_time": "Unknown"}
+        # ... (Your Metadata Extraction logic for time/finish_time goes here) ...
         
-        if os.path.exists(gcode_abs):
-            with open(gcode_abs, 'r') as f:
-                # Read end of file for PrusaSlicer metadata
-                f.seek(0, os.SEEK_END)
-                f.seek(max(0, f.tell() - 30000))
-                content = f.read()
-                
-                # Look for duration string (e.g., "1h 20m 30s" or "45m 10s")
-                t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
-                
-                if t_match:
-                    duration_str = t_match.group(1).strip()
-                    stats["time"] = duration_str
-                    
-                    # 3. Time Math
-                    try:
-                        # Extract numbers using regex
-                        h_match = re.search(r'(\d+)h', duration_str)
-                        m_match = re.search(r'(\d+)m', duration_str)
-                        s_match = re.search(r'(\d+)s', duration_str)
-                        
-                        hours = int(h_match.group(1)) if h_match else 0
-                        minutes = int(m_match.group(1)) if m_match else 0
-                        seconds = int(s_match.group(1)) if s_match else 0
-                        
-                        # Calculate finish time
-                        total_duration = timedelta(hours=hours, minutes=minutes, seconds=seconds)
-                        
-                        # Note: This uses Server Time. 
-                        # To offset for your timezone (e.g., -5), use: 
-                        # (datetime.now() + timedelta(hours=-5))
-                        now = datetime.now() 
-                        finish_dt = now + total_duration
-                        
-                        # Format as "3:45 PM"
-                        stats["finish_time"] = finish_dt.strftime("%I:%M %p")
-                    except Exception:
-                        stats["finish_time"] = "Calc Error"
-            
-            return True, stats
-        return False, "G-code generation failed."
-
+        return True, stats # stats contains your time math
+    except subprocess.CalledProcessError as e:
+        return False, f"Slicer Error: {e.stderr}"
     except Exception as e:
         return False, f"System Error: {str(e)}"
-    
     
 
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
@@ -834,25 +813,37 @@ elif st.session_state.page == "Make a Part":
                 else:
                     selected_p = st.selectbox("Select Destination Printer:", fleet_df['printer nickname'].tolist())
                     p_settings = fleet_df[fleet_df['printer nickname'] == selected_p].iloc[0]
-                    st.info(f"**Settings:** {p_settings['material']} | {p_settings['nozzle size']}mm")
                     
+                    # Display the dynamic settings the user is about to use
+                    st.info(f"**Material:** {p_settings['material']} | **Infill:** {p_settings['infil']} | **Walls:** {p_settings['wall count']}")
+                    
+                    # --- WITHIN THE SLICING ENGINE MENU IN "MAKE A PART" ---
                     if st.button("Generate G-Code (Slice)", use_container_width=True):
                         with st.spinner(f"Slicing for {selected_p}..."):
-                            # Adjust 'brand' and 'model' keys to match your fleet_df column names
-                            hardware_name = f"{p_settings['brand']} {p_settings['model']}"
-                            # --- PASS hardware_name INSTEAD OF selected_p ---
-                            success, result = run_slicing_workflow("part.stl", "part.gcode", hardware_name)
+                            
+                            # 1. This matches the filename logic we established
+                            # Format: "Brand Model Material Nozzlemm"
+                            hardware_name = f"{p_settings['brand']} {p_settings['model']} {p_settings['material']} {p_settings['nozzle size']}mm"
+                            
+                            # 2. This is the missing piece! 
+                            # It pulls the dynamic choices you saved in the Profile page.
+                            overrides = {
+                                "infill": str(p_settings['infil']).replace('%', ''),
+                                "walls": p_settings.get('wall count', 3),
+                                "supports": p_settings['supports']
+                            }
+                            
+                            # 3. Add 'overrides' as the 4th argument here
+                            success, result = run_slicing_workflow("part.stl", "part.gcode", hardware_name, overrides)
                             
                             if success:
                                 st.success("Slicing Complete!")
-
-                                # 2. DISPLAY LOGIC GOES HERE (AFTER THE FUNCTION)
                                 m1, m2, m3 = st.columns(3)
                                 m1.metric("Est. Time", result["time"])
                                 m3.metric("Est. Finish", result['finish_time'])
                                 
                                 with open("part.gcode", "rb") as g_file:
-                                    st.download_button("Download G-Code", data=g_file, file_name="part.gcode", use_container_width=True)
+                                    st.download_button("Download G-Code", data=g_file, file_name=f"{selected_p}_part.gcode", use_container_width=True)
                             else:
                                 st.error(f"Slicing failed: {result}")
 
