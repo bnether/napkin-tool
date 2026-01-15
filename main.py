@@ -1027,7 +1027,8 @@ elif st.session_state.page == "Contact":
         st.form_submit_button("Send Message")
 
 
-# 7. --- PROFILE PAGE (With integrated Login) ---
+
+# --- PROFILE PAGE ---
 elif st.session_state.page == "Profile":
     # 1. Check Auth Status
     if not st.session_state.authenticated:
@@ -1043,7 +1044,6 @@ elif st.session_state.page == "Profile":
                 email_clean = email_attempt.lower().strip()
                 if email_clean in BETA_USERS:
                     user_data = BETA_USERS[email_clean]
-                    # SECURE THE DATA INTO SESSION STATE
                     st.session_state.authenticated = True
                     st.session_state.user_email = email_clean
                     st.session_state.user_company = user_data.get('company', 'General')
@@ -1093,80 +1093,56 @@ elif st.session_state.page == "Profile":
             stat2.metric("Printers Connected", f"{printer_count}")
             stat3.metric("Plan", user['plan'])
             
-
             st.markdown("---")
         
             # --- UNIFIED PRINTER FLEET MANAGER ---
             st.markdown("### Manage Printers")
             
-            # 1. Fetch data once
             fleet_df = get_my_fleet()
-            
-            # 2. Create Dropdown Options
             printer_list = []
             if not fleet_df.empty:
                 printer_list = fleet_df['printer nickname'].tolist()
             
-            # Add the "Add New" option to the end of the list
             options = printer_list + ["+ Add New Printer"]
-            
-            # 3. Selection Logic
             selection = st.selectbox("Select a printer to manage or add a new one:", options)
 
             # --- FORM LOGIC ---
             if selection == "+ Add New Printer":
                 st.info("Configuring a new printer for your fleet.")
                 
-                # Brand/Model selectors outside the form for dynamic filtering
                 selected_brand = st.selectbox("Printer Brand", list(PRINTER_MASTER_LIST.keys()))
                 available_models = PRINTER_MASTER_LIST.get(selected_brand, ["Standard/Generic"])
                 model = st.selectbox("Model", available_models)
 
-                # 1. Scan your recipes folder
-            verified_list = get_verified_recipes()
-
-            # 2. Start the Form
-            with st.form("printer_add_form"):
-                col1, col2 = st.columns(2)
-                
-                # 3. Create the filtering logic
-                # We look for files starting with "Brand Model"
+                # Filter logic based on existing .ini files
+                verified_list = get_verified_recipes()
                 prefix = f"{selected_brand} {model}"
                 
-                # Filter the options based on what files actually exist
                 m_all = ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"]
                 m_valid = [m for m in m_all if any(f"{prefix} {m}" in r for r in verified_list)]
                 
-                n_all = [0.25, 0.4, 0.6, 0.8]
-                # This checks for the string "Brand Model Material Nozzlemm"
-                # Note: We need a material to check nozzle, so we'll use a temporary one or check all
+                n_all = [0.2, 0.4, 0.6, 0.8]
                 n_valid = [n for n in n_all if any(f"{n}mm" in r and prefix in r for r in verified_list)]
 
-                with col1:
-                    nickname = st.text_input("Printer Nickname", placeholder="e.g. Lab Bench 1")
-                    
-                    # UI GUARDRAIL: Only show materials you have files for
-                    if m_valid:
-                        material = st.selectbox("Default Material", m_valid)
-                    else:
-                        st.error("No material profiles found for this model.")
-                        material = None
-
-                with col2:
-                    # UI GUARDRAIL: Only show nozzles you have files for
-                    if n_valid:
-                        nozzle = st.selectbox("Nozzle Size (mm)", n_valid)
-                    else:
-                        st.error("No nozzle profiles found.")
-                        nozzle = 0.4
-                        
-                    bed_type = st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"])
+                with st.form("printer_add_form"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        nickname = st.text_input("Printer Nickname", placeholder="e.g. Lab Bench 1")
+                        material = st.selectbox("Default Material", m_valid if m_valid else ["No Profiles Found"], disabled=not m_valid)
+                    with col2:
+                        nozzle = st.selectbox("Nozzle Size (mm)", n_valid if n_valid else [0.4], disabled=not n_valid)
+                        bed_type = st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"])
 
                     infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=15)
                     walls = st.number_input("Wall Count", min_value=1, max_value=10, value=3)
                     supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True)
 
-                    submitted = st.form_submit_button("Add to Fleet", use_container_width=True)
+                    submit_disabled = not (m_valid and n_valid)
+                    submitted = st.form_submit_button("Add to Fleet", use_container_width=True, disabled=submit_disabled)
+                    
+                    if submit_disabled:
+                        st.warning(f"No recipe files found for {prefix} in /recipes folder.")
+
                     if submitted:
                         if not nickname:
                             st.error("Please provide a nickname.")
@@ -1186,13 +1162,11 @@ elif st.session_state.page == "Profile":
                     
                     col1, col2 = st.columns(2)
                     with col1:
-                        # Material selection (find index for default value)
                         m_list = ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"]
                         current_m = p_data['material'] if p_data['material'] in m_list else "PLA"
                         new_material = st.selectbox("Material", m_list, index=m_list.index(current_m))
                         
-                        # Nozzle selection
-                        n_list = [0.25, 0.4, 0.6, 0.8]
+                        n_list = [0.2, 0.4, 0.6, 0.8]
                         try:
                             current_n = float(p_data['nozzle size'])
                             n_idx = n_list.index(current_n)
@@ -1203,15 +1177,12 @@ elif st.session_state.page == "Profile":
                         b_list = ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"]
                         current_b = p_data['bed type'] if p_data['bed type'] in b_list else "Textured PEI"
                         new_bed = st.selectbox("Bed Type", b_list, index=b_list.index(current_b))
-                        
                         new_walls = st.number_input("Wall Count", min_value=1, max_value=10, value=int(p_data.get('wall count', 3)))
 
-                    # Infill math
                     try:
                         current_infill = int(str(p_data['infil']).replace('%', ''))
                     except: current_infill = 15
                     new_infill = st.select_slider("Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=current_infill)
-                    
                     new_supports = st.radio("Supports", ["ON", "OFF"], horizontal=True, index=0 if p_data['supports'] == "ON" else 1)
                     
                     st.markdown("---")
