@@ -280,7 +280,12 @@ def get_my_fleet():
         st.error(f"Fleet Fetch Error: {e}")
         return pd.DataFrame()
 
-
+def get_verified_recipes():
+    """Returns a list of all .ini filenames in the recipes folder without the extension."""
+    recipe_path = "./recipes"
+    if not os.path.exists(recipe_path):
+        return []
+    return [f.replace(".ini", "") for f in os.listdir(recipe_path) if f.endswith(".ini")]
 
 
 PRINTER_MASTER_LIST = {
@@ -1117,14 +1122,45 @@ elif st.session_state.page == "Profile":
                 available_models = PRINTER_MASTER_LIST.get(selected_brand, ["Standard/Generic"])
                 model = st.selectbox("Model", available_models)
 
-                with st.form("printer_add_form"):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        nickname = st.text_input("Printer Nickname", placeholder="e.g. Lab Bench 1")
-                        material = st.selectbox("Default Material", ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"])
-                    with col2:
-                        nozzle = st.selectbox("Nozzle Size (mm)", [0.25, 0.4, 0.6, 0.8], index=1)
-                        bed_type = st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"])
+                # 1. Scan your recipes folder
+            verified_list = get_verified_recipes()
+
+            # 2. Start the Form
+            with st.form("printer_add_form"):
+                col1, col2 = st.columns(2)
+                
+                # 3. Create the filtering logic
+                # We look for files starting with "Brand Model"
+                prefix = f"{selected_brand} {model}"
+                
+                # Filter the options based on what files actually exist
+                m_all = ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"]
+                m_valid = [m for m in m_all if any(f"{prefix} {m}" in r for r in verified_list)]
+                
+                n_all = [0.25, 0.4, 0.6, 0.8]
+                # This checks for the string "Brand Model Material Nozzlemm"
+                # Note: We need a material to check nozzle, so we'll use a temporary one or check all
+                n_valid = [n for n in n_all if any(f"{n}mm" in r and prefix in r for r in verified_list)]
+
+                with col1:
+                    nickname = st.text_input("Printer Nickname", placeholder="e.g. Lab Bench 1")
+                    
+                    # UI GUARDRAIL: Only show materials you have files for
+                    if m_valid:
+                        material = st.selectbox("Default Material", m_valid)
+                    else:
+                        st.error("No material profiles found for this model.")
+                        material = None
+
+                with col2:
+                    # UI GUARDRAIL: Only show nozzles you have files for
+                    if n_valid:
+                        nozzle = st.selectbox("Nozzle Size (mm)", n_valid)
+                    else:
+                        st.error("No nozzle profiles found.")
+                        nozzle = 0.4
+                        
+                    bed_type = st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"])
 
                     infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=15)
                     walls = st.number_input("Wall Count", min_value=1, max_value=10, value=3)
