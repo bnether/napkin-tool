@@ -1155,6 +1155,7 @@ elif st.session_state.page == "Profile":
 
             else:
                 # --- EDIT/DELETE EXISTING PRINTER ---
+                # This 'else' now correctly matches the 'if selection == "+ Add New Printer":'
                 p_data = fleet_df[fleet_df['printer nickname'] == selection].iloc[0]
                 
                 with st.form("printer_edit_form"):
