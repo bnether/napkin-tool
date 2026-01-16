@@ -1046,7 +1046,7 @@ elif st.session_state.page == "Contact":
 
 
 
-# 7. --- PROFILE PAGE ---
+# --- PROFILE PAGE ---
 elif st.session_state.page == "Profile":
     # 1. Check Auth Status
     if not st.session_state.authenticated:
@@ -1121,7 +1121,7 @@ elif st.session_state.page == "Profile":
 
             is_new = (selection == "+ Add New Printer")
 
-            # 1. INITIALIZE DATA BASED ON SELECTION
+            # 1. INITIALIZE DATA
             if is_new:
                 st.info("Configuring a new printer for your fleet.")
                 p_brand = st.selectbox("Printer Brand", list(PRINTER_MASTER_LIST.keys()))
@@ -1151,42 +1151,51 @@ elif st.session_state.page == "Profile":
                 except:
                     init_infill = 15
 
-            # 2. FILTER VALID RECIPES (Based on Brand/Model selected/loaded)
+            # 2. FILTER VALID RECIPES (Dynamic Logic)
             verified_list = get_verified_recipes()
             prefix = f"{p_brand} {p_model}"
+
             m_all = ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"]
             m_valid = [m for m in m_all if any(f"{prefix} {m}" in r for r in verified_list)]
             n_all = [0.2, 0.4, 0.6, 0.8]
             n_valid = [n for n in n_all if any(f"{n}mm" in r and prefix in r for r in verified_list)]
 
-            # 3. CONSOLIDATED CONFIGURATION FORM
+            # 3. UNIFIED FORM
             with st.form("printer_config_form"):
                 col1, col2 = st.columns(2)
                 with col1:
                     nickname = st.text_input("Printer Nickname", value=init_nickname, disabled=not is_new, placeholder="e.g. Lab Bench 1")
                     
-                    m_idx = m_valid.index(init_material) if init_material in m_valid else 0
+                    # SAFETY: Reset index if the previous choice is no longer valid
+                    m_idx = 0
+                    if init_material in m_valid:
+                        m_idx = m_valid.index(init_material)
+                    
                     material = st.selectbox("Default Material", m_valid if m_valid else ["No Profiles Found"], index=m_idx, disabled=not m_valid)
                     
                 with col2:
-                    n_idx = n_valid.index(init_nozzle) if init_nozzle in n_valid else 1
+                    # SAFETY: Reset index if the nozzle size doesn't exist for this model
+                    n_idx = 0
+                    if n_valid:
+                        try:
+                            n_idx = n_valid.index(init_nozzle)
+                        except (ValueError, IndexError):
+                            n_idx = 0
+
                     nozzle = st.selectbox("Nozzle Size (mm)", n_valid if n_valid else [0.4], index=n_idx, disabled=not n_valid)
                     
-                    # GREYED OUT BED TYPE (As requested)
-                    st.selectbox("Bed Type", ["Coming Soon..."], index=0, disabled=True)
+                    # Bed Type Greyed Out (Preserving init_bed for the database)
+                    st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"], index=0, disabled=True, help="Bed type selection is currently disabled.")
 
                 infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=init_infill)
                 walls = st.number_input("Wall Count", min_value=1, max_value=10, value=init_walls)
                 supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True, index=0 if init_supports == "ON" else 1)
 
                 st.markdown("---")
-                
                 if is_new:
                     submit = st.form_submit_button("Add to Fleet", use_container_width=True, disabled=not (m_valid and n_valid))
-                    if submit:
-                        if not nickname:
-                            st.error("Please provide a nickname.")
-                        elif add_to_printers_sheet(p_brand, p_model, nickname, material, infill, supports, nozzle, init_bed, walls):
+                    if submit and nickname:
+                        if add_to_printers_sheet(p_brand, p_model, nickname, material, infill, supports, nozzle, init_bed, walls):
                             st.success(f"{nickname} added!")
                             st.cache_data.clear()
                             st.rerun()
@@ -1197,7 +1206,7 @@ elif st.session_state.page == "Profile":
                     
                     if update:
                         if update_printer_in_sheet(selection, material, infill, supports, nozzle, init_bed, walls):
-                            st.success("Changes Saved!")
+                            st.success("Configuration Updated!")
                             st.cache_data.clear()
                             st.rerun()
                     
