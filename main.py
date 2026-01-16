@@ -18,6 +18,7 @@ from PIL import Image
 import io
 import base64
 from io import BytesIO
+from streamlit_cookies_controller import CookieController
 
 # Registry Spreadsheet
 conn = st.connection("gsheets", type=GSheetsConnection)
@@ -162,6 +163,7 @@ if "show_printer_manager" not in st.session_state:
     st.session_state.show_printer_manager = False
 if "user_tier" not in st.session_state:
     st.session_state.user_tier = "Starter"  # Default value
+
 
 def set_page(page_name):
     st.session_state.page = page_name
@@ -1094,6 +1096,7 @@ elif st.session_state.page == "Profile":
             if st.button("Log Out", use_container_width=True):
                 st.session_state.authenticated = False
                 st.session_state.user_email = None
+                controller.remove('user_email_cookie')
                 st.rerun()
 
         with prof_col2:
