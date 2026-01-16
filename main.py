@@ -1046,7 +1046,7 @@ elif st.session_state.page == "Contact":
 
 
 
-# --- PROFILE PAGE ---
+# 7. --- PROFILE PAGE ---
 elif st.session_state.page == "Profile":
     # 1. Check Auth Status
     if not st.session_state.authenticated:
@@ -1106,9 +1106,8 @@ elif st.session_state.page == "Profile":
             stat1, stat2, stat3 = st.columns(3)
             
             stat1.metric("Feedback Given", f"{user['feedback given']}")
-            fleet = get_my_fleet()
-            printer_count = len(fleet)
-            stat2.metric("Printers Connected", f"{printer_count}")
+            fleet_df = get_my_fleet()
+            stat2.metric("Printers Connected", f"{len(fleet_df)}")
             stat3.metric("Plan", user['plan'])
             
             st.markdown("---")
@@ -1116,112 +1115,98 @@ elif st.session_state.page == "Profile":
             # --- UNIFIED PRINTER FLEET MANAGER ---
             st.markdown("### Manage Printers")
             
-            fleet_df = get_my_fleet()
-            printer_list = []
-            if not fleet_df.empty:
-                printer_list = fleet_df['printer nickname'].tolist()
-            
-            options = printer_list + ["+ Add New Printer"]
+            printer_list = fleet_df['printer nickname'].tolist() if not fleet_df.empty else []
+            options = ["+ Add New Printer"] + printer_list
             selection = st.selectbox("Select a printer to manage or add a new one:", options)
 
-            # --- FORM LOGIC ---
-            if selection == "+ Add New Printer":
+            is_new = (selection == "+ Add New Printer")
+
+            # 1. INITIALIZE DATA BASED ON SELECTION
+            if is_new:
                 st.info("Configuring a new printer for your fleet.")
+                p_brand = st.selectbox("Printer Brand", list(PRINTER_MASTER_LIST.keys()))
+                p_model = st.selectbox("Model", PRINTER_MASTER_LIST.get(p_brand, ["Standard/Generic"]))
                 
-                selected_brand = st.selectbox("Printer Brand", list(PRINTER_MASTER_LIST.keys()))
-                available_models = PRINTER_MASTER_LIST.get(selected_brand, ["Standard/Generic"])
-                model = st.selectbox("Model", available_models)
-
-                # Filter logic based on existing .ini files
-                verified_list = get_verified_recipes()
-                prefix = f"{selected_brand} {model}"
+                init_nickname = ""
+                init_material = "PLA"
+                init_nozzle = 0.4
+                init_bed = "Textured PEI"
+                init_infill = 15
+                init_walls = 3
+                init_supports = "OFF"
+            else:
+                p_data = fleet_df[fleet_df['printer nickname'] == selection].iloc[0]
+                p_brand = p_data['brand']
+                p_model = p_data['model']
+                st.caption(f"Hardware: {p_brand} {p_model}")
                 
-                m_all = ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"]
-                m_valid = [m for m in m_all if any(f"{prefix} {m}" in r for r in verified_list)]
-                
-                n_all = [0.2, 0.4, 0.6, 0.8]
-                n_valid = [n for n in n_all if any(f"{n}mm" in r and prefix in r for r in verified_list)]
+                init_nickname = p_data['printer nickname']
+                init_material = p_data['material']
+                init_nozzle = float(p_data['nozzle size'])
+                init_bed = p_data['bed type']
+                init_walls = int(p_data.get('wall count', 3))
+                init_supports = p_data['supports']
+                try:
+                    init_infill = int(str(p_data['infil']).replace('%', ''))
+                except:
+                    init_infill = 15
 
-                with st.form("printer_add_form"):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        nickname = st.text_input("Printer Nickname", placeholder="e.g. Lab Bench 1")
-                        material = st.selectbox("Default Material", m_valid if m_valid else ["No Profiles Found"], disabled=not m_valid)
-                    with col2:
-                        nozzle = st.selectbox("Nozzle Size (mm)", n_valid if n_valid else [0.4], disabled=not n_valid)
-                        bed_type = st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"])
+            # 2. FILTER VALID RECIPES (Based on Brand/Model selected/loaded)
+            verified_list = get_verified_recipes()
+            prefix = f"{p_brand} {p_model}"
+            m_all = ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"]
+            m_valid = [m for m in m_all if any(f"{prefix} {m}" in r for r in verified_list)]
+            n_all = [0.2, 0.4, 0.6, 0.8]
+            n_valid = [n for n in n_all if any(f"{n}mm" in r and prefix in r for r in verified_list)]
 
-                    infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=15)
-                    walls = st.number_input("Wall Count", min_value=1, max_value=10, value=3)
-                    supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True)
-
-                    submit_disabled = not (m_valid and n_valid)
-                    submitted = st.form_submit_button("Add to Fleet", use_container_width=True, disabled=submit_disabled)
+            # 3. CONSOLIDATED CONFIGURATION FORM
+            with st.form("printer_config_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    nickname = st.text_input("Printer Nickname", value=init_nickname, disabled=not is_new, placeholder="e.g. Lab Bench 1")
                     
-                    if submit_disabled:
-                        st.warning(f"No recipe files found for {prefix} in /recipes folder.")
+                    m_idx = m_valid.index(init_material) if init_material in m_valid else 0
+                    material = st.selectbox("Default Material", m_valid if m_valid else ["No Profiles Found"], index=m_idx, disabled=not m_valid)
+                    
+                with col2:
+                    n_idx = n_valid.index(init_nozzle) if init_nozzle in n_valid else 1
+                    nozzle = st.selectbox("Nozzle Size (mm)", n_valid if n_valid else [0.4], index=n_idx, disabled=not n_valid)
+                    
+                    # GREYED OUT BED TYPE (As requested)
+                    st.selectbox("Bed Type", ["Coming Soon..."], index=0, disabled=True)
 
-                    if submitted:
+                infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=init_infill)
+                walls = st.number_input("Wall Count", min_value=1, max_value=10, value=init_walls)
+                supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True, index=0 if init_supports == "ON" else 1)
+
+                st.markdown("---")
+                
+                if is_new:
+                    submit = st.form_submit_button("Add to Fleet", use_container_width=True, disabled=not (m_valid and n_valid))
+                    if submit:
                         if not nickname:
                             st.error("Please provide a nickname.")
-                        else:
-                            with st.spinner("Saving..."):
-                                if add_to_printers_sheet(selected_brand, model, nickname, material, infill, supports, nozzle, bed_type, walls):
-                                    st.success(f"{nickname} added!")
-                                    st.cache_data.clear()
-                                    st.rerun()
-
-            else:
-                # --- EDIT/DELETE EXISTING PRINTER ---
-                # This 'else' now correctly matches the 'if selection == "+ Add New Printer":'
-                p_data = fleet_df[fleet_df['printer nickname'] == selection].iloc[0]
-                
-                with st.form("printer_edit_form"):
-                    st.caption(f"Hardware: {p_data['brand']} {p_data['model']}")
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        m_list = ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"]
-                        current_m = p_data['material'] if p_data['material'] in m_list else "PLA"
-                        new_material = st.selectbox("Material", m_list, index=m_list.index(current_m))
-                        
-                        n_list = [0.2, 0.4, 0.6, 0.8]
-                        try:
-                            current_n = float(p_data['nozzle size'])
-                            n_idx = n_list.index(current_n)
-                        except: n_idx = 1
-                        new_nozzle = st.selectbox("Nozzle (mm)", n_list, index=n_idx)
-
-                    with col2:
-                        b_list = ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"]
-                        current_b = p_data['bed type'] if p_data['bed type'] in b_list else "Textured PEI"
-                        new_bed = st.selectbox("Bed Type", b_list, index=b_list.index(current_b))
-                        new_walls = st.number_input("Wall Count", min_value=1, max_value=10, value=int(p_data.get('wall count', 3)))
-
-                    try:
-                        current_infill = int(str(p_data['infil']).replace('%', ''))
-                    except: current_infill = 15
-                    new_infill = st.select_slider("Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=current_infill)
-                    new_supports = st.radio("Supports", ["ON", "OFF"], horizontal=True, index=0 if p_data['supports'] == "ON" else 1)
-                    
-                    st.markdown("---")
-                    col_btn1, col_btn2 = st.columns(2)
-                    with col_btn1:
-                        update_btn = st.form_submit_button("Save Changes", use_container_width=True)
-                    with col_btn2:
-                        delete_btn = st.form_submit_button("Delete Printer", use_container_width=True)
-
-                    if update_btn:
-                        if update_printer_in_sheet(selection, new_material, new_infill, new_supports, new_nozzle, new_bed, new_walls):
-                            st.success("Updated!")
+                        elif add_to_printers_sheet(p_brand, p_model, nickname, material, infill, supports, nozzle, init_bed, walls):
+                            st.success(f"{nickname} added!")
                             st.cache_data.clear()
                             st.rerun()
-
-                    if delete_btn:
+                else:
+                    btn_col1, btn_col2 = st.columns(2)
+                    update = btn_col1.form_submit_button("Save Changes", use_container_width=True)
+                    delete = btn_col2.form_submit_button("Delete Printer", use_container_width=True)
+                    
+                    if update:
+                        if update_printer_in_sheet(selection, material, infill, supports, nozzle, init_bed, walls):
+                            st.success("Changes Saved!")
+                            st.cache_data.clear()
+                            st.rerun()
+                    
+                    if delete:
                         if delete_printer_from_sheet(selection):
-                            st.warning("Deleted.")
+                            st.warning(f"Deleted {selection}.")
                             st.cache_data.clear()
                             st.rerun()
+
 
 # 8. ADMIN VERIFICATION SYSTEM
 elif st.session_state.page == "Admin":
