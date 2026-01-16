@@ -18,38 +18,24 @@ from PIL import Image
 import io
 import base64
 from io import BytesIO
-from streamlit_cookies_controller import CookieController
-import extra_streamlit_components as stx
+# REMOVED: streamlit_cookies_controller
+import extra_streamlit_components as stx 
 
-# Registry Spreadsheet
+# --- 1. INITIALIZE COOKIE MANAGER ---
+cookie_manager = stx.CookieManager()
+
+# --- 2. REGISTRY FUNCTIONS (KEEP THESE) ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 @st.cache_data(ttl=10)
 def load_registry():
-    # 1. Pull the URL from the specific secrets path
     url = st.secrets["connections"]["gsheets"]["registry"]
-    
-    # 2. Connect and read the data
     df = conn.read(spreadsheet=url)
-    
-    # 3. Standardize column names (lowercase and no spaces)
     df.columns = [c.strip().lower() for c in df.columns]
-    
-    # 4. Cleanup the Email column
-    # Drop rows where email is missing
     df = df.dropna(subset=['email'])
-    # Force to string, strip whitespace, and lowercase for perfect matching
     df['email'] = df['email'].astype(str).str.strip().str.lower()
-    
-    # 5. Clean up numeric columns (Parts and Printers)
-    # pd.to_numeric with 'coerce' turns errors into NaN, then fillna(0) makes them 0
-    # .astype(int) ensures 0 decimal places (e.g., 5.0 becomes 5)
-    df['geedback given'] = pd.to_numeric(df['feedback given'], errors='coerce').fillna(0).astype(int)
-    df['printers'] = pd.to_numeric(df['printers'], errors='coerce').fillna(0).astype(int)
-    # Inside your load_registry function
     df['feedback given'] = pd.to_numeric(df['feedback given'], errors='coerce').fillna(0).astype(int)
-
-    # 6. Convert to the dictionary format your Profile page expects
+    df['printers'] = pd.to_numeric(df['printers'], errors='coerce').fillna(0).astype(int)
     return df.set_index('email').to_dict('index')
 
 def update_printer_count(email_to_update):
@@ -57,15 +43,10 @@ def update_printer_count(email_to_update):
         url = st.secrets["connections"]["gsheets"]["registry"]
         df = conn.read(spreadsheet=url, ttl=0)
         df.columns = [c.strip().lower() for c in df.columns]
-        
         mask = df['email'].str.strip().str.lower() == email_to_update.lower().strip()
-        
         if mask.any():
-            # Get current count, handle errors/empty, add 1
             current_val = pd.to_numeric(df.loc[mask, 'printers'], errors='coerce').fillna(0).astype(int)
             df.loc[mask, 'printers'] = int(current_val + 1)
-            
-            # Save back to sheet
             conn.update(spreadsheet=url, data=df)
             return True
     except Exception as e:
@@ -129,22 +110,17 @@ def increment_models_generated(email_to_update):
         st.error(f"Internal Increment Error: {e}")
     return False
 
-# Initialize
+# --- 3. INITIALIZE DATA ---
 try:
     BETA_USERS = load_registry()
 except Exception as e:
     st.error(f"Registry Connection Failed: {e}")
     BETA_USERS = {}
 
-
-
-# --- MASTER SESSION STATE INIT ---
-controller = CookieController() # Initialize the cookie manager
-
-# 1. Check for cookie IF not already authenticated
+# --- 4. MASTER SESSION STATE & AUTO-LOGIN ---
+# Replace your previous session state block with this:
 if not st.session_state.get("authenticated", False):
-    saved_email = controller.get('user_email_cookie')
-    # Use the BETA_USERS dictionary we loaded from GSheets earlier
+    saved_email = cookie_manager.get('user_email_cookie')
     if saved_email and saved_email in BETA_USERS:
         user_data = BETA_USERS[saved_email]
         st.session_state.authenticated = True
@@ -153,17 +129,24 @@ if not st.session_state.get("authenticated", False):
         st.session_state.user_name = user_data.get('name', 'User')
         st.session_state.user_tier = user_data.get('plan', 'Starter')
 
-# 2. Standard Session State Defaults
-st.session_state.setdefault("authenticated", False)
-st.session_state.setdefault("user_email", None)
-st.session_state.setdefault("page", "Home")
-st.session_state.setdefault("testimonial_index", 0)
-st.session_state.setdefault("home_tab", "Why Napkin")
-st.session_state.setdefault("initial_sync_done", False)
-st.session_state.setdefault("show_slicing_menu", False)
-st.session_state.setdefault("user_company", "")
-st.session_state.setdefault("user_name", "")
-st.session_state.setdefault("user_tier", "Starter")
+# Consolidated Defaults
+defaults = {
+    "authenticated": False,
+    "user_email": None,
+    "user_company": "",
+    "user_name": "",
+    "user_tier": "Starter",
+    "page": "Home",
+    "testimonial_index": 0,
+    "home_tab": "Why Napkin",
+    "initial_sync_done": False,
+    "show_slicing_menu": False,
+    "show_printer_setup": False,
+    "show_printer_manager": False
+}
+
+for key, value in defaults.items():
+    st.session_state.setdefault(key, value)
 
 
 def set_page(page_name):
@@ -1070,6 +1053,10 @@ elif st.session_state.page == "Profile":
                     st.session_state.user_company = user_data.get('company', 'General')
                     st.session_state.user_name = user_data.get('name', 'User')
                     st.session_state.user_tier = user_data.get('plan', 'Starter')
+                    
+                    # UPDATED: Set cookie using stx manager (valid for 30 days)
+                    cookie_manager.set('user_email_cookie', email_clean, expires_at=datetime.now() + timedelta(days=30))
+                    
                     st.rerun()
                 else:
                     st.error("No account associated with this email")
@@ -1097,7 +1084,8 @@ elif st.session_state.page == "Profile":
             if st.button("Log Out", use_container_width=True):
                 st.session_state.authenticated = False
                 st.session_state.user_email = None
-                controller.remove('user_email_cookie')
+                # UPDATED: Delete cookie using stx manager
+                cookie_manager.delete('user_email_cookie')
                 st.rerun()
 
         with prof_col2:
@@ -1170,7 +1158,6 @@ elif st.session_state.page == "Profile":
                 with col1:
                     nickname = st.text_input("Printer Nickname", value=init_nickname, disabled=not is_new, placeholder="e.g. Lab Bench 1")
                     
-                    # SAFETY: Reset index if the previous choice is no longer valid
                     m_idx = 0
                     if init_material in m_valid:
                         m_idx = m_valid.index(init_material)
@@ -1178,7 +1165,6 @@ elif st.session_state.page == "Profile":
                     material = st.selectbox("Default Material", m_valid if m_valid else ["No Profiles Found"], index=m_idx, disabled=not m_valid)
                     
                 with col2:
-                    # SAFETY: Reset index if the nozzle size doesn't exist for this model
                     n_idx = 0
                     if n_valid:
                         try:
@@ -1188,7 +1174,6 @@ elif st.session_state.page == "Profile":
 
                     nozzle = st.selectbox("Nozzle Size (mm)", n_valid if n_valid else [0.4], index=n_idx, disabled=not n_valid)
                     
-                    # Bed Type Greyed Out (Preserving init_bed for the database)
                     st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"], index=0, disabled=True, help="Bed type selection is currently disabled.")
 
                 infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=init_infill)
