@@ -19,6 +19,7 @@ import io
 import base64
 from io import BytesIO
 from streamlit_cookies_controller import CookieController
+import extra_streamlit_components as stx
 
 # Registry Spreadsheet
 conn = st.connection("gsheets", type=GSheetsConnection)
@@ -138,7 +139,21 @@ except Exception as e:
 
 
 # --- MASTER SESSION STATE INIT ---
-# Using setdefault ensures variables are only created if they don't already exist
+controller = CookieController() # Initialize the cookie manager
+
+# 1. Check for cookie IF not already authenticated
+if not st.session_state.get("authenticated", False):
+    saved_email = controller.get('user_email_cookie')
+    # Use the BETA_USERS dictionary we loaded from GSheets earlier
+    if saved_email and saved_email in BETA_USERS:
+        user_data = BETA_USERS[saved_email]
+        st.session_state.authenticated = True
+        st.session_state.user_email = saved_email
+        st.session_state.user_company = user_data.get('company', 'General')
+        st.session_state.user_name = user_data.get('name', 'User')
+        st.session_state.user_tier = user_data.get('plan', 'Starter')
+
+# 2. Standard Session State Defaults
 st.session_state.setdefault("authenticated", False)
 st.session_state.setdefault("user_email", None)
 st.session_state.setdefault("page", "Home")
@@ -146,23 +161,9 @@ st.session_state.setdefault("testimonial_index", 0)
 st.session_state.setdefault("home_tab", "Why Napkin")
 st.session_state.setdefault("initial_sync_done", False)
 st.session_state.setdefault("show_slicing_menu", False)
-
-
-# Initialize session state variables if they don't exist
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-if "user_email" not in st.session_state:
-    st.session_state.user_email = None
-if "user_company" not in st.session_state:
-    st.session_state.user_company = ""
-if "user_name" not in st.session_state:
-    st.session_state.user_name = ""
-if "show_printer_setup" not in st.session_state:
-    st.session_state.show_printer_setup = False
-if "show_printer_manager" not in st.session_state:
-    st.session_state.show_printer_manager = False
-if "user_tier" not in st.session_state:
-    st.session_state.user_tier = "Starter"  # Default value
+st.session_state.setdefault("user_company", "")
+st.session_state.setdefault("user_name", "")
+st.session_state.setdefault("user_tier", "Starter")
 
 
 def set_page(page_name):
