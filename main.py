@@ -896,9 +896,13 @@ elif st.session_state.page == "Help":
     
     st.markdown("### Setting up your 3D Printer")
     st.markdown("""
-    1. **Network Discovery:** Ensure your printer and computer are on the same Wi-Fi network.
-    2. **API Access:** Locate your API Key or Access Code within your printer's network settings.
-    3. **Direct Printing:** Once configured, you can send generated parts straight to the print bed from this software, without leaving the shop floor.
+    1. **Access the Profile Tab:** Navigate to the Profile page from the top navigation bar. You must be logged in to manage your fleet.
+    2. **Identify Your Hardware:** Under the Manage Printers section, select "+ Add New Printer" from the dropdown menu. Choose your brand and specific model from our master list. If your printer does not appear, please contact us to add it to our system.
+    3. **Set Your Nickname:** Give your printer a unique name (e.g., "Lab-Bench-A" or "Blue-P1S"). This helps you identify which machine to send files to later.
+    4. **Select Printer Configurations:** Select your material, nozzle size, and bed type for your hardware. If options are grayed out or missing, these configurations are not yet available. Please contact us to add them to our system.
+    5. **Choose Default Settings:** Select your default settings (infill, walls, supports).
+    6. ** Save to Fleet:** Click "Add to Fleet." Your settings are now saved securely to your company’s registry.
+    7. **Manage Printers:** If you want to edit the configurations or default settings for your printer (e.g. change material), select the printer's nickname from the dropdown menu, apply the changes and click 'Save Changes' to update the profile instantly.
     """)
     st.markdown("---")
     st.markdown("### Frequently Asked Questions")
