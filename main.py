@@ -117,10 +117,17 @@ except Exception as e:
     st.error(f"Registry Connection Failed: {e}")
     BETA_USERS = {}
 
-# --- 4. MASTER SESSION STATE & AUTO-LOGIN ---
-# Replace your previous session state block with this:
+# --- MASTER SESSION STATE & AUTO-LOGIN ---
+# 1. Check for cookie IF not already authenticated
 if not st.session_state.get("authenticated", False):
     saved_email = cookie_manager.get('user_email_cookie')
+    
+    # If the manager is still "handshaking" with the browser, saved_email might be None
+    # We use a placeholder check to prevent the script from finishing until the cookie is read
+    if saved_email is None:
+        # This gives the browser a moment to return the cookie value
+        st.stop() 
+
     if saved_email and saved_email in BETA_USERS:
         user_data = BETA_USERS[saved_email]
         st.session_state.authenticated = True
