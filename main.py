@@ -139,25 +139,27 @@ except Exception as e:
 
 
 # --- MASTER SESSION STATE INIT ---
-# 1. Initialize the manager
 cookie_manager = stx.CookieManager()
 
-# 2. Check for cookie IF not already authenticated in session state
+# IMPORTANT: If the manager hasn't loaded yet, it returns None. 
+# We wait until it's ready before checking the login.
+saved_email = cookie_manager.get('user_email_cookie')
+
 if not st.session_state.get("authenticated", False):
-    # This retrieves the email from the browser
-    saved_email = cookie_manager.get('user_email_cookie')
-    
-    # If a cookie is found, log them in and FORCE a rerun
-    if saved_email and saved_email in BETA_USERS:
-        user_data = BETA_USERS[saved_email]
-        st.session_state.authenticated = True
-        st.session_state.user_email = saved_email
-        st.session_state.user_company = user_data.get('company', 'General')
-        st.session_state.user_name = user_data.get('name', 'User')
-        st.session_state.user_tier = user_data.get('plan', 'Starter')
-        
-        # CRITICAL: This refresh tells Streamlit to show the "Logged In" UI
-        st.rerun()
+    # If saved_email is NOT None, it means the browser has responded
+    if saved_email:
+        if saved_email in BETA_USERS:
+            user_data = BETA_USERS[saved_email]
+            st.session_state.authenticated = True
+            st.session_state.user_email = saved_email
+            st.session_state.user_company = user_data.get('company', 'General')
+            st.session_state.user_name = user_data.get('name', 'User')
+            st.session_state.user_tier = user_data.get('plan', 'Starter')
+            st.rerun() # Refresh to show the logged-in UI
+    else:
+        # If saved_email is None, the component is still "waking up."
+        # We don't stop the whole app, but we don't try to log in yet.
+        pass
 
 # 2. Standard Session State Defaults
 st.session_state.setdefault("authenticated", False)
