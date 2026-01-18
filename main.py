@@ -139,12 +139,15 @@ except Exception as e:
 
 
 # --- MASTER SESSION STATE INIT ---
-controller = CookieController() # Initialize the cookie manager
+# 1. Initialize the new cookie manager
+cookie_manager = stx.CookieManager() 
 
-# 1. Check for cookie IF not already authenticated
+# 2. Check for cookie IF not already authenticated
 if not st.session_state.get("authenticated", False):
-    saved_email = controller.get('user_email_cookie')
-    # Use the BETA_USERS dictionary we loaded from GSheets earlier
+    # Use .get() from the new cookie_manager
+    saved_email = cookie_manager.get('user_email_cookie')
+    
+    # Check if we have a valid email in our registry
     if saved_email and saved_email in BETA_USERS:
         user_data = BETA_USERS[saved_email]
         st.session_state.authenticated = True
