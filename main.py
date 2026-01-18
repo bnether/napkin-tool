@@ -1088,7 +1088,7 @@ elif st.session_state.page == "Profile":
                     cookie_manager.set(
                         'user_email_cookie', 
                         email_clean, 
-                        expires_at=datetime.now() + timedelta(days=30) # Keeps you logged in for a month
+                        expires_at=datetime.now() + timedelta(days=30)
                     )
                     st.rerun()
                 else:
@@ -1115,14 +1115,9 @@ elif st.session_state.page == "Profile":
             ''', unsafe_allow_html=True)
             
             if st.button("Log Out", use_container_width=True):
-                # 1. Clear session state immediately
                 st.session_state.authenticated = False
                 st.session_state.user_email = None
-                
-                # 2. Delete the cookie (Using the same 'cookie_manager' variable)
                 cookie_manager.delete('user_email_cookie')
-                
-                # 3. Force a rerun to clear the UI and return to the login screen
                 st.rerun()
 
         with prof_col2:
@@ -1149,12 +1144,22 @@ elif st.session_state.page == "Profile":
             selection = st.selectbox("Select a printer to manage or add a new one:", options)
 
             is_new = (selection == "+ Add New Printer")
+            verified_list = get_verified_recipes()
 
-            # 1. INITIALIZE DATA
+            # 1. INITIALIZE DATA (DYNAMIC LOGIC)
             if is_new:
                 st.info("Configuring a new printer for your fleet.")
-                p_brand = st.selectbox("Printer Brand", list(PRINTER_MASTER_LIST.keys()))
-                p_model = st.selectbox("Model", PRINTER_MASTER_LIST.get(p_brand, ["Standard/Generic"]))
+                
+                # Dynamic Brand Selection based on available .ini files
+                available_brands = sorted(list(set([f.split(' ')[0] for f in verified_list])))
+                p_brand = st.selectbox("Printer Brand", available_brands if available_brands else ["No Profiles Found"])
+                
+                # Dynamic Model Selection based on Brand
+                available_models = sorted(list(set([
+                    f.split(f"{p_brand} ")[1].split(' ')[0] 
+                    for f in verified_list if f.startswith(p_brand)
+                ])))
+                p_model = st.selectbox("Model", available_models if available_models else ["Standard/Generic"])
                 
                 init_nickname = ""
                 init_material = "PLA"
@@ -1162,7 +1167,7 @@ elif st.session_state.page == "Profile":
                 init_bed = "Textured PEI"
                 init_infill = 15
                 init_walls = 3
-                init_supports = "OFF"
+                init_supports = "ON" # Default set to ON
             else:
                 p_data = fleet_df[fleet_df['printer nickname'] == selection].iloc[0]
                 p_brand = p_data['brand']
@@ -1180,10 +1185,8 @@ elif st.session_state.page == "Profile":
                 except:
                     init_infill = 15
 
-            # 2. FILTER VALID RECIPES (Dynamic Logic)
-            verified_list = get_verified_recipes()
+            # 2. FILTER VALID RECIPES for chosen Brand/Model
             prefix = f"{p_brand} {p_model}"
-
             m_all = ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"]
             m_valid = [m for m in m_all if any(f"{prefix} {m}" in r for r in verified_list)]
             n_all = [0.2, 0.4, 0.6, 0.8]
@@ -1195,7 +1198,6 @@ elif st.session_state.page == "Profile":
                 with col1:
                     nickname = st.text_input("Printer Nickname", value=init_nickname, disabled=not is_new, placeholder="e.g. Lab Bench 1")
                     
-                    # SAFETY: Reset index if the previous choice is no longer valid
                     m_idx = 0
                     if init_material in m_valid:
                         m_idx = m_valid.index(init_material)
@@ -1203,7 +1205,6 @@ elif st.session_state.page == "Profile":
                     material = st.selectbox("Default Material", m_valid if m_valid else ["No Profiles Found"], index=m_idx, disabled=not m_valid)
                     
                 with col2:
-                    # SAFETY: Reset index if the nozzle size doesn't exist for this model
                     n_idx = 0
                     if n_valid:
                         try:
@@ -1212,12 +1213,12 @@ elif st.session_state.page == "Profile":
                             n_idx = 0
 
                     nozzle = st.selectbox("Nozzle Size (mm)", n_valid if n_valid else [0.4], index=n_idx, disabled=not n_valid)
-                    
-                    # Bed Type Greyed Out (Preserving init_bed for the database)
-                    st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"], index=0, disabled=True, help="Bed type selection is currently disabled.")
+                    st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"], index=0, disabled=True)
 
                 infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=init_infill)
                 walls = st.number_input("Wall Count", min_value=1, max_value=10, value=init_walls)
+                
+                # Support Logic: Index 0 is "ON", Index 1 is "OFF"
                 supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True, index=0 if init_supports == "ON" else 1)
 
                 st.markdown("---")
