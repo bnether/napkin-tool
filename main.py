@@ -1073,12 +1073,7 @@ elif st.session_state.page == "Profile":
             
             if submit:
                 email_clean = email_attempt.lower().strip()
-                cookie_manager.set(
-                    'user_email_cookie', 
-                    email_clean, 
-                    expires_at=datetime.now() + timedelta(days=30) # Keeps you logged in for a month
-                )
-                st.rerun()
+                
                 if email_clean in BETA_USERS:
                     user_data = BETA_USERS[email_clean]
                     st.session_state.authenticated = True
@@ -1086,6 +1081,12 @@ elif st.session_state.page == "Profile":
                     st.session_state.user_company = user_data.get('company', 'General')
                     st.session_state.user_name = user_data.get('name', 'User')
                     st.session_state.user_tier = user_data.get('plan', 'Starter')
+
+                    cookie_manager.set(
+                        'user_email_cookie', 
+                        email_clean, 
+                        expires_at=datetime.now() + timedelta(days=30) # Keeps you logged in for a month
+                    )
                     st.rerun()
                 else:
                     st.error("No account associated with this email")
