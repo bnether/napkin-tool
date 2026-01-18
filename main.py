@@ -138,28 +138,29 @@ except Exception as e:
 
 
 
-# --- MASTER SESSION STATE INIT ---
+# --- MASTER SESSION INIT ---
 cookie_manager = stx.CookieManager()
 
-# IMPORTANT: If the manager hasn't loaded yet, it returns None. 
-# We wait until it's ready before checking the login.
+# Default initializations
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "page" not in st.session_state:
+    st.session_state.page = "Home"
+
+# Cookie Retrieval Logic
 saved_email = cookie_manager.get('user_email_cookie')
 
-if not st.session_state.get("authenticated", False):
-    # If saved_email is NOT None, it means the browser has responded
-    if saved_email:
-        if saved_email in BETA_USERS:
-            user_data = BETA_USERS[saved_email]
-            st.session_state.authenticated = True
-            st.session_state.user_email = saved_email
-            st.session_state.user_company = user_data.get('company', 'General')
-            st.session_state.user_name = user_data.get('name', 'User')
-            st.session_state.user_tier = user_data.get('plan', 'Starter')
-            st.rerun() # Refresh to show the logged-in UI
-    else:
-        # If saved_email is None, the component is still "waking up."
-        # We don't stop the whole app, but we don't try to log in yet.
-        pass
+# If cookie exists but we aren't auth'd yet, log them in automatically
+if saved_email and not st.session_state.authenticated:
+    email_clean = saved_email.lower().strip()
+    if email_clean in BETA_USERS:
+        user_data = BETA_USERS[email_clean]
+        st.session_state.authenticated = True
+        st.session_state.user_email = email_clean
+        st.session_state.user_company = user_data.get('company', 'General')
+        st.session_state.user_name = user_data.get('name', 'User')
+        st.session_state.user_tier = user_data.get('plan', 'Starter')
+        # No rerun needed here, the rest of the script will now see 'authenticated' as True
 
 # 2. Standard Session State Defaults
 st.session_state.setdefault("authenticated", False)
@@ -1114,9 +1115,14 @@ elif st.session_state.page == "Profile":
             ''', unsafe_allow_html=True)
             
             if st.button("Log Out", use_container_width=True):
+                # 1. Clear session state immediately
                 st.session_state.authenticated = False
                 st.session_state.user_email = None
-                controller.remove('user_email_cookie')
+                
+                # 2. Delete the cookie (Using the same 'cookie_manager' variable)
+                cookie_manager.delete('user_email_cookie')
+                
+                # 3. Force a rerun to clear the UI and return to the login screen
                 st.rerun()
 
         with prof_col2:
