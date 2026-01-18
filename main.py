@@ -18,8 +18,8 @@ from PIL import Image
 import io
 import base64
 from io import BytesIO
-from streamlit_cookies_controller import CookieController
 import extra_streamlit_components as stx
+
 
 # Registry Spreadsheet
 conn = st.connection("gsheets", type=GSheetsConnection)
