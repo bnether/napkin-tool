@@ -139,15 +139,15 @@ except Exception as e:
 
 
 # --- MASTER SESSION STATE INIT ---
-# 1. Initialize the new cookie manager
-cookie_manager = stx.CookieManager() 
+# 1. Initialize the manager
+cookie_manager = stx.CookieManager()
 
-# 2. Check for cookie IF not already authenticated
+# 2. Check for cookie IF not already authenticated in session state
 if not st.session_state.get("authenticated", False):
-    # Use .get() from the new cookie_manager
+    # This retrieves the email from the browser
     saved_email = cookie_manager.get('user_email_cookie')
     
-    # Check if we have a valid email in our registry
+    # If a cookie is found, log them in and FORCE a rerun
     if saved_email and saved_email in BETA_USERS:
         user_data = BETA_USERS[saved_email]
         st.session_state.authenticated = True
@@ -155,6 +155,9 @@ if not st.session_state.get("authenticated", False):
         st.session_state.user_company = user_data.get('company', 'General')
         st.session_state.user_name = user_data.get('name', 'User')
         st.session_state.user_tier = user_data.get('plan', 'Starter')
+        
+        # CRITICAL: This refresh tells Streamlit to show the "Logged In" UI
+        st.rerun()
 
 # 2. Standard Session State Defaults
 st.session_state.setdefault("authenticated", False)
@@ -914,7 +917,7 @@ elif st.session_state.page == "Help":
     3. **Set Your Nickname:** Give your printer a unique name (e.g., "Lab-Bench-A" or "Blue-P1S"). This helps you identify which machine to send files to later.
     4. **Select Printer Configurations:** Select your material, nozzle size, and bed type for your hardware. If options are grayed out or missing, these configurations are not yet available. Please contact us to add them to our system.
     5. **Choose Default Settings:** Select your default settings (infill, walls, supports).
-    6. ** Save to Fleet:** Click "Add to Fleet." Your settings are now saved securely to your company’s registry.
+    6. **Save to Fleet:** Click "Add to Fleet." Your settings are now saved securely to your company’s registry.
     7. **Manage Printers:** If you want to edit the configurations or default settings for your printer (e.g. change material), select the printer's nickname from the dropdown menu, apply the changes and click 'Save Changes' to update the profile instantly.
     """)
     st.markdown("---")
@@ -1070,6 +1073,12 @@ elif st.session_state.page == "Profile":
             
             if submit:
                 email_clean = email_attempt.lower().strip()
+                cookie_manager.set(
+                    'user_email_cookie', 
+                    email_clean, 
+                    expires_at=datetime.now() + timedelta(days=30) # Keeps you logged in for a month
+                )
+                st.rerun()
                 if email_clean in BETA_USERS:
                     user_data = BETA_USERS[email_clean]
                     st.session_state.authenticated = True
