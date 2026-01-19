@@ -52,6 +52,7 @@ def load_registry():
     # 6. Convert to the dictionary format your Profile page expects
     return df.set_index('email').to_dict('index')
 
+
 def update_printer_count(email_to_update):
     try:
         url = st.secrets["connections"]["gsheets"]["registry"]
@@ -308,7 +309,7 @@ def clean_infill(infill_value):
 
 
 PRINTER_MASTER_LIST = {
-    "Bambu Lab": ["X1-Carbon", "X1-E (Enterprise)", "P1S", "P1P", "A1", "A1 Mini"],
+    "BambuLab": ["X1-Carbon", "X1-E (Enterprise)", "P1S", "P1P", "A1", "A1 Mini"],
     "Prusa Research": ["MK4", "MK3S+", "XL (Multi-Tool)", "MINI+", "SL1S Speed (Resin)"],
     "UltiMaker": ["S7", "S5", "S3", "Method X", "Method XL", "2+ Connect"],
     "Markforged": ["Onyx One", "Mark Two", "Onyx Pro", "X7 (Industrial)"],
