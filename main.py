@@ -344,7 +344,7 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
 
-    # 2. EXTRACTION LOGIC (Prevents "Missing Library" errors)
+    # 2. EXTRACTION LOGIC
     if not os.path.exists(exe):
         try:
             if os.path.exists(extract_path):
@@ -360,42 +360,44 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         except Exception as e:
             return False, f"Extraction Failed: {str(e)}"
 
-    # 3. Build Command (Specific OrcaSlicer Syntax)
-    # The STL follows --slice immediately to avoid "setup params error"
+    # 3. Build Command (Positional STL at the end)
     support_val = "true" if str(user_overrides.get('supports')).upper() == "ON" else "false"
     
     command = [
         exe,
-        "--slice", stl_abs,
-        "--load", config_path,
-        "--output", gcode_abs,
+        "--slice",                 # Mode flag (usually takes no value here)
+        "--load", config_path,     # Load the profile
+        "--output", gcode_abs,     # Destination
         "--set", f"sparse_infill_density={user_overrides.get('infill', 15)}%",
         "--set", f"wall_loops={user_overrides.get('walls', 3)}",
-        "--set", f"enable_support={support_val}"
+        "--set", f"enable_support={support_val}",
+        stl_abs                    # Input file MUST be at the end for some Orca builds
     ]
 
-    # 4. Environment - The "Yesterday" Secret Sauce
+    # 4. Environment
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["GDK_BACKEND"] = "x11"
     env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib")
 
     try:
-        # Run Slicer with a 5-minute timeout
+        # Run Slicer
         result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
         
         if result.returncode != 0:
-            return False, f"Slicer Error: {result.stderr if result.stderr else result.stdout}"
+            # Check if stderr is empty and fallback to stdout for the error message
+            error_msg = result.stderr if result.stderr.strip() else result.stdout
+            return False, f"Slicer Error: {error_msg}"
 
-        # 5. Metadata Extraction (Orca/Bambu Format)
+        # 5. Metadata Extraction
         stats = {"time": "Unknown", "finish_time": "Unknown"}
         if os.path.exists(gcode_abs):
             with open(gcode_abs, 'r', encoding='utf-8', errors='ignore') as f:
-                # Read the end of the file where Orca stores metadata
                 f.seek(0, os.SEEK_END)
-                f.seek(max(0, f.tell() - 40000))
+                f.seek(max(0, f.tell() - 60000)) # Read more to be safe
                 content = f.read()
                 
+                # Regex for Orca/Bambu time stamps
                 t_match = re.search(r"total estimating time[:=]\s*(.*)", content, re.IGNORECASE)
                 if not t_match:
                     t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
@@ -403,22 +405,17 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
                 if t_match:
                     duration_str = t_match.group(1).strip()
                     stats["time"] = duration_str
-                    
-                    # Parse hours and minutes for finish time
                     try:
                         h = int(re.search(r'(\d+)h', duration_str).group(1)) if 'h' in duration_str else 0
                         m = int(re.search(r'(\d+)m', duration_str).group(1)) if 'm' in duration_str else 0
                         finish_dt = datetime.now() + timedelta(hours=h, minutes=m)
                         stats["finish_time"] = finish_dt.strftime("%H:%M")
-                    except:
-                        pass
+                    except: pass
 
             return True, stats
         
         return False, "G-code file not generated."
 
-    except subprocess.TimeoutExpired:
-        return False, "Slicing timed out."
     except Exception as e:
         return False, f"System Error: {str(e)}"
     
