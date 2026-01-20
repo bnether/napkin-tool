@@ -325,66 +325,47 @@ PRINTER_MASTER_LIST = {
 
 
 def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides):
-    import os, subprocess, re, stat, shutil, json
-    from datetime import datetime, timedelta
+    import os, subprocess, re, stat, shutil
+    from datetime import datetime
 
     base_path = os.path.dirname(os.path.abspath(__file__))
+    exe = os.path.join("/tmp/orca_extracted", "bin", "orca-slicer")
     appimage = os.path.join(base_path, "OrcaSlicer")
-    extract_path = "/tmp/orca_extracted"
-    exe = os.path.join(extract_path, "bin", "orca-slicer")
-    ini_path = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
+    config_path = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
     
-    # 1. Extraction (already working)
+    # 1. Extraction (Keep this, it's the only way to get the binary to run)
     if not os.path.exists(exe):
-        if os.path.exists(extract_path): shutil.rmtree(extract_path)
+        if os.path.exists("/tmp/orca_extracted"): shutil.rmtree("/tmp/orca_extracted")
         subprocess.run([appimage, "--appimage-extract"], cwd="/tmp", check=True)
-        os.rename("/tmp/squashfs-root", extract_path)
+        os.rename("/tmp/squashfs-root", "/tmp/orca_extracted")
         os.chmod(exe, 0o755)
 
-    # 2. Convert INI to JSON (The "Bridge" fix)
-    # Orca 1.9.3 CLI demands JSON via --load-settings
-    json_config_path = f"/tmp/{full_config_name}.json"
-    config_data = {}
-    try:
-        with open(ini_path, 'r') as f:
-            for line in f:
-                if '=' in line and not line.startswith('['):
-                    k, v = line.split('=', 1)
-                    config_data[k.strip()] = v.strip()
-        with open(json_config_path, 'w') as f:
-            json.dump(config_data, f)
-    except Exception as e:
-        return False, f"Config Conversion Failed: {str(e)}"
-
-    # 3. Setup Output Dir
-    output_dir = "/tmp/slicer_output"
-    if os.path.exists(output_dir): shutil.rmtree(output_dir)
-    os.makedirs(output_dir, exist_ok=True)
-
-    # 4. The Command (Using the exact flags from your log)
+    # 2. The Legacy Command (The likely "Yesterday" setup)
+    # --export-gcode tells Orca to act like PrusaSlicer/Slic3r
+    # This mode accepts --load and .ini files natively.
     command = [
         exe,
-        "--slice", "0",
-        "--load-settings", json_config_path,
-        "--outputdir", output_dir, 
+        "--export-gcode", 
+        "--load", config_path,
+        "--fill-density", f"{user_overrides['infill']}%",
+        "--perimeters", str(user_overrides['walls']),
+        "--output", os.path.abspath(gcode_path),
         os.path.abspath(stl_path)
     ]
 
-    # 5. Environment
+    # 3. Environment
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
-    env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib")
+    env["LD_LIBRARY_PATH"] = os.path.join("/tmp/orca_extracted", "lib")
 
     try:
-        result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
+        # Run the process
+        result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=180)
         
-        # Orca names files like 'PartName_plate_0.gcode'
-        generated_files = [f for f in os.listdir(output_dir) if f.endswith('.gcode')]
-        
-        if generated_files:
-            shutil.move(os.path.join(output_dir, generated_files[0]), os.path.abspath(gcode_path))
+        if os.path.exists(gcode_path):
             return True, {"time": "Success"}
         
+        # If it fails, we need the log to see why the legacy mode didn't catch it
         return False, f"Log: {result.stdout}\nError: {result.stderr}"
 
     except Exception as e:
