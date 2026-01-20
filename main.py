@@ -323,59 +323,82 @@ PRINTER_MASTER_LIST = {
 
 
 
-def run_slicing_workflow(input_stl, output_gcode, hardware_name, overrides):
-    import stat # Move this to the top of your file if you prefer
-    
-    # 1. Direct Pathing (Root Folder)
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    exe = os.path.join(base_path, "OrcaSlicer")
-    recipe_path = os.path.join(base_path, "recipes", f"{hardware_name}.ini")
-    
-    # 2. Permissions & Existence Check
-    if os.path.exists(exe):
-        # Ensure Linux sees the file as a program, not just a text file
-        stt = os.stat(exe)
-        os.chmod(exe, stt.st_mode | stat.S_IEXEC)
-    else:
-        return False, f"Binary 'OrcaSlicer' not found in root: {base_path}"
 
-    # 3. Construct Command
-    # --appimage-extract-and-run is mandatory for Streamlit Cloud/Docker
-    cmd = [
+def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides):
+    # 1. Setup Paths
+    # Ensure the file is named 'Slicer' in your directory as per your code
+    exe = os.path.abspath("./Slicer") 
+    stl_abs = os.path.abspath(stl_path)
+    gcode_abs = os.path.abspath(gcode_path)
+    
+
+@@ -339,51 +340,57 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
+
+    os.chmod(exe, 0o755)
+
+    # 2. Build the Command (OrcaSlicer / BambuStudio Style)
+    command = [
         exe, 
-        "--appimage-extract-and-run", 
-        "--slice", 
-        "--load", recipe_path
+        "--appimage-extract-and-run",
+        "--slice",
+        "--config", config_path,  # Orca uses --config for the profile
+        "--output", gcode_abs,
+        "--fill-density", f"{user_overrides['infill']}%",
+        "--perimeters", str(user_overrides['walls'])
     ]
     
-    # OrcaSlicer Specific Overrides
-    support_val = "true" if str(overrides.get("supports")).upper() == "ON" else "false"
-    cmd.extend(["--set", f"enable_support={support_val}"])
-    cmd.extend(["--set", f"sparse_infill_density={overrides.get('infill', 15)}%"])
-    cmd.extend(["--set", f"wall_loops={overrides.get('walls', 3)}"])
+    # OrcaSlicer still accepts these flags
+    if user_overrides['supports'] == "ON":
+        command.append("--enable-support") # Orca often uses enable-support
+    else:
+        command.append("--disable-support")
+
+    command.append(stl_abs)
     
-    cmd.extend(["--output", output_gcode, input_stl])
+    # 3. Execution Environment
+    env = os.environ.copy()
+    # OrcaSlicer often needs these to run headless on Linux
+    env["QT_QPA_PLATFORM"] = "offscreen"
+    env["GDK_BACKEND"] = "x11" 
 
     try:
-        # 4. Execution with XVFB (Virtual Display)
-        # We use xvfb-run because OrcaSlicer needs a 'screen' to initialize, 
-        # even when just slicing via command line.
-        final_cmd = ["xvfb-run", "-a"] + cmd
-        
-        result = subprocess.run(
-            final_cmd, 
-            capture_output=True, 
-            text=True, 
-            env=os.environ.copy()
-        )
-        
-        if result.returncode == 0:
-            return True, {"log": result.stdout}
-        else:
-            return False, f"Slicing Failed: {result.stderr}"
+        stats = {"time": "Unknown", "finish_time": "Unknown"}
 
+        # Run the process
+        subprocess.run(command, capture_output=True, text=True, check=True, env=env, timeout=180)
+        
+        # 4. Metadata Extraction (OrcaSlicer specific)
+        if os.path.exists(gcode_abs):
+            with open(gcode_abs, 'r', encoding='utf-8', errors='ignore') as f:
+                f.seek(0, os.SEEK_END)
+                # Orca/Bambu metadata is usually right at the end
+                f.seek(max(0, f.tell() - 40000))
+                content = f.read()
+                
+                # OrcaSlicer/Bambu format: "; total estimating time: 1h 20m 15s" 
+                # or "; estimated printing time (normal mode) = 1h 20m"
+                t_match = re.search(r"total estimating time[:=]\s*(.*)", content, re.IGNORECASE)
+                if not t_match:
+                    t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
+                
+                if t_match:
+                    duration_str = t_match.group(1).strip()
+                    stats["time"] = duration_str
+                    
+                    try:
+                        # Extract digits
+                        h_match = re.search(r'(\d+)h', duration_str)
+                        m_match = re.search(r'(\d+)m', duration_str)
+                        s_match = re.search(r'(\d+)s', duration_str)
+
+@@ -403,7 +410,8 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
+        return False, "G-code file not generated."
+
+    except subprocess.CalledProcessError as e:
+        # Crucial for debugging the 'offscreen' crash
+        return False, f"Slicer Error: {e.stderr if e.stderr else e.stdout}"
     except Exception as e:
-        return False, f"Workflow Exception: {str(e)}"
+        return False, f"System Error: {str(e)}"
     
 
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
