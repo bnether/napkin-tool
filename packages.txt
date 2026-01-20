@@ -1,7 +1,10 @@
 openscad
+xvfb
 libfuse2
 libgomp1
 libglu1-mesa
 libdbus-1-3
 libnss3
 libexpat1
+libgtk-3-0
+libxkbcommon-x11-0
