@@ -333,32 +333,40 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     appimage = os.path.join(base_path, "OrcaSlicer")
     extract_path = "/tmp/orca_extracted"
     exe = os.path.join(extract_path, "bin", "orca-slicer")
-    config_path = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
-    output_dir = "/tmp/slicer_output"
-
-    # 2. Cleanup & Extraction
-    if os.path.exists(output_dir): shutil.rmtree(output_dir)
-    os.makedirs(output_dir, exist_ok=True)
-
+    ini_recipe = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
+    
+    # 2. Extraction
     if not os.path.exists(exe):
         subprocess.run([appimage, "--appimage-extract"], cwd="/tmp", check=True)
         if os.path.exists(extract_path): shutil.rmtree(extract_path)
         os.rename("/tmp/squashfs-root", extract_path)
         os.chmod(exe, 0o755)
 
-    # 3. The "No-Flag" Command
-    # We use --slice 0 to start the engine.
-    # We provide the INI and STL as positional arguments.
-    # We use --outputdir because your log says --output is invalid.
+    # 3. THE FIX: Force the .ini into the Slicer's "Brain"
+    # We create a fake "User Data" directory. Orca will automatically load
+    # whatever is in the 'user/default/process' folder.
+    data_dir = "/tmp/orca_data"
+    process_dir = os.path.join(data_dir, "user", "default", "process")
+    os.makedirs(process_dir, exist_ok=True)
+    
+    # Copy your recipe into the internal folder Orca scans on startup
+    shutil.copy(ini_recipe, os.path.join(process_dir, "recipe.ini"))
+
+    output_dir = "/tmp/slicer_output"
+    if os.path.exists(output_dir): shutil.rmtree(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 4. The Command (No configuration flags needed!)
+    # Because we use --datadir, Orca will find 'recipe.ini' automatically
     command = [
         exe,
         "--slice", "0",
+        "--datadir", data_dir,
         "--outputdir", output_dir,
-        os.path.abspath(config_path),  # Positional 1
-        os.path.abspath(stl_path)      # Positional 2
+        os.path.abspath(stl_path)
     ]
 
-    # 4. Environment
+    # 5. Environment
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib")
@@ -366,25 +374,12 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     try:
         result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
         
-        # 5. File Recovery
-        # Orca 1.9 names files: [STL_NAME]_plate_0.gcode
+        # 6. Check for G-code
         generated_files = [f for f in os.listdir(output_dir) if f.endswith('.gcode')]
-        
         if generated_files:
-            final_source = os.path.join(output_dir, generated_files[0])
-            shutil.move(final_source, os.path.abspath(gcode_path))
-            
-            # Simple metadata check
-            stats = {"time": "Unknown"}
-            with open(os.path.abspath(gcode_path), 'r', encoding='utf-8', errors='ignore') as f:
-                tail = f.read()[-20000:]
-                # Orca/Bambu specific time string
-                m = re.search(r"total estimating time[:=]\s*(.*)", tail, re.IGNORECASE)
-                if m: stats["time"] = m.group(1).strip()
-            
-            return True, stats
+            shutil.move(os.path.join(output_dir, generated_files[0]), os.path.abspath(gcode_path))
+            return True, {"time": "Success"}
 
-        # If no gcode, return the logs so we can see what the "guess" logic did
         return False, f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}"
 
     except Exception as e:
