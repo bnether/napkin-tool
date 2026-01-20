@@ -325,9 +325,13 @@ PRINTER_MASTER_LIST = {
 
 
 def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides):
+    import os
+    import subprocess
+    import re
     import stat
     import shutil
-    
+    from datetime import datetime, timedelta
+
     # 1. Setup Paths
     base_path = os.path.dirname(os.path.abspath(__file__))
     appimage = os.path.join(base_path, "OrcaSlicer")
@@ -335,19 +339,19 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     # Use /tmp for extraction (Streamlit Cloud's reliable writeable space)
     extract_path = "/tmp/orca_extracted"
     exe = os.path.join(extract_path, "bin", "orca-slicer")
+    config_path = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
+    
+    stl_abs = os.path.abspath(stl_path)
+    gcode_abs = os.path.abspath(gcode_path)
 
-    # 2. EXTRACTION LOGIC
+    # 2. EXTRACTION LOGIC (Prevents "Missing Library" errors)
     if not os.path.exists(exe):
         try:
-            # Clean up any partial previous extractions
             if os.path.exists(extract_path):
                 shutil.rmtree(extract_path)
             
-            # Extract AppImage
-            # --appimage-extract creates a folder named 'squashfs-root' in the CWD
+            # Extract AppImage into /tmp
             subprocess.run([appimage, "--appimage-extract"], cwd="/tmp", check=True)
-            
-            # Move squashfs-root to our stable extract_path
             os.rename("/tmp/squashfs-root", extract_path)
             
             # Ensure the binary is executable
@@ -356,42 +360,67 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         except Exception as e:
             return False, f"Extraction Failed: {str(e)}"
 
-    # 3. Build Command
-    config_path = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
+    # 3. Build Command (Specific OrcaSlicer Syntax)
+    # The STL follows --slice immediately to avoid "setup params error"
+    support_val = "true" if str(user_overrides.get('supports')).upper() == "ON" else "false"
     
-    # Use explicit absolute paths for everything
     command = [
         exe,
-        "--slice",
+        "--slice", stl_abs,
         "--load", config_path,
-        "--output", os.path.abspath(gcode_path),
-        "--set", f"sparse_infill_density={user_overrides['infill']}%",
-        "--set", f"wall_loops={user_overrides['walls']}",
-        "--set", f"enable_support={'true' if user_overrides['supports'] == 'ON' else 'false'}",
-        os.path.abspath(stl_path)
+        "--output", gcode_abs,
+        "--set", f"sparse_infill_density={user_overrides.get('infill', 15)}%",
+        "--set", f"wall_loops={user_overrides.get('walls', 3)}",
+        "--set", f"enable_support={support_val}"
     ]
 
-    # 4. Environment - The "Yesterday" recipe
+    # 4. Environment - The "Yesterday" Secret Sauce
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["GDK_BACKEND"] = "x11"
-    # This helps the binary find its internal libraries after extraction
     env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib")
 
     try:
-        # Run Slicer
+        # Run Slicer with a 5-minute timeout
         result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
         
-        if result.returncode == 0:
-            # Metadata extraction logic (from your working version)
-            stats = {"time": "Unknown", "finish_time": "Unknown"}
-            # ... (Your regex metadata code here) ...
+        if result.returncode != 0:
+            return False, f"Slicer Error: {result.stderr if result.stderr else result.stdout}"
+
+        # 5. Metadata Extraction (Orca/Bambu Format)
+        stats = {"time": "Unknown", "finish_time": "Unknown"}
+        if os.path.exists(gcode_abs):
+            with open(gcode_abs, 'r', encoding='utf-8', errors='ignore') as f:
+                # Read the end of the file where Orca stores metadata
+                f.seek(0, os.SEEK_END)
+                f.seek(max(0, f.tell() - 40000))
+                content = f.read()
+                
+                t_match = re.search(r"total estimating time[:=]\s*(.*)", content, re.IGNORECASE)
+                if not t_match:
+                    t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
+                
+                if t_match:
+                    duration_str = t_match.group(1).strip()
+                    stats["time"] = duration_str
+                    
+                    # Parse hours and minutes for finish time
+                    try:
+                        h = int(re.search(r'(\d+)h', duration_str).group(1)) if 'h' in duration_str else 0
+                        m = int(re.search(r'(\d+)m', duration_str).group(1)) if 'm' in duration_str else 0
+                        finish_dt = datetime.now() + timedelta(hours=h, minutes=m)
+                        stats["finish_time"] = finish_dt.strftime("%H:%M")
+                    except:
+                        pass
+
             return True, stats
-        else:
-            return False, f"Slicer Error: {result.stderr}"
-            
+        
+        return False, "G-code file not generated."
+
+    except subprocess.TimeoutExpired:
+        return False, "Slicing timed out."
     except Exception as e:
-        return False, f"Process Error: {str(e)}"
+        return False, f"System Error: {str(e)}"
     
 
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
