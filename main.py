@@ -342,16 +342,17 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         os.chmod(exe, 0o755)
 
     # 2. Setup Directories
-    # Orca 1.9.3 wants a directory for output, not a filename.
     output_dir = "/tmp/slicer_output"
     if os.path.exists(output_dir): shutil.rmtree(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
-    # 3. The Command (Matching your log exactly)
+    # 3. The Command
+    # We remove --load-settings because it ONLY wants JSON.
+    # We use --config which is the universal flag for .ini files.
     command = [
         exe,
         "--slice", "0",
-        "--load-settings", config_path,
+        "--config", config_path,  # Use --config for .ini files
         "--outputdir", output_dir, 
         os.path.abspath(stl_path)
     ]
@@ -364,15 +365,14 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     try:
         result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
         
-        # Orca 1.9.3 usually names the output [stl_name].gcode or [stl_name]_plate_0.gcode
-        # We need to find whatever file it just created in that folder
-        generated_files = os.listdir(output_dir)
+        # Check for files
+        generated_files = [f for f in os.listdir(output_dir) if f.endswith('.gcode')]
         
-        if result.returncode == 0 and generated_files:
+        if generated_files:
             source_file = os.path.join(output_dir, generated_files[0])
             shutil.move(source_file, os.path.abspath(gcode_path))
             
-            # Metadata parsing
+            # Metadata
             stats = {"time": "Unknown", "finish_time": "Unknown"}
             with open(os.path.abspath(gcode_path), 'r', encoding='utf-8', errors='ignore') as f:
                 content = f.read()[-60000:]
@@ -381,7 +381,7 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
                     stats["time"] = t_match.group(1).strip()
             return True, stats
         
-        return False, f"Log: {result.stdout}\nError: {result.stderr}\nFiles found: {generated_files}"
+        return False, f"Return Code: {result.returncode}\nLog: {result.stdout}\nError: {result.stderr}"
 
     except Exception as e:
         return False, f"System Error: {str(e)}"
