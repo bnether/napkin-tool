@@ -326,30 +326,40 @@ PRINTER_MASTER_LIST = {
 
 def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides):
     import stat
+    import shutil
     
     # 1. Setup Paths
     base_path = os.path.dirname(os.path.abspath(__file__))
     appimage = os.path.join(base_path, "OrcaSlicer")
     
-    # Define where the extracted files live
-    extract_path = os.path.join(base_path, "orca_extracted")
-    # The actual binary inside the extracted folder
+    # Use /tmp for extraction (Streamlit Cloud's reliable writeable space)
+    extract_path = "/tmp/orca_extracted"
     exe = os.path.join(extract_path, "bin", "orca-slicer")
 
-    # 2. ONE-TIME EXTRACTION (If not already done)
-    if not os.path.exists(extract_path):
-        with st.spinner("Initializing Slicer Engine for the first time..."):
-            # This extracts the AppImage into the 'orca_extracted' folder
-            subprocess.run([appimage, "--appimage-extract"], cwd=base_path)
-            os.rename(os.path.join(base_path, "squashfs-root"), extract_path)
+    # 2. EXTRACTION LOGIC
+    if not os.path.exists(exe):
+        try:
+            # Clean up any partial previous extractions
+            if os.path.exists(extract_path):
+                shutil.rmtree(extract_path)
             
-            # Make the internal binary executable
+            # Extract AppImage
+            # --appimage-extract creates a folder named 'squashfs-root' in the CWD
+            subprocess.run([appimage, "--appimage-extract"], cwd="/tmp", check=True)
+            
+            # Move squashfs-root to our stable extract_path
+            os.rename("/tmp/squashfs-root", extract_path)
+            
+            # Ensure the binary is executable
             stt = os.stat(exe)
             os.chmod(exe, stt.st_mode | stat.S_IEXEC)
+        except Exception as e:
+            return False, f"Extraction Failed: {str(e)}"
 
-    # 3. Build Command pointing to the RAW binary (No AppImage wrapper)
+    # 3. Build Command
     config_path = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
     
+    # Use explicit absolute paths for everything
     command = [
         exe,
         "--slice",
@@ -361,23 +371,27 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         os.path.abspath(stl_path)
     ]
 
-    # 4. Environment (Using the 'Yesterday' settings)
+    # 4. Environment - The "Yesterday" recipe
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["GDK_BACKEND"] = "x11"
-    # Point the library path to the extracted folder's lib
-    env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib") 
+    # This helps the binary find its internal libraries after extraction
+    env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib")
 
     try:
-        # We NO LONGER need xvfb-run if offscreen is working!
-        result = subprocess.run(command, capture_output=True, text=True, env=env)
+        # Run Slicer
+        result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
         
         if result.returncode == 0:
-            return True, {"time": "Extracted Successfully"} # Simplify for test
+            # Metadata extraction logic (from your working version)
+            stats = {"time": "Unknown", "finish_time": "Unknown"}
+            # ... (Your regex metadata code here) ...
+            return True, stats
         else:
             return False, f"Slicer Error: {result.stderr}"
+            
     except Exception as e:
-        return False, f"System Error: {str(e)}"
+        return False, f"Process Error: {str(e)}"
     
 
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
