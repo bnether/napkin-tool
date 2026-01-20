@@ -342,22 +342,42 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         os.rename("/tmp/squashfs-root", extract_path)
         os.chmod(exe, 0o755)
 
-    # 3. THE FIX: Force the .ini into the Slicer's "Brain"
-    # We create a fake "User Data" directory. Orca will automatically load
-    # whatever is in the 'user/default/process' folder.
+    # 3. Data Injection (Bypasses CLI Flag issues)
     data_dir = "/tmp/orca_data"
     process_dir = os.path.join(data_dir, "user", "default", "process")
     os.makedirs(process_dir, exist_ok=True)
     
-    # Copy your recipe into the internal folder Orca scans on startup
-    shutil.copy(ini_recipe, os.path.join(process_dir, "recipe.ini"))
+    # FIX: Read the INI and ensure the required G-code is present
+    with open(ini_recipe, 'r') as f:
+        lines = f.readlines()
+    
+    # Add the required G92 E0 to the layer_change_gcode line
+    # And inject user overrides (Infill, Walls) directly into the file
+    modified_lines = []
+    for line in lines:
+        if line.startswith("layer_change_gcode"):
+            # Append G92 E0 if it's missing
+            if "G92 E0" not in line:
+                line = line.strip() + "\\nG92 E0\\n"
+        elif line.startswith("sparse_infill_density"):
+            line = f"sparse_infill_density = {user_overrides.get('infill', 15)}%\n"
+        elif line.startswith("wall_loops"):
+            line = f"wall_loops = {user_overrides.get('walls', 3)}\n"
+        elif line.startswith("enable_support"):
+            val = "1" if user_overrides.get('supports') == "ON" else "0"
+            line = f"enable_support = {val}\n"
+        modified_lines.append(line)
+
+    # Save the "fixed" recipe to the data directory
+    target_ini = os.path.join(process_dir, "active_recipe.ini")
+    with open(target_ini, 'w') as f:
+        f.writelines(modified_lines)
 
     output_dir = "/tmp/slicer_output"
     if os.path.exists(output_dir): shutil.rmtree(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
-    # 4. The Command (No configuration flags needed!)
-    # Because we use --datadir, Orca will find 'recipe.ini' automatically
+    # 4. The Command
     command = [
         exe,
         "--slice", "0",
@@ -366,7 +386,7 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         os.path.abspath(stl_path)
     ]
 
-    # 5. Environment
+    # 5. Environment (Yesterday's Offscreen Setup)
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib")
@@ -374,13 +394,13 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     try:
         result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
         
-        # 6. Check for G-code
+        # 6. Success Check
         generated_files = [f for f in os.listdir(output_dir) if f.endswith('.gcode')]
         if generated_files:
             shutil.move(os.path.join(output_dir, generated_files[0]), os.path.abspath(gcode_path))
-            return True, {"time": "Success"}
+            return True, {"status": "G-code Generated"}
 
-        return False, f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+        return False, f"Slicer Error: {result.stderr if result.stderr else result.stdout}"
 
     except Exception as e:
         return False, f"System Error: {str(e)}"
