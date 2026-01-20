@@ -310,7 +310,7 @@ def clean_infill(infill_value):
 
 PRINTER_MASTER_LIST = {
     "BambuLab": ["X1-Carbon", "X1-E (Enterprise)", "P1S", "P1P", "A1", "A1-Mini"],
-    "Prusa Research": ["MK4", "MK3S+", "XL (Multi-Tool)", "MINI+", "SL1S Speed (Resin)"],
+    "Prusa": ["MK4", "MK3S+", "XL", "MINI+", "SL1S Speed (Resin)"],
     "UltiMaker": ["S7", "S5", "S3", "Method X", "Method XL", "2+ Connect"],
     "Markforged": ["Onyx One", "Mark Two", "Onyx Pro", "X7 (Industrial)"],
     "Formlabs (Resin)": ["Form 4", "Form 3+", "Form 3L", "Form 4B"],
