@@ -325,84 +325,57 @@ PRINTER_MASTER_LIST = {
 
 
 def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides):
-    import os
-    import subprocess
-    import re
     import stat
-    from datetime import datetime, timedelta
-
+    
     # 1. Setup Paths
     base_path = os.path.dirname(os.path.abspath(__file__))
-    exe = os.path.join(base_path, "OrcaSlicer") # Matches your root filename
+    appimage = os.path.join(base_path, "OrcaSlicer")
+    
+    # Define where the extracted files live
+    extract_path = os.path.join(base_path, "orca_extracted")
+    # The actual binary inside the extracted folder
+    exe = os.path.join(extract_path, "bin", "orca-slicer")
+
+    # 2. ONE-TIME EXTRACTION (If not already done)
+    if not os.path.exists(extract_path):
+        with st.spinner("Initializing Slicer Engine for the first time..."):
+            # This extracts the AppImage into the 'orca_extracted' folder
+            subprocess.run([appimage, "--appimage-extract"], cwd=base_path)
+            os.rename(os.path.join(base_path, "squashfs-root"), extract_path)
+            
+            # Make the internal binary executable
+            stt = os.stat(exe)
+            os.chmod(exe, stt.st_mode | stat.S_IEXEC)
+
+    # 3. Build Command pointing to the RAW binary (No AppImage wrapper)
     config_path = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
     
-    stl_abs = os.path.abspath(stl_path)
-    gcode_abs = os.path.abspath(gcode_path)
-
-    if not os.path.exists(exe):
-        return False, f"OrcaSlicer binary not found at {exe}"
-
-    # Force execution permissions
-    os.chmod(exe, 0o755)
-
-    # 2. Build the Command
-    # We use --set for OrcaSlicer to prevent "Unknown Option" errors
-    support_val = "true" if user_overrides['supports'] == "ON" else "false"
-    
     command = [
-        exe, 
-        "--appimage-extract-and-run",
+        exe,
         "--slice",
         "--load", config_path,
-        "--output", gcode_abs,
+        "--output", os.path.abspath(gcode_path),
         "--set", f"sparse_infill_density={user_overrides['infill']}%",
         "--set", f"wall_loops={user_overrides['walls']}",
-        "--set", f"enable_support={support_val}",
-        stl_abs
+        "--set", f"enable_support={'true' if user_overrides['supports'] == 'ON' else 'false'}",
+        os.path.abspath(stl_path)
     ]
-    
-    # 3. Execution Environment (The "Yesterday" Secret Sauce)
+
+    # 4. Environment (Using the 'Yesterday' settings)
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
-    env["GDK_BACKEND"] = "x11" 
+    env["GDK_BACKEND"] = "x11"
+    # Point the library path to the extracted folder's lib
+    env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib") 
 
     try:
-        stats = {"time": "Unknown", "finish_time": "Unknown"}
-
-        # Run the process
-        # Increased timeout to 300s because AppImage extraction takes time
-        result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
+        # We NO LONGER need xvfb-run if offscreen is working!
+        result = subprocess.run(command, capture_output=True, text=True, env=env)
         
-        if result.returncode != 0:
-            return False, f"Slicer Error: {result.stderr if result.stderr else result.stdout}"
-
-        # 4. Metadata Extraction
-        if os.path.exists(gcode_abs):
-            with open(gcode_abs, 'r', encoding='utf-8', errors='ignore') as f:
-                f.seek(0, os.SEEK_END)
-                f.seek(max(0, f.tell() - 40000))
-                content = f.read()
-                
-                t_match = re.search(r"total estimating time[:=]\s*(.*)", content, re.IGNORECASE)
-                if not t_match:
-                    t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
-                
-                if t_match:
-                    duration_str = t_match.group(1).strip()
-                    stats["time"] = duration_str
-                    
-                    # Estimate finish time logic
-                    h = int(re.search(r'(\d+)h', duration_str).group(1)) if 'h' in duration_str else 0
-                    m = int(re.search(r'(\d+)m', duration_str).group(1)) if 'm' in duration_str else 0
-                    finish_dt = datetime.now() + timedelta(hours=h, minutes=m)
-                    stats["finish_time"] = finish_dt.strftime("%H:%M")
-
-            return True, stats
-        
-        return False, "G-code file not generated."
-
-    except subprocess.TimeoutExpired:
-        return False, "Slicing timed out (took longer than 5 minutes)."
+        if result.returncode == 0:
+            return True, {"time": "Extracted Successfully"} # Simplify for test
+        else:
+            return False, f"Slicer Error: {result.stderr}"
     except Exception as e:
         return False, f"System Error: {str(e)}"
     
