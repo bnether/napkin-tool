@@ -345,7 +345,7 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         exe, 
         "--appimage-extract-and-run",
         "--slice", 
-        "--config", config_path,  # Orca uses --config for the profile
+        "--load", config_path,  # CHANGED: Use --load instead of --config
         "--output", gcode_abs,
         "--fill-density", f"{user_overrides['infill']}%",
         "--perimeters", str(user_overrides['walls'])
