@@ -324,66 +324,55 @@ PRINTER_MASTER_LIST = {
 
 
 def run_slicing_workflow(input_stl, output_gcode, hardware_name, overrides):
-    """
-    OrcaSlicer CLI Workflow
-    hardware_name: e.g., "Bambu X1C PLA 0.4mm" (Must match a filename in /recipes)
-    overrides: dict containing 'infill', 'walls', 'supports'
-    """
-    import subprocess
-    import os
-    import shutil
-
-    # 1. Path Setup
-    exe = "./Slicer/orca-slicer" # Ensure this points to your OrcaSlicer binary
-    recipe_path = f"recipes/{hardware_name}.ini"
+    import stat # Move this to the top of your file if you prefer
     
-    # Safety check: does the recipe exist?
-    if not os.path.exists(recipe_path):
-        return False, f"Configuration profile not found: {recipe_path}"
+    # 1. Direct Pathing (Root Folder)
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    exe = os.path.join(base_path, "OrcaSlicer")
+    recipe_path = os.path.join(base_path, "recipes", f"{hardware_name}.ini")
+    
+    # 2. Permissions & Existence Check
+    if os.path.exists(exe):
+        # Ensure Linux sees the file as a program, not just a text file
+        stt = os.stat(exe)
+        os.chmod(exe, stt.st_mode | stat.S_IEXEC)
+    else:
+        return False, f"Binary 'OrcaSlicer' not found in root: {base_path}"
 
-    # 2. Map OrcaSlicer Specific Keys
-    # Orca uses 'true'/'false' for booleans and 'wall_loops' for wall count
-    support_val = "true" if str(overrides.get("supports")).upper() == "ON" else "false"
-    infill_val = f"{overrides.get('infill', 15)}%"
-    wall_val = str(overrides.get("walls", 3))
-
-    # 3. Build the Command
-    # Note: OrcaSlicer uses --set key=value for overrides
+    # 3. Construct Command
+    # --appimage-extract-and-run is mandatory for Streamlit Cloud/Docker
     cmd = [
-        exe,
-        "--slice",
-        "--load", recipe_path,
-        "--set", f"enable_support={support_val}",
-        "--set", f"sparse_infill_density={infill_val}",
-        "--set", f"wall_loops={wall_val}",
-        "--output", output_gcode,
-        input_stl
+        exe, 
+        "--appimage-extract-and-run", 
+        "--slice", 
+        "--load", recipe_path
     ]
+    
+    # OrcaSlicer Specific Overrides
+    support_val = "true" if str(overrides.get("supports")).upper() == "ON" else "false"
+    cmd.extend(["--set", f"enable_support={support_val}"])
+    cmd.extend(["--set", f"sparse_infill_density={overrides.get('infill', 15)}%"])
+    cmd.extend(["--set", f"wall_loops={overrides.get('walls', 3)}"])
+    
+    cmd.extend(["--output", output_gcode, input_stl])
 
     try:
-        # 4. Execute Slicing
-        # We use env=os.environ.copy() to ensure the slicer has access to system libs
+        # 4. Execution with XVFB (Virtual Display)
+        # We use xvfb-run because OrcaSlicer needs a 'screen' to initialize, 
+        # even when just slicing via command line.
+        final_cmd = ["xvfb-run", "-a"] + cmd
+        
         result = subprocess.run(
-            cmd, 
+            final_cmd, 
             capture_output=True, 
             text=True, 
             env=os.environ.copy()
         )
-
+        
         if result.returncode == 0:
-            # OrcaSlicer CLI is successful
-            # We calculate a fake finish time for the UI demo; real time is in the G-code
-            from datetime import datetime, timedelta
-            finish_time = (datetime.now() + timedelta(hours=1, minutes=20)).strftime("%H:%M")
-            
-            return True, {
-                "time": "1h 20m", 
-                "finish_time": finish_time,
-                "log": result.stdout
-            }
+            return True, {"log": result.stdout}
         else:
-            # Capture the specific error (like the one you saw)
-            return False, f"Slicer Error: {result.stderr if result.stderr else result.stdout}"
+            return False, f"Slicing Failed: {result.stderr}"
 
     except Exception as e:
         return False, f"Workflow Exception: {str(e)}"
