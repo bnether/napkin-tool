@@ -309,7 +309,7 @@ def clean_infill(infill_value):
 
 
 PRINTER_MASTER_LIST = {
-    "BambuLab": ["X1-Carbon", "X1-E (Enterprise)", "P1S", "P1P", "A1", "A1 Mini"],
+    "BambuLab": ["X1-Carbon", "X1-E (Enterprise)", "P1S", "P1P", "A1", "A1-Mini"],
     "Prusa Research": ["MK4", "MK3S+", "XL (Multi-Tool)", "MINI+", "SL1S Speed (Resin)"],
     "UltiMaker": ["S7", "S5", "S3", "Method X", "Method XL", "2+ Connect"],
     "Markforged": ["Onyx One", "Mark Two", "Onyx Pro", "X7 (Industrial)"],
@@ -325,7 +325,8 @@ PRINTER_MASTER_LIST = {
 
 def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides):
     # 1. Setup Paths
-    exe = os.path.abspath("./Slicer")
+    # Ensure the file is named 'Slicer' in your directory as per your code
+    exe = os.path.abspath("./Slicer") 
     stl_abs = os.path.abspath(stl_path)
     gcode_abs = os.path.abspath(gcode_path)
     
@@ -339,51 +340,57 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
 
     os.chmod(exe, 0o755)
 
-    # 2. Build the Command
+    # 2. Build the Command (OrcaSlicer / BambuStudio Style)
     command = [
-        exe, "--appimage-extract-and-run",
+        exe, 
+        "--appimage-extract-and-run",
         "--slice", 
-        "--load", config_path,
+        "--config", config_path,  # Orca uses --config for the profile
         "--output", gcode_abs,
         "--fill-density", f"{user_overrides['infill']}%",
         "--perimeters", str(user_overrides['walls'])
     ]
     
+    # OrcaSlicer still accepts these flags
     if user_overrides['supports'] == "ON":
-        command.append("--support-material")
+        command.append("--enable-support") # Orca often uses enable-support
     else:
-        command.append("--no-support-material")
+        command.append("--disable-support")
 
     command.append(stl_abs)
     
-    # 3. Execution
+    # 3. Execution Environment
     env = os.environ.copy()
+    # OrcaSlicer often needs these to run headless on Linux
     env["QT_QPA_PLATFORM"] = "offscreen"
+    env["GDK_BACKEND"] = "x11" 
 
     try:
-        # --- FIX: INITIALIZE STATS HERE ---
         stats = {"time": "Unknown", "finish_time": "Unknown"}
 
         # Run the process
         subprocess.run(command, capture_output=True, text=True, check=True, env=env, timeout=180)
         
-        # --- FIX: METADATA EXTRACTION ---
+        # 4. Metadata Extraction (OrcaSlicer specific)
         if os.path.exists(gcode_abs):
-            with open(gcode_abs, 'r') as f:
-                # Read end of file for PrusaSlicer metadata (usually in the last 30kb)
+            with open(gcode_abs, 'r', encoding='utf-8', errors='ignore') as f:
                 f.seek(0, os.SEEK_END)
-                f.seek(max(0, f.tell() - 30000))
+                # Orca/Bambu metadata is usually right at the end
+                f.seek(max(0, f.tell() - 40000))
                 content = f.read()
                 
-                # Look for duration string (e.g., "estimated printing time = 1h 20m")
-                t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
+                # OrcaSlicer/Bambu format: "; total estimating time: 1h 20m 15s" 
+                # or "; estimated printing time (normal mode) = 1h 20m"
+                t_match = re.search(r"total estimating time[:=]\s*(.*)", content, re.IGNORECASE)
+                if not t_match:
+                    t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
                 
                 if t_match:
                     duration_str = t_match.group(1).strip()
                     stats["time"] = duration_str
                     
-                    # Time Math for Finish Time
                     try:
+                        # Extract digits
                         h_match = re.search(r'(\d+)h', duration_str)
                         m_match = re.search(r'(\d+)m', duration_str)
                         s_match = re.search(r'(\d+)s', duration_str)
@@ -403,7 +410,8 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         return False, "G-code file not generated."
 
     except subprocess.CalledProcessError as e:
-        return False, f"Slicer Error: {e.stderr}"
+        # Crucial for debugging the 'offscreen' crash
+        return False, f"Slicer Error: {e.stderr if e.stderr else e.stdout}"
     except Exception as e:
         return False, f"System Error: {str(e)}"
     
