@@ -325,15 +325,15 @@ PRINTER_MASTER_LIST = {
 
 
 def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides):
-    import os, subprocess, re, stat, shutil
+    import os, subprocess, re, stat, shutil, json
     from datetime import datetime, timedelta
 
     base_path = os.path.dirname(os.path.abspath(__file__))
     appimage = os.path.join(base_path, "OrcaSlicer")
     extract_path = "/tmp/orca_extracted"
     exe = os.path.join(extract_path, "bin", "orca-slicer")
-    config_path = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
-
+    ini_path = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
+    
     # 1. Extraction (already working)
     if not os.path.exists(exe):
         if os.path.exists(extract_path): shutil.rmtree(extract_path)
@@ -341,23 +341,36 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         os.rename("/tmp/squashfs-root", extract_path)
         os.chmod(exe, 0o755)
 
-    # 2. Setup Output Dir
+    # 2. Convert INI to JSON (The "Bridge" fix)
+    # Orca 1.9.3 CLI demands JSON via --load-settings
+    json_config_path = f"/tmp/{full_config_name}.json"
+    config_data = {}
+    try:
+        with open(ini_path, 'r') as f:
+            for line in f:
+                if '=' in line and not line.startswith('['):
+                    k, v = line.split('=', 1)
+                    config_data[k.strip()] = v.strip()
+        with open(json_config_path, 'w') as f:
+            json.dump(config_data, f)
+    except Exception as e:
+        return False, f"Config Conversion Failed: {str(e)}"
+
+    # 3. Setup Output Dir
     output_dir = "/tmp/slicer_output"
     if os.path.exists(output_dir): shutil.rmtree(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
-    # 3. The "Yesterday" Command Logic
-    # We use -c (short for config) which sometimes works when --config is hidden
-    # OR we pass it via --load which is the internal alias.
+    # 4. The Command (Using the exact flags from your log)
     command = [
         exe,
         "--slice", "0",
-        "--load", config_path,  # Using the internal Slic3r alias
+        "--load-settings", json_config_path,
         "--outputdir", output_dir, 
         os.path.abspath(stl_path)
     ]
 
-    # 4. Environment
+    # 5. Environment
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib")
@@ -365,17 +378,13 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     try:
         result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
         
+        # Orca names files like 'PartName_plate_0.gcode'
         generated_files = [f for f in os.listdir(output_dir) if f.endswith('.gcode')]
         
         if generated_files:
             shutil.move(os.path.join(output_dir, generated_files[0]), os.path.abspath(gcode_path))
-            return True, {"time": "Generated"}
+            return True, {"time": "Success"}
         
-        # FINAL ATTEMPT IF --load FAILS: Use the positional loading
-        if "Invalid option --load" in result.stderr:
-            command[2] = "--load-settings" # Switch back to see if we can trick it
-            # (Logic continues if needed, but let's try --load first)
-
         return False, f"Log: {result.stdout}\nError: {result.stderr}"
 
     except Exception as e:
