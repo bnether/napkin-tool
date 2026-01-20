@@ -325,96 +325,47 @@ PRINTER_MASTER_LIST = {
 
 
 def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides):
-    import os
-    import subprocess
-    import re
-    import stat
-    import shutil
+    import os, subprocess, re, stat, shutil
     from datetime import datetime, timedelta
 
-    # 1. Setup Paths
     base_path = os.path.dirname(os.path.abspath(__file__))
     appimage = os.path.join(base_path, "OrcaSlicer")
-    
-    # Use /tmp for extraction (Streamlit Cloud's reliable writeable space)
     extract_path = "/tmp/orca_extracted"
     exe = os.path.join(extract_path, "bin", "orca-slicer")
     config_path = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
-    
-    stl_abs = os.path.abspath(stl_path)
-    gcode_abs = os.path.abspath(gcode_path)
 
-    # 2. EXTRACTION LOGIC
+    # 1. Reliable Extraction
     if not os.path.exists(exe):
-        try:
-            if os.path.exists(extract_path):
-                shutil.rmtree(extract_path)
-            
-            # Extract AppImage into /tmp
-            subprocess.run([appimage, "--appimage-extract"], cwd="/tmp", check=True)
-            os.rename("/tmp/squashfs-root", extract_path)
-            
-            # Ensure the binary is executable
-            stt = os.stat(exe)
-            os.chmod(exe, stt.st_mode | stat.S_IEXEC)
-        except Exception as e:
-            return False, f"Extraction Failed: {str(e)}"
+        if os.path.exists(extract_path): shutil.rmtree(extract_path)
+        subprocess.run([appimage, "--appimage-extract"], cwd="/tmp", check=True)
+        os.rename("/tmp/squashfs-root", extract_path)
+        os.chmod(exe, 0o755)
 
-    # 3. Build Command (Positional STL at the end)
-    support_val = "true" if str(user_overrides.get('supports')).upper() == "ON" else "false"
-    
+    # 2. The Leanest Possible Command
+    # If --slice is failing, we use the positional 'shorthand' 
+    # that most Slic3r forks support.
     command = [
         exe,
-        "--slice",                 # Mode flag (usually takes no value here)
-        "--load", config_path,     # Load the profile
-        "--output", gcode_abs,     # Destination
-        "--set", f"sparse_infill_density={user_overrides.get('infill', 15)}%",
-        "--set", f"wall_loops={user_overrides.get('walls', 3)}",
-        "--set", f"enable_support={support_val}",
-        stl_abs                    # Input file MUST be at the end for some Orca builds
+        "--slice", 
+        "--load", config_path,
+        "--output", os.path.abspath(gcode_path),
+        os.path.abspath(stl_path)
     ]
 
-    # 4. Environment
+    # 3. Environment (Yesterday's Working Settings)
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
-    env["GDK_BACKEND"] = "x11"
     env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib")
 
     try:
-        # Run Slicer
-        result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
+        # Run and capture everything
+        result = subprocess.run(command, capture_output=True, text=True, env=env)
         
-        if result.returncode != 0:
-            # Check if stderr is empty and fallback to stdout for the error message
-            error_msg = result.stderr if result.stderr.strip() else result.stdout
-            return False, f"Slicer Error: {error_msg}"
-
-        # 5. Metadata Extraction
-        stats = {"time": "Unknown", "finish_time": "Unknown"}
-        if os.path.exists(gcode_abs):
-            with open(gcode_abs, 'r', encoding='utf-8', errors='ignore') as f:
-                f.seek(0, os.SEEK_END)
-                f.seek(max(0, f.tell() - 60000)) # Read more to be safe
-                content = f.read()
-                
-                # Regex for Orca/Bambu time stamps
-                t_match = re.search(r"total estimating time[:=]\s*(.*)", content, re.IGNORECASE)
-                if not t_match:
-                    t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
-                
-                if t_match:
-                    duration_str = t_match.group(1).strip()
-                    stats["time"] = duration_str
-                    try:
-                        h = int(re.search(r'(\d+)h', duration_str).group(1)) if 'h' in duration_str else 0
-                        m = int(re.search(r'(\d+)m', duration_str).group(1)) if 'm' in duration_str else 0
-                        finish_dt = datetime.now() + timedelta(hours=h, minutes=m)
-                        stats["finish_time"] = finish_dt.strftime("%H:%M")
-                    except: pass
-
-            return True, stats
+        if result.returncode == 0:
+            return True, {"time": "Success"}
         
-        return False, "G-code file not generated."
+        # If it fails, we need to see the EXACT output to stop the guessing game
+        return False, f"STDOUT: {result.stdout} \n STDERR: {result.stderr}"
 
     except Exception as e:
         return False, f"System Error: {str(e)}"
