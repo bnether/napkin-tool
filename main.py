@@ -334,38 +334,45 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     exe = os.path.join(extract_path, "bin", "orca-slicer")
     config_path = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
 
-    # 1. Reliable Extraction
+    # 1. Extraction (already solid)
     if not os.path.exists(exe):
         if os.path.exists(extract_path): shutil.rmtree(extract_path)
         subprocess.run([appimage, "--appimage-extract"], cwd="/tmp", check=True)
         os.rename("/tmp/squashfs-root", extract_path)
         os.chmod(exe, 0o755)
 
-    # 2. The Leanest Possible Command
-    # If --slice is failing, we use the positional 'shorthand' 
-    # that most Slic3r forks support.
+    # 2. The Correct 1.9.3 Command Syntax
+    # --slice 0 tells it to slice all plates (which for a single STL is just plate 1)
+    # --load-settings is the correct flag for your .ini
+    # --outputdir is used for the folder, or we use --export-slicedata logic
     command = [
         exe,
-        "--slice", 
-        "--load", config_path,
+        "--slice", "0",              # FIXED: Must have '0' for all plates
+        "--load-settings", config_path, # FIXED: Based on your log's usage guide
         "--output", os.path.abspath(gcode_path),
         os.path.abspath(stl_path)
     ]
 
-    # 3. Environment (Yesterday's Working Settings)
+    # 3. Environment
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib")
 
     try:
-        # Run and capture everything
         result = subprocess.run(command, capture_output=True, text=True, env=env)
         
         if result.returncode == 0:
-            return True, {"time": "Success"}
+            # Metadata parsing
+            stats = {"time": "Unknown", "finish_time": "Unknown"}
+            if os.path.exists(gcode_path):
+                with open(gcode_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()[-60000:]
+                    t_match = re.search(r"total estimating time[:=]\s*(.*)", content, re.IGNORECASE)
+                    if t_match:
+                        stats["time"] = t_match.group(1).strip()
+            return True, stats
         
-        # If it fails, we need to see the EXACT output to stop the guessing game
-        return False, f"STDOUT: {result.stdout} \n STDERR: {result.stderr}"
+        return False, f"Log Output: {result.stdout}\nError: {result.stderr}"
 
     except Exception as e:
         return False, f"System Error: {str(e)}"
