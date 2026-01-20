@@ -337,47 +337,59 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     
     # 2. Extraction
     if not os.path.exists(exe):
-        subprocess.run([appimage, "--appimage-extract"], cwd="/tmp", check=True)
         if os.path.exists(extract_path): shutil.rmtree(extract_path)
+        subprocess.run([appimage, "--appimage-extract"], cwd="/tmp", check=True)
         os.rename("/tmp/squashfs-root", extract_path)
         os.chmod(exe, 0o755)
 
-    # 3. Data Injection (Bypasses CLI Flag issues)
+    # 3. Data Injection (The folder trick that bypassed your "Invalid Option" errors)
     data_dir = "/tmp/orca_data"
     process_dir = os.path.join(data_dir, "user", "default", "process")
     os.makedirs(process_dir, exist_ok=True)
     
-    # FIX: Read the INI and ensure the required G-code is present
+    # FIX: Read the INI and patch it for the Bambu engine
     with open(ini_recipe, 'r') as f:
         lines = f.readlines()
     
-    # Add the required G92 E0 to the layer_change_gcode line
-    # And inject user overrides (Infill, Walls) directly into the file
-    modified_lines = []
+    patched_lines = []
+    # Key settings we want to ensure or override
+    overrides = {
+        "sparse_infill_density": f"{user_overrides.get('infill', 15)}%",
+        "wall_loops": str(user_overrides.get('walls', 3)),
+        "enable_support": "1" if user_overrides.get('supports') == "ON" else "0"
+    }
+
+    found_keys = set()
     for line in lines:
+        # Resolve the G92 E0 error
         if line.startswith("layer_change_gcode"):
-            # Append G92 E0 if it's missing
             if "G92 E0" not in line:
-                line = line.strip() + "\\nG92 E0\\n"
-        elif line.startswith("sparse_infill_density"):
-            line = f"sparse_infill_density = {user_overrides.get('infill', 15)}%\n"
-        elif line.startswith("wall_loops"):
-            line = f"wall_loops = {user_overrides.get('walls', 3)}\n"
-        elif line.startswith("enable_support"):
-            val = "1" if user_overrides.get('supports') == "ON" else "0"
-            line = f"enable_support = {val}\n"
-        modified_lines.append(line)
+                line = line.strip() + "\\nG92 E0\\n\n"
+        
+        # Apply infill/walls/support by replacing existing lines
+        for key, value in overrides.items():
+            if line.startswith(key):
+                line = f"{key} = {value}\n"
+                found_keys.add(key)
+        
+        patched_lines.append(line)
 
-    # Save the "fixed" recipe to the data directory
-    target_ini = os.path.join(process_dir, "active_recipe.ini")
+    # If any keys weren't in the file, append them
+    for key, value in overrides.items():
+        if key not in found_keys:
+            patched_lines.append(f"{key} = {value}\n")
+
+    # Save to the data dir Orca is watching
+    target_ini = os.path.join(process_dir, "recipe.ini")
     with open(target_ini, 'w') as f:
-        f.writelines(modified_lines)
+        f.writelines(patched_lines)
 
+    # 4. Cleanup Output
     output_dir = "/tmp/slicer_output"
     if os.path.exists(output_dir): shutil.rmtree(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
-    # 4. The Command
+    # 5. The Command (Lean & Mean)
     command = [
         exe,
         "--slice", "0",
@@ -386,7 +398,7 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         os.path.abspath(stl_path)
     ]
 
-    # 5. Environment (Yesterday's Offscreen Setup)
+    # 6. Environment
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib")
@@ -394,11 +406,19 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     try:
         result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
         
-        # 6. Success Check
+        # Check for generated G-code
         generated_files = [f for f in os.listdir(output_dir) if f.endswith('.gcode')]
         if generated_files:
             shutil.move(os.path.join(output_dir, generated_files[0]), os.path.abspath(gcode_path))
-            return True, {"status": "G-code Generated"}
+            
+            # Extract time metadata
+            stats = {"time": "Success"}
+            with open(os.path.abspath(gcode_path), 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()[-20000:]
+                m = re.search(r"total estimating time[:=]\s*(.*)", content, re.IGNORECASE)
+                if m: stats["time"] = m.group(1).strip()
+                
+            return True, stats
 
         return False, f"Slicer Error: {result.stderr if result.stderr else result.stdout}"
 
