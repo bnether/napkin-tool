@@ -1,0 +1,6 @@
+Find (Bambu/Orca),Replace with (Prusa/Cloud)
+ironing_type = no ironing,ironing_type = none
+fuzzy_skin = 0,fuzzy_skin = none
+brim_type = auto_brim,brim_type = outer_only
+gap_fill_target = nowhere,gap_fill_enabled = 0
+z_hop_types = Auto Lift,z_hop_types = normal
