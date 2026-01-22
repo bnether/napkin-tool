@@ -392,30 +392,30 @@ import streamlit as st
 
 st.markdown(f"""
     <style>
-    /* 1. PROFESSIONAL RESET: Ensures borders never "expand" a box */
+    /* 1. THE ULTIMATE RESET */
     *, *::before, *::after {{
         box-sizing: border-box !important;
     }}
 
     /* Global Layout */
     .block-container {{
-        padding-top: 0rem !important;
+        padding-top: 2rem !important;
         padding-bottom: 0rem !important;
-        padding-left: 5% !important;
-        padding-right: 5% !important;
     }}
     .stApp {{ background-color: #0e1117; color: #ffffff; margin-top: 60px; }}
 
-    /* Fix for Column Clipping: Gives cards 5px of breathing room */
-    [data-testid="column"] > div {{
-        padding: 5px !important;
+    /* 2. FIX THE "SOUTH WEST" SHIFT 
+       We target the Streamlit column internal div to remove its forced padding 
+       that usually pushes custom cards out of alignment. */
+    [data-testid="column"] {{
+        padding: 10px !important; /* Creates a "buffer zone" around your cards */
     }}
 
-    /* --- MODERN NAVBAR (FIXED TOP) --- */
+    /* --- MODERN NAVBAR --- */
     .nav-wrapper {{
         background-color: #0e1117;
         border-bottom: 1px solid #30363d;
-        width: 100vw;
+        width: 100%;
         position: fixed;
         top: 0;
         left: 0;
@@ -426,67 +426,36 @@ st.markdown(f"""
         height: 60px;
     }}
 
-    /* RE-STYLING BUTTONS TO LOOK LIKE NAV ITEMS */
+    /* NAVIGATION BUTTONS */
     .stButton > button {{
-        padding: 18px 25px !important;
+        padding: 10px 20px !important;
         color: #8b949e !important;
         background: transparent !important;
         border: none !important;
         font-size: 15px !important;
-        font-weight: 500 !important;
-        border-bottom: 2px solid transparent !important;
         border-radius: 0px !important;
-        transition: all 0.3s ease !important;
         height: 60px !important;
-        width: 100% !important;
     }}
 
-    .stButton > button:hover {{
-        color: #58a6ff !important;
-        border-bottom: 2px solid #58a6ff !important;
-        background: transparent !important;
-    }}
-
-    /* Hero Section */
-    .hero-container {{
-        position: relative;
-        width: 100%;
-        height: 550px;
-        background-image: linear-gradient(to bottom, rgba(14, 17, 23, 0) 50%, rgba(14, 17, 23, 1) 100%), url("app/static/home1.jpg");
-        background-size: cover;
-        background-position: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }}
-
-    /* UI Elements - Fixed Borders */
-    .testimonial-card {{
+    /* 3. FIXED CARDS (The specific fix for your issue) */
+    .price-card, .testimonial-card {{ 
         background: #161b22; 
         padding: 30px; 
         border-radius: 15px; 
-        border: 1px solid #30363d;
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        min-height: 180px;
-        max-width: 800px; 
-        margin: 0 auto;
-    }}
-    
-    .price-card {{ 
-        background: #161b22; 
-        padding: 30px; 
-        border-radius: 15px; 
-        border: 1px solid #30363d; 
-        text-align: center; 
-        min-height: 380px; 
-        margin-bottom: 25px;
+        border: 1.5px solid #30363d !important; /* Slightly thicker for visibility */
+        
+        /* THE FIX: Shrink the card slightly so it can't be clipped */
+        width: 98% !important; 
+        margin: 0 auto !important; 
+        
+        box-sizing: border-box !important;
+        display: block;
+        text-align: center;
     }}
 
     .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
 
-    /* --- FIXED FOOTER SECTION --- */
+    /* --- FOOTER --- */
     .footer-minimal {{
         background-color: #1e3a8a; 
         border-top: 3px solid #3b82f6;
@@ -494,30 +463,13 @@ st.markdown(f"""
         text-align: center; 
         color: #e2e8f0; 
         margin-top: 4rem;
-        margin-left: -6% !important; 
-        margin-right: -6% !important; 
-        width: 112% !important;
+        width: 100% !important;
     }}
 
-    .footer-icon-box {{
-        width: 35px;
-        height: 35px;
-        margin: 0 10px;
-        display: inline-flex;
-        justify-content: center;
-        align-items: center;
-    }}
-
-    .footer-icon-box img {{
-        width: 24px;
-        height: 24px;
-        filter: brightness(0) invert(1);
-        object-fit: contain;
-    }}
-
-    /* Hide Streamlit Native UI */
-    header {{ visibility: hidden; }}
-    footer {{ visibility: hidden; }}
+    /* Hide Native UI */
+    header {{ visibility: hidden !important; }}
+    footer {{ visibility: hidden !important; }}
+    [data-testid="stDecoration"] {{ display: none; }}
     .stAppDeployButton {{ display:none; }}
     </style>
     """, unsafe_allow_html=True)
