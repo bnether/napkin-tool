@@ -328,68 +328,37 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     import os, subprocess, re, stat, shutil
     from datetime import datetime
 
-    # 1. Paths
     base_path = os.path.dirname(os.path.abspath(__file__))
     appimage = os.path.join(base_path, "OrcaSlicer")
     extract_path = "/tmp/orca_extracted"
     exe = os.path.join(extract_path, "bin", "orca-slicer")
     ini_recipe = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
     
-    # 2. Extraction
+    # 1. Extraction (Mandatory for Streamlit)
     if not os.path.exists(exe):
-        if os.path.exists(extract_path): shutil.rmtree(extract_path)
         subprocess.run([appimage, "--appimage-extract"], cwd="/tmp", check=True)
+        if os.path.exists(extract_path): shutil.rmtree(extract_path)
         os.rename("/tmp/squashfs-root", extract_path)
         os.chmod(exe, 0o755)
 
-    # 3. Data Injection (The folder trick that bypassed your "Invalid Option" errors)
+    # 2. THE "SANITY" INJECTION
+    # We create a full environment so Orca doesn't use its broken defaults
     data_dir = "/tmp/orca_data"
-    process_dir = os.path.join(data_dir, "user", "default", "process")
-    os.makedirs(process_dir, exist_ok=True)
+    if os.path.exists(data_dir): shutil.rmtree(data_dir)
     
-    # FIX: Read the INI and patch it for the Bambu engine
-    with open(ini_recipe, 'r') as f:
-        lines = f.readlines()
-    
-    patched_lines = []
-    # Key settings we want to ensure or override
-    overrides = {
-        "sparse_infill_density": f"{user_overrides.get('infill', 15)}%",
-        "wall_loops": str(user_overrides.get('walls', 3)),
-        "enable_support": "1" if user_overrides.get('supports') == "ON" else "0"
-    }
+    # Create the three pillars of a Bambu/Orca profile
+    for folder in ["process", "printer", "filament"]:
+        path = os.path.join(data_dir, "user", "default", folder)
+        os.makedirs(path, exist_ok=True)
+        # Put the recipe in EVERY folder so it overrides everything
+        shutil.copy(ini_recipe, os.path.join(path, f"override_{folder}.ini"))
 
-    found_keys = set()
-    for line in lines:
-        # Resolve the G92 E0 error
-        if line.startswith("layer_change_gcode"):
-            if "G92 E0" not in line:
-                line = line.strip() + "\\nG92 E0\\n\n"
-        
-        # Apply infill/walls/support by replacing existing lines
-        for key, value in overrides.items():
-            if line.startswith(key):
-                line = f"{key} = {value}\n"
-                found_keys.add(key)
-        
-        patched_lines.append(line)
-
-    # If any keys weren't in the file, append them
-    for key, value in overrides.items():
-        if key not in found_keys:
-            patched_lines.append(f"{key} = {value}\n")
-
-    # Save to the data dir Orca is watching
-    target_ini = os.path.join(process_dir, "recipe.ini")
-    with open(target_ini, 'w') as f:
-        f.writelines(patched_lines)
-
-    # 4. Cleanup Output
     output_dir = "/tmp/slicer_output"
-    if os.path.exists(output_dir): shutil.rmtree(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
-    # 5. The Command (Lean & Mean)
+    # 3. The Command
+    # We point to the datadir and the STL. 
+    # We don't use --load-settings because it's already "installed" in datadir
     command = [
         exe,
         "--slice", "0",
@@ -398,7 +367,7 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         os.path.abspath(stl_path)
     ]
 
-    # 6. Environment
+    # 4. Environment
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
     env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib")
@@ -406,60 +375,37 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
     try:
         result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
         
-        # Check for generated G-code
+        # Check for G-code
         generated_files = [f for f in os.listdir(output_dir) if f.endswith('.gcode')]
         if generated_files:
             shutil.move(os.path.join(output_dir, generated_files[0]), os.path.abspath(gcode_path))
-            
-            # Extract time metadata
-            stats = {"time": "Success"}
-            with open(os.path.abspath(gcode_path), 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()[-20000:]
-                m = re.search(r"total estimating time[:=]\s*(.*)", content, re.IGNORECASE)
-                if m: stats["time"] = m.group(1).strip()
-                
-            return True, stats
+            return True, {"status": "Success"}
 
+        # If it still fails, the log will now tell us WHICH of the three it's missing
         return False, f"Slicer Error: {result.stderr if result.stderr else result.stdout}"
 
     except Exception as e:
         return False, f"System Error: {str(e)}"
     
 
+
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
 st.markdown(f"""
     <style>
-<<<<<<< HEAD
-    /* 1. THE ULTIMATE RESET */
-    *, *::before, *::after {{
-        box-sizing: border-box !important;
-    }}
-
-=======
->>>>>>> parent of 06bcdb5 (css change for button borders)
     /* Global Layout */
     .block-container {{
-        padding-top: 2rem !important;
+        padding-top: 0rem !important;
         padding-bottom: 0rem !important;
+        padding-left: 5% !important;
+        padding-right: 5% !important;
     }}
     .stApp {{ background-color: #0e1117; color: #ffffff; margin-top: 60px; }}
 
-<<<<<<< HEAD
-    /* 2. FIX THE "SOUTH WEST" SHIFT 
-       We target the Streamlit column internal div to remove its forced padding 
-       that usually pushes custom cards out of alignment. */
-    [data-testid="column"] {{
-        padding: 10px !important; /* Creates a "buffer zone" around your cards */
-    }}
-
-    /* --- MODERN NAVBAR --- */
-=======
     /* --- MODERN NAVBAR (FIXED TOP) --- */
->>>>>>> parent of 06bcdb5 (css change for button borders)
     .nav-wrapper {{
         background-color: #0e1117;
         border-bottom: 1px solid #30363d;
-        width: 100%;
+        width: 100vw;
         position: fixed;
         top: 0;
         left: 0;
@@ -470,9 +416,6 @@ st.markdown(f"""
         height: 60px;
     }}
 
-<<<<<<< HEAD
-    /* NAVIGATION BUTTONS */
-=======
     /* Target the Column Container for the Nav */
     [data-testid="column"] {{
         display: flex;
@@ -481,33 +424,20 @@ st.markdown(f"""
     }}
 
     /* RE-STYLING BUTTONS TO LOOK LIKE NAV ITEMS */
->>>>>>> parent of 06bcdb5 (css change for button borders)
     .stButton > button {{
-        padding: 10px 20px !important;
+        padding: 18px 25px !important;
         color: #8b949e !important;
         background: transparent !important;
         border: none !important;
         font-size: 15px !important;
+        font-weight: 500 !important;
+        border-bottom: 2px solid transparent !important;
         border-radius: 0px !important;
+        transition: all 0.3s ease !important;
         height: 60px !important;
+        width: 100% !important;
     }}
 
-<<<<<<< HEAD
-    /* 3. FIXED CARDS (The specific fix for your issue) */
-    .price-card, .testimonial-card {{ 
-        background: #161b22; 
-        padding: 30px; 
-        border-radius: 15px; 
-        border: 1.5px solid #30363d !important; /* Slightly thicker for visibility */
-        
-        /* THE FIX: Shrink the card slightly so it can't be clipped */
-        width: 98% !important; 
-        margin: 0 auto !important; 
-        
-        box-sizing: border-box !important;
-        display: block;
-        text-align: center;
-=======
     .stButton > button:hover {{
         color: #58a6ff !important;
         border-bottom: 2px solid #58a6ff !important;
@@ -544,7 +474,6 @@ st.markdown(f"""
         background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
         display: flex; align-items: center; justify-content: center; min-height: 180px;
         max-width: 800px; margin: 0 auto;
->>>>>>> parent of 06bcdb5 (css change for button borders)
     }}
     .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
 
@@ -558,24 +487,8 @@ st.markdown(f"""
     .per-month {{ font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }}
     .currency-sub {{ font-size: 0.85rem; color: #8b949e; margin-top: -10px; margin-bottom: 15px; }}
 
-    /* --- FOOTER --- */
+    /* --- FIXED FOOTER SECTION --- */
     .footer-minimal {{
-<<<<<<< HEAD
-        background-color: #1e3a8a; 
-        border-top: 3px solid #3b82f6;
-        padding: 40px 15px; 
-        text-align: center; 
-        color: #e2e8f0; 
-        margin-top: 4rem;
-        width: 100% !important;
-    }}
-
-    /* Hide Native UI */
-    header {{ visibility: hidden !important; }}
-    footer {{ visibility: hidden !important; }}
-    [data-testid="stDecoration"] {{ display: none; }}
-    .stAppDeployButton {{ display:none; }}
-=======
         background-color: #1e3a8a; border-top: 3px solid #3b82f6;
         padding: 40px 15px; text-align: center; color: #e2e8f0; margin-top: 4rem;
         margin-left: -6% !important; margin-right: -6% !important; width: 112% !important;
@@ -599,7 +512,6 @@ st.markdown(f"""
 
     header {{ visibility: hidden; }}
     footer {{ visibility: hidden; }}
->>>>>>> parent of 06bcdb5 (css change for button borders)
     </style>
     """, unsafe_allow_html=True)
 
