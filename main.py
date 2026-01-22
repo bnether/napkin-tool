@@ -388,15 +388,17 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         return False, f"System Error: {str(e)}"
     
 
-import streamlit as st
-
+# --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
 st.markdown(f"""
     <style>
+<<<<<<< HEAD
     /* 1. THE ULTIMATE RESET */
     *, *::before, *::after {{
         box-sizing: border-box !important;
     }}
 
+=======
+>>>>>>> parent of 06bcdb5 (css change for button borders)
     /* Global Layout */
     .block-container {{
         padding-top: 2rem !important;
@@ -404,6 +406,7 @@ st.markdown(f"""
     }}
     .stApp {{ background-color: #0e1117; color: #ffffff; margin-top: 60px; }}
 
+<<<<<<< HEAD
     /* 2. FIX THE "SOUTH WEST" SHIFT 
        We target the Streamlit column internal div to remove its forced padding 
        that usually pushes custom cards out of alignment. */
@@ -412,6 +415,9 @@ st.markdown(f"""
     }}
 
     /* --- MODERN NAVBAR --- */
+=======
+    /* --- MODERN NAVBAR (FIXED TOP) --- */
+>>>>>>> parent of 06bcdb5 (css change for button borders)
     .nav-wrapper {{
         background-color: #0e1117;
         border-bottom: 1px solid #30363d;
@@ -426,7 +432,18 @@ st.markdown(f"""
         height: 60px;
     }}
 
+<<<<<<< HEAD
     /* NAVIGATION BUTTONS */
+=======
+    /* Target the Column Container for the Nav */
+    [data-testid="column"] {{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }}
+
+    /* RE-STYLING BUTTONS TO LOOK LIKE NAV ITEMS */
+>>>>>>> parent of 06bcdb5 (css change for button borders)
     .stButton > button {{
         padding: 10px 20px !important;
         color: #8b949e !important;
@@ -437,6 +454,7 @@ st.markdown(f"""
         height: 60px !important;
     }}
 
+<<<<<<< HEAD
     /* 3. FIXED CARDS (The specific fix for your issue) */
     .price-card, .testimonial-card {{ 
         background: #161b22; 
@@ -451,12 +469,60 @@ st.markdown(f"""
         box-sizing: border-box !important;
         display: block;
         text-align: center;
+=======
+    .stButton > button:hover {{
+        color: #58a6ff !important;
+        border-bottom: 2px solid #58a6ff !important;
+        background: transparent !important;
     }}
 
+    /* Active State (Triggered by 'primary' type in Python) */
+    .stButton > button[kind="primary"] {{
+        color: #ffffff !important;
+        border-bottom: 2px solid #3b82f6 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }}
+
+    /* Hero Section */
+    .hero-container {{
+        position: relative;
+        width: 100%;
+        height: 550px;
+        background-image: linear-gradient(to bottom, rgba(14, 17, 23, 0) 50%, rgba(14, 17, 23, 1) 100%), url("app/static/home1.jpg");
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0px;
+    }}
+    .section-content {{ position: relative; z-index: 2; width: 70%; text-align: center; }}
+    .section-text {{ font-size: 2.8rem; font-weight: 800; color: white; line-height: 1.2; text-shadow: 2px 2px 15px rgba(0,0,0,0.9); }}
+    .highlight {{ color: #58a6ff; }}
+
+    /* UI Elements */
+    .testimonial-card {{
+        background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d;
+        display: flex; align-items: center; justify-content: center; min-height: 180px;
+        max-width: 800px; margin: 0 auto;
+>>>>>>> parent of 06bcdb5 (css change for button borders)
+    }}
+    .testimonial-img {{ width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-right: 25px; border: 2px solid #3b82f6; }}
+
+    /* Pagination Dots */
+    .dot-container {{ text-align: center; margin-top: 15px; }}
+    .dot {{ height: 10px; width: 10px; margin: 0 5px; background-color: #30363d; border-radius: 50%; display: inline-block; }}
+    .dot-active {{ background-color: #3b82f6; width: 25px; border-radius: 5px; }}
+    
+    .price-card {{ background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; text-align: center; min-height: 380px; margin-bottom: 25px;}}
     .price-amt {{ font-size: 2.8rem; font-weight: 800; color: #58a6ff; }}
+    .per-month {{ font-size: 1rem; color: #8b949e; font-weight: 400; margin-left: 5px; }}
+    .currency-sub {{ font-size: 0.85rem; color: #8b949e; margin-top: -10px; margin-bottom: 15px; }}
 
     /* --- FOOTER --- */
     .footer-minimal {{
+<<<<<<< HEAD
         background-color: #1e3a8a; 
         border-top: 3px solid #3b82f6;
         padding: 40px 15px; 
@@ -471,8 +537,34 @@ st.markdown(f"""
     footer {{ visibility: hidden !important; }}
     [data-testid="stDecoration"] {{ display: none; }}
     .stAppDeployButton {{ display:none; }}
+=======
+        background-color: #1e3a8a; border-top: 3px solid #3b82f6;
+        padding: 40px 15px; text-align: center; color: #e2e8f0; margin-top: 4rem;
+        margin-left: -6% !important; margin-right: -6% !important; width: 112% !important;
+    }}
+
+    .footer-icon-box {{
+        width: 35px;
+        height: 35px;
+        margin: 0 10px;
+        display: inline-flex; /* Keeps icons side-by-side */
+        justify-content: center;
+        align-items: center;
+    }}
+
+    .footer-icon-box img {{
+        width: 24px; /* Fixes the large size */
+        height: 24px;
+        filter: brightness(0) invert(1); /* Turns black icons WHITE */
+        object-fit: contain;
+    }}
+
+    header {{ visibility: hidden; }}
+    footer {{ visibility: hidden; }}
+>>>>>>> parent of 06bcdb5 (css change for button borders)
     </style>
     """, unsafe_allow_html=True)
+
 
 # --- NAVBAR LOGIC (Session-Safe Buttons with CSS Styling) ---
 pages = ["Home", "Make a Part", "Pricing", "Help", "Examples", "Contact", "Profile"]
