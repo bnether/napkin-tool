@@ -309,7 +309,7 @@ def clean_infill(infill_value):
 
 
 PRINTER_MASTER_LIST = {
-    "BambuLab": ["X1-Carbon", "X1-E (Enterprise)", "P1S", "P1P", "A1", "A1-Mini"],
+    "BambuLab": ["X1-Carbon", "X1-E (Enterprise)", "P1S", "P1P", "A1", "A1 Mini"],
     "Prusa": ["MK4", "MK3S+", "XL", "MINI+", "SL1S Speed (Resin)"],
     "UltiMaker": ["S7", "S5", "S3", "Method X", "Method XL", "2+ Connect"],
     "Markforged": ["Onyx One", "Mark Two", "Onyx Pro", "X7 (Industrial)"],
@@ -323,71 +323,90 @@ PRINTER_MASTER_LIST = {
 
 
 
-
 def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides):
-    import os, subprocess, re, stat, shutil
-    from datetime import datetime
-
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    appimage = os.path.join(base_path, "OrcaSlicer")
-    extract_path = "/tmp/orca_extracted"
-    exe = os.path.join(extract_path, "bin", "orca-slicer")
-    ini_recipe = os.path.join(base_path, "recipes", f"{full_config_name}.ini")
+    # 1. Setup Paths
+    exe = os.path.abspath("./Slicer")
+    stl_abs = os.path.abspath(stl_path)
+    gcode_abs = os.path.abspath(gcode_path)
     
-    # 1. Extraction (Mandatory for Streamlit)
+    recipe_filename = f"{full_config_name}.ini"
+    config_path = os.path.abspath(os.path.join("recipes", recipe_filename))
+    
+    if not os.path.exists(config_path):
+        return False, f"Missing recipe: {recipe_filename}"
     if not os.path.exists(exe):
-        subprocess.run([appimage, "--appimage-extract"], cwd="/tmp", check=True)
-        if os.path.exists(extract_path): shutil.rmtree(extract_path)
-        os.rename("/tmp/squashfs-root", extract_path)
-        os.chmod(exe, 0o755)
+        return False, "Slicer binary missing."
 
-    # 2. THE "SANITY" INJECTION
-    # We create a full environment so Orca doesn't use its broken defaults
-    data_dir = "/tmp/orca_data"
-    if os.path.exists(data_dir): shutil.rmtree(data_dir)
-    
-    # Create the three pillars of a Bambu/Orca profile
-    for folder in ["process", "printer", "filament"]:
-        path = os.path.join(data_dir, "user", "default", folder)
-        os.makedirs(path, exist_ok=True)
-        # Put the recipe in EVERY folder so it overrides everything
-        shutil.copy(ini_recipe, os.path.join(path, f"override_{folder}.ini"))
+    os.chmod(exe, 0o755)
 
-    output_dir = "/tmp/slicer_output"
-    os.makedirs(output_dir, exist_ok=True)
-
-    # 3. The Command
-    # We point to the datadir and the STL. 
-    # We don't use --load-settings because it's already "installed" in datadir
+    # 2. Build the Command
     command = [
-        exe,
-        "--slice", "0",
-        "--datadir", data_dir,
-        "--outputdir", output_dir,
-        os.path.abspath(stl_path)
+        exe, "--appimage-extract-and-run",
+        "--slice", 
+        "--load", config_path,
+        "--output", gcode_abs,
+        "--fill-density", f"{user_overrides['infill']}%",
+        "--perimeters", str(user_overrides['walls'])
     ]
+    
+    if user_overrides['supports'] == "ON":
+        command.append("--support-material")
+    else:
+        command.append("--no-support-material")
 
-    # 4. Environment
+    command.append(stl_abs)
+    
+    # 3. Execution
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
-    env["LD_LIBRARY_PATH"] = os.path.join(extract_path, "lib")
 
     try:
-        result = subprocess.run(command, capture_output=True, text=True, env=env, timeout=300)
+        # --- FIX: INITIALIZE STATS HERE ---
+        stats = {"time": "Unknown", "finish_time": "Unknown"}
+
+        # Run the process
+        subprocess.run(command, capture_output=True, text=True, check=True, env=env, timeout=180)
         
-        # Check for G-code
-        generated_files = [f for f in os.listdir(output_dir) if f.endswith('.gcode')]
-        if generated_files:
-            shutil.move(os.path.join(output_dir, generated_files[0]), os.path.abspath(gcode_path))
-            return True, {"status": "Success"}
+        # --- FIX: METADATA EXTRACTION ---
+        if os.path.exists(gcode_abs):
+            with open(gcode_abs, 'r') as f:
+                # Read end of file for PrusaSlicer metadata (usually in the last 30kb)
+                f.seek(0, os.SEEK_END)
+                f.seek(max(0, f.tell() - 30000))
+                content = f.read()
+                
+                # Look for duration string (e.g., "estimated printing time = 1h 20m")
+                t_match = re.search(r"estimated printing time.*=\s*(.*)", content, re.IGNORECASE)
+                
+                if t_match:
+                    duration_str = t_match.group(1).strip()
+                    stats["time"] = duration_str
+                    
+                    # Time Math for Finish Time
+                    try:
+                        h_match = re.search(r'(\d+)h', duration_str)
+                        m_match = re.search(r'(\d+)m', duration_str)
+                        s_match = re.search(r'(\d+)s', duration_str)
+                        
+                        hours = int(h_match.group(1)) if h_match else 0
+                        minutes = int(m_match.group(1)) if m_match else 0
+                        seconds = int(s_match.group(1)) if s_match else 0
+                        
+                        total_duration = timedelta(hours=hours, minutes=minutes, seconds=seconds)
+                        finish_dt = datetime.now() + total_duration
+                        stats["finish_time"] = finish_dt.strftime("%I:%M %p")
+                    except:
+                        stats["finish_time"] = "Calc Error"
 
-        # If it still fails, the log will now tell us WHICH of the three it's missing
-        return False, f"Slicer Error: {result.stderr if result.stderr else result.stdout}"
+            return True, stats
+        
+        return False, "G-code file not generated."
 
+    except subprocess.CalledProcessError as e:
+        return False, f"Slicer Error: {e.stderr}"
     except Exception as e:
         return False, f"System Error: {str(e)}"
     
-
 
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
 st.markdown(f"""
@@ -1411,7 +1430,6 @@ st.markdown("""
         <p style="font-size:0.75rem; margin-top: 25px; opacity: 0.7; color: white;">© 2025 Napkin Manufacturing Tool. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)
-
 
 
 
