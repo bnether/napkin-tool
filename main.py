@@ -1155,7 +1155,7 @@ elif st.session_state.page == "Profile":
         
             # --- UNIFIED PRINTER FLEET MANAGER ---
             st.markdown("### Manage Printers")
-            
+
             printer_list = fleet_df['printer nickname'].tolist() if not fleet_df.empty else []
             options = ["+ Add New Printer"] + printer_list
             selection = st.selectbox("Select a printer to manage or add a new one:", options)
@@ -1237,6 +1237,14 @@ elif st.session_state.page == "Profile":
                 
                 # Support Logic: Index 0 is "ON", Index 1 is "OFF"
                 supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True, index=0 if init_supports == "ON" else 1)
+                
+                # Wireless Configuration Placeholder Button
+                st.button(
+                    "Configure Wireless Connection", 
+                    use_container_width=True, 
+                    disabled=True, 
+                    help="This function is under development"
+                )
 
                 st.markdown("---")
                 if is_new:
