@@ -1239,23 +1239,24 @@ elif st.session_state.page == "Profile":
                 supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True, index=0 if init_supports == "ON" else 1)
                 
                 # --- FORM-SAFE FAKE BUTTON (High Contrast) ---
-                # Use these specific hex codes for a perfect "Disabled" match
                 st.markdown(f"""
-                    <div title="This function is under development" style="
-                        cursor: not-allowed;
-                        background-color: #f0f2f6;
-                        color: rgba(49, 51, 63, 0.4);
-                        padding: 10px 20px;
-                        border-radius: 8px;
-                        border: 1px solid rgba(49, 51, 63, 0.2);
-                        text-align: center;
-                        font-size: 14px;
-                        user-select: none;
-                        width: 100%;
-                    ">
-                        Configure Wireless Connection
-                    </div>
-                """, unsafe_allow_html=True)
+                <div title="This function is under development" style="
+                    cursor: not-allowed;
+                    background-color: #eeeeee;
+                    color: #888888;
+                    padding: 8px 16px;
+                    border-radius: 8px;
+                    border: 1px solid #dddddd;
+                    text-align: center;
+                    font-size: 16px;
+                    font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                    user-select: none;
+                    width: 100%;
+                    margin-bottom: 10px;
+                ">
+                    Configure Wireless Connection
+                </div>
+            """, unsafe_allow_html=True)
 
                 st.markdown("---")
                 if is_new:
