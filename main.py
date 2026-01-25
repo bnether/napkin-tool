@@ -1239,20 +1239,19 @@ elif st.session_state.page == "Profile":
                 supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True, index=0 if init_supports == "ON" else 1)
                 
                 # --- FORM-SAFE FAKE BUTTON (High Contrast) ---
+                # Use these specific hex codes for a perfect "Disabled" match
                 st.markdown(f"""
                     <div title="This function is under development" style="
                         cursor: not-allowed;
                         background-color: #f0f2f6;
-                        color: #31333f;
+                        color: rgba(49, 51, 63, 0.4);
                         padding: 10px 20px;
                         border-radius: 8px;
                         border: 1px solid rgba(49, 51, 63, 0.2);
                         text-align: center;
-                        font-size: 16px;
-                        font-family: 'Source Sans Pro', sans-serif;
-                        margin-bottom: 15px;
+                        font-size: 14px;
                         user-select: none;
-                        font-weight: 400;
+                        width: 100%;
                     ">
                         Configure Wireless Connection
                     </div>
