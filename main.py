@@ -890,8 +890,7 @@ elif st.session_state.page == "Make a Part":
                                         "Download G-Code", 
                                         data=g_file, 
                                         file_name=f"{selected_p}_part.gcode", 
-                                        use_container_width=True,
-                                        type="primary" # Using primary makes it stand out as the main action
+                                        use_container_width=True
                                     )
                                 
                                 # The greyed out 'Send to Printer' button
