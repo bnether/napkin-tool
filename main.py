@@ -844,8 +844,8 @@ elif st.session_state.page == "Make a Part":
             d1, d2 = st.columns(2)
             with open("part.stl", "rb") as file:
                 stl_data = file.read()
-                d1.download_button(label="Download STL", data=stl_data, file_name="part.stl", use_container_width=True)
-            if d2.button("Prepare for Print", use_container_width=True):
+                d1.download_button(label="Download STL", data=stl_data, file_name="part.stl", use_container_width=True, type="primary")
+            if d2.button("Prepare for Print", use_container_width=True, type="primary"):
                 st.session_state.show_slicing_menu = True
 
             # --- DYNAMIC SLICING MENU ---
