@@ -841,12 +841,41 @@ elif st.session_state.page == "Make a Part":
         # --- DOWNLOAD & PRINT SECTION ---
         if st.session_state.get('last_code') and os.path.exists("part.stl"):
             st.markdown("---")
-            d1, d2 = st.columns(2)
-            with open("part.stl", "rb") as file:
-                stl_data = file.read()
-                d1.download_button(label="Download STL", data=stl_data, file_name="part.stl", use_container_width=True, type="primary")
-            if d2.button("Prepare for Print", use_container_width=True, type="primary"):
-                st.session_state.show_slicing_menu = True
+
+            # Wrap everything in a named container to "isolate" the CSS
+            with st.container():
+                # This CSS ONLY targets buttons inside this specific container
+                st.markdown("""
+                    <style>
+                    [data-testid="stVerticalBlock"] [data-testid="stHorizontalBlock"] .stButton button, 
+                    [data-testid="stVerticalBlock"] [data-testid="stHorizontalBlock"] .stDownloadButton button {
+                        height: 3rem;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        text-decoration: none !important; /* Removes link underline */
+                        margin: 0px !important;
+                    }
+                    </style>
+                """, unsafe_allow_html=True)
+
+                d1, d2 = st.columns(2)
+                
+                with open("part.stl", "rb") as file:
+                    stl_data = file.read()
+                    d1.download_button(
+                        label="Download STL", 
+                        data=stl_data, 
+                        file_name="part.stl", 
+                        use_container_width=True
+                    )
+                    
+                if d2.button("Prepare for Print", use_container_width=True):
+                    st.session_state.show_slicing_menu = True
+
+
+
+            
 
             # --- DYNAMIC SLICING MENU ---
             if st.session_state.get("show_slicing_menu", False):
