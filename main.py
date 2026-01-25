@@ -1240,13 +1240,13 @@ elif st.session_state.page == "Profile":
                 
                 # --- FORM-SAFE FAKE BUTTON (High Contrast) ---
                 st.markdown(f"""
-                <div title="This function is under development" style="
+                    <div title="This function is under development" style="
                     cursor: not-allowed;
-                    background-color: #eeeeee;
+                    background-color: transparent;
                     color: #888888;
                     padding: 8px 16px;
                     border-radius: 8px;
-                    border: 1px solid #dddddd;
+                    border: 1px solid #888888;
                     text-align: center;
                     font-size: 16px;
                     font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
