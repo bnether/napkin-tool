@@ -864,7 +864,7 @@ elif st.session_state.page == "Make a Part":
                     # --- SIMPLE CLEAN INFO BOX ---
                     printer_display = f"{p_settings['brand']} {p_settings['model']} ({p_settings['material']})"
                     st.info(f"**{printer_display}**")
-                    
+
                     if st.button("Generate G-Code (Slice)", use_container_width=True):
                         with st.spinner(f"Slicing for {selected_p}..."):
                             # Ensure we match the file naming convention exactly
@@ -885,7 +885,22 @@ elif st.session_state.page == "Make a Part":
                                 m3.metric("Est. Finish", result['finish_time'])
                                 
                                 with open("part.gcode", "rb") as g_file:
-                                    st.download_button("Download G-Code", data=g_file, file_name=f"{selected_p}_part.gcode", use_container_width=True)
+                                    # The primary action button
+                                    st.download_button(
+                                        "Download G-Code", 
+                                        data=g_file, 
+                                        file_name=f"{selected_p}_part.gcode", 
+                                        use_container_width=True,
+                                        type="primary" # Using primary makes it stand out as the main action
+                                    )
+                                
+                                # The greyed out 'Send to Printer' button
+                                st.button(
+                                    "Send to Printer", 
+                                    use_container_width=True, 
+                                    disabled=True, 
+                                    help="This function is under development"
+                                )
                             else:
                                 st.error(f"Slicing failed: {result}")
 
