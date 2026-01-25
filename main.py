@@ -1238,13 +1238,17 @@ elif st.session_state.page == "Profile":
                 # Support Logic: Index 0 is "ON", Index 1 is "OFF"
                 supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True, index=0 if init_supports == "ON" else 1)
                 
-                # Wireless Configuration Placeholder Button
+                # FIX: Use a columns wrapper to allow a non-submit button-like element inside a form
+                # We use a button but don't assign it to a variable to prevent the form submission conflict
+                st.markdown(" ") # Gap for spacing
                 st.button(
                     "Configure Wireless Connection", 
                     use_container_width=True, 
                     disabled=True, 
-                    help="This function is under development"
+                    help="This function is under development",
+                    key="wireless_dev_btn" # Unique key prevents widget collision
                 )
+
 
                 st.markdown("---")
                 if is_new:
