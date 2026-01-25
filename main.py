@@ -1238,21 +1238,21 @@ elif st.session_state.page == "Profile":
                 # Support Logic: Index 0 is "ON", Index 1 is "OFF"
                 supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True, index=0 if init_supports == "ON" else 1)
                 
-                # --- FORM-SAFE FAKE BUTTON ---
-                # This looks identical to a disabled st.button but won't crash the form
+                # --- FORM-SAFE FAKE BUTTON (High Contrast) ---
                 st.markdown(f"""
                     <div title="This function is under development" style="
                         cursor: not-allowed;
-                        background-color: rgba(49, 51, 63, 0.1);
-                        color: rgba(49, 51, 63, 0.4);
+                        background-color: #f0f2f6;
+                        color: #31333f;
                         padding: 10px 20px;
                         border-radius: 8px;
                         border: 1px solid rgba(49, 51, 63, 0.2);
                         text-align: center;
                         font-size: 16px;
-                        font-family: sans-serif;
-                        margin-bottom: 10px;
+                        font-family: 'Source Sans Pro', sans-serif;
+                        margin-bottom: 15px;
                         user-select: none;
+                        font-weight: 400;
                     ">
                         Configure Wireless Connection
                     </div>
