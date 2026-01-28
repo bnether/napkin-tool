@@ -322,8 +322,49 @@ PRINTER_MASTER_LIST = {
 }
 
 
+def apply_bambu_overrides(gcode_path, brand, model):
+    """
+    Surgically injects Bambu machine logic into the G-code file.
+    Uses a 150C no-ooze temp for safe, universal homing.
+    """
+    if "bambu" not in brand.lower():
+        return 
 
-def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides):
+    with open(gcode_path, 'r') as f:
+        lines = f.readlines()
+
+    is_a1 = "A1" in model.upper()
+    cut_move = "G1 X-10 F3000\n" if is_a1 else "G1 X1 Y10 F12000\nG1 X1 Y-0.5 F3000\nG1 Y10 F3000\n"
+
+    header = [
+        "; HEADER_BLOCK_START\n",
+        f"; printer_model: {brand} {model}\n",
+        "; ams_mapping: 0\n",
+        "; HEADER_BLOCK_END\n",
+        "M1002 gcode_claim_action 2\n",
+        "M83\n",             # Relative Extrusion
+        "M106 P2 S0\n",      # Ensure Aux Fan is off during start
+        "M104 S150\n",       # Heat to No-Ooze Temp
+        "G28\n",             # Home all axes
+        "; --- Body of Prusa G-code Follows ---\n"
+    ]
+
+    footer = [
+        "\n; --- Bambu Specific Cleanup ---\n",
+        "M400\n",
+        cut_move,
+        "G1 E-15 F1000\n",   # Retract for AMS
+        "M104 S0\n",
+        "M140 S0\n",
+        "M107\n",            # Fans off
+        "M84\n"              # Motors off
+    ]
+
+    with open(gcode_path, 'w') as f:
+        f.writelines(header + lines + footer)
+
+
+def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides, p_settings):
     # 1. Setup Paths
     exe = os.path.abspath("./Slicer")
     stl_abs = os.path.abspath(stl_path)
@@ -369,6 +410,11 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         
         # --- FIX: METADATA EXTRACTION ---
         if os.path.exists(gcode_abs):
+            
+            # --- ADDED: BAMBU POST-PROCESSING ---
+            # This only runs if p_settings['brand'] contains 'Bambu'
+            apply_bambu_overrides(gcode_abs, p_settings['brand'], p_settings['model'])
+            
             with open(gcode_abs, 'r') as f:
                 # Read end of file for PrusaSlicer metadata (usually in the last 30kb)
                 f.seek(0, os.SEEK_END)
@@ -406,6 +452,7 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides)
         return False, f"Slicer Error: {e.stderr}"
     except Exception as e:
         return False, f"System Error: {str(e)}"
+    
     
 
 # --- CUSTOM CSS (Button logic unchanged, Footer fixed) ---
