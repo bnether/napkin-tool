@@ -923,7 +923,8 @@ elif st.session_state.page == "Make a Part":
                                 "supports": p_settings['supports']
                             }
                             
-                            success, result = run_slicing_workflow("part.stl", "part.gcode", hardware_name, overrides)
+                            # Make sure p_settings exists in your session state or local variables
+                            success, result = run_slicing_workflow("part.stl", "part.gcode", hardware_name, overrides, p_settings)
                             
                             if success:
                                 st.success("Slicing Complete!")
