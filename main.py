@@ -861,7 +861,7 @@ elif st.session_state.page == "Make a Part":
                             )
                             
                             inputs = [prompt, st.session_state.current_img] if upload_choice == "Sketch + Description" else [prompt]
-                            response = client.models.generate_content(model="gemini-2.0-flash-exp", contents=inputs)
+                            response = client.models.generate_content(model="gemini-1.5-flash", contents=inputs)
                             
                             scad_match = re.search(r"```openscad(.*?)```", response.text, re.DOTALL)
                             logic_match = re.search(r"\[DECODED LOGIC\]:(.*?)\[", response.text, re.DOTALL)
