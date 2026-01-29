@@ -888,68 +888,69 @@ elif st.session_state.page == "Make a Part":
         # --- DOWNLOAD & PRINT SECTION ---
         if st.session_state.get('last_code') and os.path.exists("part.stl"):
             st.markdown("---")
-            d1, d2 = st.columns(2)
+            
+            # Simplified to a single button for Download STL
             with open("part.stl", "rb") as file:
                 stl_data = file.read()
-                d1.download_button(label="Download STL", data=stl_data, file_name="part.stl", use_container_width=True)
-            if d2.button("Prepare for Print", use_container_width=True):
-                st.session_state.show_slicing_menu = True
+                st.download_button(
+                    label="Download STL", 
+                    data=stl_data, 
+                    file_name="part.stl", 
+                    use_container_width=True
+                )
 
-
-
-            # --- DYNAMIC SLICING MENU ---
-            if st.session_state.get("show_slicing_menu", False):
-                st.markdown("### Slicing Engine")
-                fleet_df = get_my_fleet()
+            # --- DYNAMIC SLICING MENU (Now persistent) ---
+            st.markdown("### Slicing Engine")
+            fleet_df = get_my_fleet()
+            
+            if fleet_df.empty:
+                st.warning("No printers found. Please add a printer in your Profile first.")
+            else:
+                selected_p = st.selectbox("Select Destination Printer:", fleet_df['printer nickname'].tolist())
+                p_settings = fleet_df[fleet_df['printer nickname'] == selected_p].iloc[0]
                 
-                if fleet_df.empty:
-                    st.warning("No printers found. Please add a printer in your Profile first.")
-                else:
-                    selected_p = st.selectbox("Select Destination Printer:", fleet_df['printer nickname'].tolist())
-                    p_settings = fleet_df[fleet_df['printer nickname'] == selected_p].iloc[0]
-                    
-                    # --- SIMPLE CLEAN INFO BOX ---
-                    printer_display = f"{p_settings['brand']} {p_settings['model']} ({p_settings['material']})"
-                    st.info(f"**{printer_display}**")
+                # --- SIMPLE CLEAN INFO BOX ---
+                printer_display = f"{p_settings['brand']} {p_settings['model']} ({p_settings['material']})"
+                st.info(f"**{printer_display}**")
 
-                    if st.button("Generate G-Code (Slice)", use_container_width=True):
-                        with st.spinner(f"Slicing for {selected_p}..."):
-                            # Ensure we match the file naming convention exactly
-                            hardware_name = f"{p_settings['brand']} {p_settings['model']} {p_settings['material']} {p_settings['nozzle size']}mm"
+                if st.button("Generate G-Code (Slice)", use_container_width=True):
+                    with st.spinner(f"Slicing for {selected_p}..."):
+                        # Ensure we match the file naming convention exactly
+                        hardware_name = f"{p_settings['brand']} {p_settings['model']} {p_settings['material']} {p_settings['nozzle size']}mm"
+                        
+                        overrides = {
+                            "infill": str(p_settings['infil']).replace('%', ''),
+                            "walls": int(p_settings.get('wall count', 3)),
+                            "supports": p_settings['supports']
+                        }
+                        
+                        # Make sure p_settings exists in your session state or local variables
+                        success, result = run_slicing_workflow("part.stl", "part.gcode", hardware_name, overrides, p_settings)
+                        
+                        if success:
+                            st.success("Slicing Complete!")
+                            m1, m2, m3 = st.columns(3)
+                            m1.metric("Est. Time", result["time"])
+                            m3.metric("Est. Finish", result['finish_time'])
                             
-                            overrides = {
-                                "infill": str(p_settings['infil']).replace('%', ''),
-                                "walls": int(p_settings.get('wall count', 3)),
-                                "supports": p_settings['supports']
-                            }
-                            
-                            # Make sure p_settings exists in your session state or local variables
-                            success, result = run_slicing_workflow("part.stl", "part.gcode", hardware_name, overrides, p_settings)
-                            
-                            if success:
-                                st.success("Slicing Complete!")
-                                m1, m2, m3 = st.columns(3)
-                                m1.metric("Est. Time", result["time"])
-                                m3.metric("Est. Finish", result['finish_time'])
-                                
-                                with open("part.gcode", "rb") as g_file:
-                                    # The primary action button
-                                    st.download_button(
-                                        "Download G-Code", 
-                                        data=g_file, 
-                                        file_name=f"{selected_p}_part.gcode", 
-                                        use_container_width=True
-                                    )
-                                
-                                # The greyed out 'Send to Printer' button
-                                st.button(
-                                    "Send to Printer", 
-                                    use_container_width=True, 
-                                    disabled=True, 
-                                    help="This function is under development"
+                            with open("part.gcode", "rb") as g_file:
+                                # The primary action button
+                                st.download_button(
+                                    "Download G-Code", 
+                                    data=g_file, 
+                                    file_name=f"{selected_p}_part.gcode", 
+                                    use_container_width=True
                                 )
-                            else:
-                                st.error(f"Slicing failed: {result}")
+                            
+                            # The greyed out 'Send to Printer' button
+                            st.button(
+                                "Send to Printer", 
+                                use_container_width=True, 
+                                disabled=True, 
+                                help="This function is under development"
+                            )
+                        else:
+                            st.error(f"Slicing failed: {result}")
 
             # --- FEEDBACK SECTION ---
             st.markdown("---")
