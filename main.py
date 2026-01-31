@@ -1205,132 +1205,138 @@ elif st.session_state.page == "Profile":
             # --- UNIFIED PRINTER FLEET MANAGER ---
             st.markdown("### Manage Printers")
 
+            # Calculate current fleet size
+            printer_count = len(fleet_df)
+            user_tier = st.session_state.get('user_tier', 'Starter')
+
+            # Define limits
+            can_add_more = True
+            if user_tier in ["Starter", "Professional"] and printer_count >= 1:
+                can_add_more = False
+
             printer_list = fleet_df['printer nickname'].tolist() if not fleet_df.empty else []
-            options = ["+ Add New Printer"] + printer_list
+
+            # Logic for the dropdown options
+            if not can_add_more:
+                options = printer_list # Remove "+ Add New Printer" from list
+                if not options: # Fallback if somehow a starter has 0 printers but is blocked
+                    options = ["+ Add New Printer"]
+                else:
+                    st.warning(f"Your {user_tier} plan is limited to 1 printer. Upgrade to **Enterprise** to manage a fleet.")
+            else:
+                options = ["+ Add New Printer"] + printer_list
+
             selection = st.selectbox("Select a printer to manage or add a new one:", options)
 
             is_new = (selection == "+ Add New Printer")
-            verified_list = get_verified_recipes()
 
-            # 1. INITIALIZE DATA (DYNAMIC LOGIC)
-            if is_new:
-                st.info("Configuring a new printer for your fleet.")
-                
-                # Dynamic Brand Selection based on available .ini files
-                available_brands = sorted(list(set([f.split(' ')[0] for f in verified_list])))
-                p_brand = st.selectbox("Printer Brand", available_brands if available_brands else ["No Profiles Found"])
-                
-                # Dynamic Model Selection based on Brand
-                available_models = sorted(list(set([
-                    f.split(f"{p_brand} ")[1].split(' ')[0] 
-                    for f in verified_list if f.startswith(p_brand)
-                ])))
-                p_model = st.selectbox("Model", available_models if available_models else ["Standard/Generic"])
-                
-                init_nickname = ""
-                init_material = "PLA"
-                init_nozzle = 0.4
-                init_bed = "Textured PEI"
-                init_infill = 15
-                init_walls = 3
-                init_supports = "ON" # Default set to ON
+            # Additional hard-stop for the form submission if they bypass the UI
+            if is_new and not can_add_more:
+                st.error("Access Denied: Please upgrade your account to add more hardware.")
             else:
-                p_data = fleet_df[fleet_df['printer nickname'] == selection].iloc[0]
-                p_brand = p_data['brand']
-                p_model = p_data['model']
-                st.caption(f"Hardware: {p_brand} {p_model}")
-                
-                init_nickname = p_data['printer nickname']
-                init_material = p_data['material']
-                init_nozzle = float(p_data['nozzle size'])
-                init_bed = p_data['bed type']
-                init_walls = int(p_data.get('wall count', 3))
-                init_supports = p_data['supports']
-                try:
-                    init_infill = int(str(p_data['infil']).replace('%', ''))
-                except:
-                    init_infill = 15
+                verified_list = get_verified_recipes()
 
-            # 2. FILTER VALID RECIPES for chosen Brand/Model
-            prefix = f"{p_brand} {p_model}"
-            m_all = ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"]
-            m_valid = [m for m in m_all if any(f"{prefix} {m}" in r for r in verified_list)]
-            n_all = [0.2, 0.4, 0.6, 0.8]
-            n_valid = [n for n in n_all if any(f"{n}mm" in r and prefix in r for r in verified_list)]
-
-            # 3. UNIFIED FORM
-            with st.form("printer_config_form"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    nickname = st.text_input("Printer Nickname", value=init_nickname, disabled=not is_new, placeholder="e.g. Lab Bench 1")
-                    
-                    m_idx = 0
-                    if init_material in m_valid:
-                        m_idx = m_valid.index(init_material)
-                    
-                    material = st.selectbox("Default Material", m_valid if m_valid else ["No Profiles Found"], index=m_idx, disabled=not m_valid)
-                    
-                with col2:
-                    n_idx = 0
-                    if n_valid:
-                        try:
-                            n_idx = n_valid.index(init_nozzle)
-                        except (ValueError, IndexError):
-                            n_idx = 0
-
-                    nozzle = st.selectbox("Nozzle Size (mm)", n_valid if n_valid else [0.4], index=n_idx, disabled=not n_valid)
-                    st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"], index=0, disabled=True)
-
-                infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=init_infill)
-                walls = st.number_input("Wall Count", min_value=1, max_value=10, value=init_walls)
-                
-                # Support Logic: Index 0 is "ON", Index 1 is "OFF"
-                supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True, index=0 if init_supports == "ON" else 1)
-                
-                # --- FORM-SAFE FAKE BUTTON (High Contrast) ---
-                st.markdown(f"""
-                    <div title="This function is under development" style="
-                    cursor: not-allowed;
-                    background-color: transparent;
-                    color: #888888;
-                    padding: 8px 16px;
-                    border-radius: 8px;
-                    border: 1px solid #888888;
-                    text-align: center;
-                    font-size: 16px;
-                    font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-                    user-select: none;
-                    width: 100%;
-                    margin-bottom: 10px;
-                ">
-                    Configure Wireless Connection
-                </div>
-            """, unsafe_allow_html=True)
-
-                st.markdown("---")
+                # 1. INITIALIZE DATA (DYNAMIC LOGIC)
                 if is_new:
-                    submit = st.form_submit_button("Add to Fleet", use_container_width=True, disabled=not (m_valid and n_valid))
-                    if submit and nickname:
-                        if add_to_printers_sheet(p_brand, p_model, nickname, material, infill, supports, nozzle, init_bed, walls):
-                            st.success(f"{nickname} added!")
-                            st.cache_data.clear()
-                            st.rerun()
+                    st.info("Configuring a new printer for your fleet.")
+                    
+                    # Dynamic Brand Selection based on available .ini files
+                    available_brands = sorted(list(set([f.split(' ')[0] for f in verified_list])))
+                    p_brand = st.selectbox("Printer Brand", available_brands if available_brands else ["No Profiles Found"])
+                    
+                    # Dynamic Model Selection based on Brand
+                    available_models = sorted(list(set([
+                        f.split(f"{p_brand} ")[1].split(' ')[0] 
+                        for f in verified_list if f.startswith(p_brand)
+                    ])))
+                    p_model = st.selectbox("Model", available_models if available_models else ["Standard/Generic"])
+                    
+                    init_nickname = ""
+                    init_material = "PLA"
+                    init_nozzle = 0.4
+                    init_bed = "Textured PEI"
+                    init_infill = 15
+                    init_walls = 3
+                    init_supports = "ON"
                 else:
-                    btn_col1, btn_col2 = st.columns(2)
-                    update = btn_col1.form_submit_button("Save Changes", use_container_width=True)
-                    delete = btn_col2.form_submit_button("Delete Printer", use_container_width=True)
+                    # ... (Keep existing p_data initialization logic for existing printers)
+                    p_data = fleet_df[fleet_df['printer nickname'] == selection].iloc[0]
+                    p_brand = p_data['brand']
+                    p_model = p_data['model']
+                    st.caption(f"Hardware: {p_brand} {p_model}")
                     
-                    if update:
-                        if update_printer_in_sheet(selection, material, infill, supports, nozzle, init_bed, walls):
-                            st.success("Configuration Updated!")
-                            st.cache_data.clear()
-                            st.rerun()
+                    init_nickname = p_data['printer nickname']
+                    init_material = p_data['material']
+                    init_nozzle = float(p_data['nozzle size'])
+                    init_bed = p_data['bed type']
+                    init_walls = int(p_data.get('wall count', 3))
+                    init_supports = p_data['supports']
+                    try:
+                        init_infill = int(str(p_data['infil']).replace('%', ''))
+                    except:
+                        init_infill = 15
+
+                # 2. FILTER VALID RECIPES (Existing Logic)
+                prefix = f"{p_brand} {p_model}"
+                m_all = ["PLA", "PETG", "ABS", "ASA", "Nylon", "TPU"]
+                m_valid = [m for m in m_all if any(f"{prefix} {m}" in r for r in verified_list)]
+                n_all = [0.2, 0.4, 0.6, 0.8]
+                n_valid = [n for n in n_all if any(f"{n}mm" in r and prefix in r for r in verified_list)]
+
+                # 3. UNIFIED FORM
+                with st.form("printer_config_form"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        nickname = st.text_input("Printer Nickname", value=init_nickname, disabled=not is_new, placeholder="e.g. Lab Bench 1")
+                        
+                        m_idx = 0
+                        if init_material in m_valid:
+                            m_idx = m_valid.index(init_material)
+                        
+                        material = st.selectbox("Default Material", m_valid if m_valid else ["No Profiles Found"], index=m_idx, disabled=not m_valid)
+                        
+                    with col2:
+                        n_idx = 0
+                        if n_valid:
+                            try:
+                                n_idx = n_valid.index(init_nozzle)
+                            except (ValueError, IndexError):
+                                n_idx = 0
+
+                        nozzle = st.selectbox("Nozzle Size (mm)", n_valid if n_valid else [0.4], index=n_idx, disabled=not n_valid)
+                        st.selectbox("Bed Type", ["Textured PEI", "Smooth PEI", "Engineering Plate", "Glass"], index=0, disabled=True)
+
+                    infill = st.select_slider("Default Infill (%)", options=[5, 10, 15, 20, 40, 60, 80, 100], value=init_infill)
+                    walls = st.number_input("Wall Count", min_value=1, max_value=10, value=init_walls)
+                    supports = st.radio("Enable Supports?", ["ON", "OFF"], horizontal=True, index=0 if init_supports == "ON" else 1)
                     
-                    if delete:
-                        if delete_printer_from_sheet(selection):
-                            st.warning(f"Deleted {selection}.")
-                            st.cache_data.clear()
-                            st.rerun()
+                    # ... (Keep Fake Wireless Button Markdown)
+
+                    st.markdown("---")
+                    if is_new:
+                        # Check button disable state based on limits
+                        submit = st.form_submit_button("Add to Fleet", use_container_width=True, disabled=not (m_valid and n_valid and can_add_more))
+                        if submit and nickname:
+                            if add_to_printers_sheet(p_brand, p_model, nickname, material, infill, supports, nozzle, init_bed, walls):
+                                st.success(f"{nickname} added!")
+                                st.cache_data.clear()
+                                st.rerun()
+                    else:
+                        btn_col1, btn_col2 = st.columns(2)
+                        update = btn_col1.form_submit_button("Save Changes", use_container_width=True)
+                        delete = btn_col2.form_submit_button("Delete Printer", use_container_width=True)
+                        
+                        if update:
+                            if update_printer_in_sheet(selection, material, infill, supports, nozzle, init_bed, walls):
+                                st.success("Configuration Updated!")
+                                st.cache_data.clear()
+                                st.rerun()
+                        
+                        if delete:
+                            if delete_printer_from_sheet(selection):
+                                st.warning(f"Deleted {selection}.")
+                                st.cache_data.clear()
+                                st.rerun()
 
 
 # 8. ADMIN VERIFICATION SYSTEM
