@@ -322,6 +322,19 @@ PRINTER_MASTER_LIST = {
 }
 
 
+def check_slicer():
+    slicer_path = "./Slicer" 
+    if not os.path.exists(slicer_path):
+        st.error(f"Slicer not found at {slicer_path}")
+        return False
+    
+    # Check if we have permission to run it
+    if not os.access(slicer_path, os.X_OK):
+        st.error("Slicer is not executable. Check your Render Build Command!")
+        return False
+    return True
+
+
 def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides, p_settings):
     # 1. Setup Paths
     exe = os.path.abspath("./Slicer")
@@ -341,7 +354,8 @@ def run_slicing_workflow(stl_path, gcode_path, full_config_name, user_overrides,
     # 2. Build the Command
     command = [
         exe, "--appimage-extract-and-run",
-        "--slice", 
+        "--no-gui",  
+        "--slice",
         "--load", config_path,
         "--output", gcode_abs,
         "--fill-density", f"{user_overrides['infill']}%",
