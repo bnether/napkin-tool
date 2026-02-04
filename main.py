@@ -502,7 +502,7 @@ st.markdown(f"""
     /* --- FIXED FOOTER SECTION --- */
     .footer-minimal {{
         background-color: #1e3a8a; border-top: 3px solid #3b82f6;
-        padding: 40px 15px 20px; text-align: center; color: #e2e8f0; margin-top: 4rem;
+        padding: 50px 15px; text-align: center; color: #e2e8f0; margin-top: 4rem;
         margin-left: -6% !important; margin-right: -6% !important; width: 112% !important;
     }}
 
