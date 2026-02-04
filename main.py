@@ -308,18 +308,6 @@ def clean_infill(infill_value):
         return 15 # Default fallback
 
 
-PRINTER_MASTER_LIST = {
-    "BambuLab": ["X1-Carbon", "X1-E (Enterprise)", "P1S", "P1P", "A1", "A1 Mini"],
-    "Prusa": ["MK4", "MK3S+", "XL", "MINI+", "SL1S Speed (Resin)"],
-    "UltiMaker": ["S7", "S5", "S3", "Method X", "Method XL", "2+ Connect"],
-    "Markforged": ["Onyx One", "Mark Two", "Onyx Pro", "X7 (Industrial)"],
-    "Formlabs (Resin)": ["Form 4", "Form 3+", "Form 3L", "Form 4B"],
-    "Raise3D": ["Pro3 Series", "Pro2 Series", "E2", "E2CF (Carbon Fiber)"],
-    "Creality (Pro/High Speed)": ["K1 Max", "K1C", "Ender-3 V3 Plus", "Ender-5 S1", "CR-5 Pro V2"],
-    "Anycubic": ["Kobra 2 Max", "Kobra 2 Pro", "Photon Mono M5s"],
-    "Flashforge": ["Guider 3 Ultra", "Creator 4", "Adventurer 5M Pro"],
-    "Other/Custom": ["Standard Marlin 250mm", "Large Format Klipper", "Custom Build"]
-}
 
 
 
@@ -514,7 +502,7 @@ st.markdown(f"""
     /* --- FIXED FOOTER SECTION --- */
     .footer-minimal {{
         background-color: #1e3a8a; border-top: 3px solid #3b82f6;
-        padding: 40px 15px; text-align: center; color: #e2e8f0; margin-top: 4rem;
+        padding: 40px 15px 20px; text-align: center; color: #e2e8f0; margin-top: 4rem;
         margin-left: -6% !important; margin-right: -6% !important; width: 112% !important;
     }}
 
